@@ -23,9 +23,9 @@ use std::mem::zeroed;
 /// Open a subshell with envcli variables available
 #[derive(Parser)]
 pub struct Args {
-    /// Service to pull variables from (defaults to linked service)
-    #[clap(short, long)]
-    service: Option<String>,
+    // /// Service to pull variables from (defaults to linked service)
+    // #[clap(short, long)]
+    // service: Option<String>,
 }
 
 pub async fn command(_args: Args, _json: bool) -> Result<()> {
