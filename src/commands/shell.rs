@@ -1,5 +1,4 @@
 use super::*;
-use crate::controllers::variables;
 use std::collections::BTreeMap;
 
 /// winapi is only used on windows
@@ -33,7 +32,7 @@ pub async fn command(_args: Args, _json: bool) -> Result<()> {
     let mut all_variables = BTreeMap::<String, String>::new();
     all_variables.insert("IN_ENVCLI_SHELL".to_owned(), "true".to_owned());
 
-    let variables = variables::get_variables().await.unwrap();
+    let variables = crate::sdk::Client::get_variables().await?;
 
     for variable in variables {
         all_variables.insert(variable.name, variable.value);

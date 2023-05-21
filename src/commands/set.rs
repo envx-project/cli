@@ -1,9 +1,6 @@
 use super::*;
-use crate::utils::config::*;
 use crate::utils::prompt::prompt_text;
 use anyhow::Ok;
-use reqwest::Client;
-use serde::{Deserialize, Serialize};
 
 /// Clean the cache
 #[derive(Parser)]
@@ -11,21 +8,7 @@ pub struct Args {
     kvpair: Option<String>,
 }
 
-#[derive(Serialize, Deserialize)]
-struct User {
-    id: String,
-}
-
-#[derive(Serialize, Deserialize)]
-struct SetParams {
-    password: String,
-    value: String,
-}
-
 pub async fn command(args: Args, _json: bool) -> Result<()> {
-    let client = Client::new();
-    let config = get_config()?;
-
     let (key, value) = match args.kvpair {
         Some(kvpair) => {
             let split = &kvpair.split("=").collect::<Vec<&str>>();
@@ -56,23 +39,7 @@ pub async fn command(args: Args, _json: bool) -> Result<()> {
         }
     };
 
-    let params = SetParams {
-        password: config.password.clone(),
-        value: value.clone(),
-    };
-
-    let res = client
-        .post(format!("{}/env/{}/{}", BASE_URL, config.user_id, key))
-        .json::<SetParams>(&params)
-        .send()
-        .await?;
-
-    if res.status().is_success() {
-        println!("Successfully set {}={}", key, value);
-    } else {
-        eprintln!("Error: Could not set {}={}", key, value);
-        std::process::exit(1);
-    }
+    crate::sdk::Client::set_env(key, value).await?;
 
     Ok(())
 }

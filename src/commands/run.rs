@@ -1,7 +1,6 @@
 use super::*;
-use crate::controllers::variables;
+use crate::sdk::Client;
 use anyhow::bail;
-
 /// Run a local command using variables from the active environment
 #[derive(Debug, Parser)]
 pub struct Args {
@@ -11,7 +10,7 @@ pub struct Args {
 }
 
 pub async fn command(args: Args, _json: bool) -> Result<()> {
-    let variables = variables::get_variables().await.unwrap();
+    let variables = Client::get_variables().await?;
 
     // a bit janky :/
     ctrlc::set_handler(move || {
