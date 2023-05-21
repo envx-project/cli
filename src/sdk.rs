@@ -1,7 +1,7 @@
+use crate::{types::User, utils::config::get_config};
 use anyhow::Ok;
 use serde::{Deserialize, Serialize};
-
-use crate::utils::config::get_config;
+use url::Url;
 
 use super::*;
 use std::fmt::Display;
@@ -45,11 +45,10 @@ impl Client {
             value: value.clone(),
         };
 
-        let res = client
-            .post(format!("{}/env/{}/{}", BASE_URL, config.user_id, key))
-            .json::<SetParams>(&params)
-            .send()
-            .await?;
+        let base = Url::parse(BASE_URL)?;
+        let url = base.join(&format!("/env/{}/{}", config.user_id, key))?;
+
+        let res = client.post(url).json::<SetParams>(&params).send().await?;
 
         if res.status().is_success() {
             Ok(())
@@ -63,12 +62,14 @@ impl Client {
 
     #[allow(dead_code)]
     pub async fn get_env(key: String) -> Result<Env, anyhow::Error> {
-        // {{base_url}}/env/{{userId}}/test
         let config = get_config()?;
         let client = reqwest::Client::new();
 
+        let base = Url::parse(BASE_URL)?;
+        let url = base.join(&format!("/env/{}/{}", config.user_id, key))?;
+
         let env_var = client
-            .get(format!("{}/env/{}/{}", BASE_URL, config.user_id, key))
+            .get(url)
             .json(&GetParams {
                 password: config.password.clone(),
             })
@@ -84,10 +85,10 @@ impl Client {
         let config = get_config()?;
         let client = reqwest::Client::new();
 
-        let res = client
-            .delete(format!("{}/env/{}/{}", BASE_URL, config.user_id, key))
-            .send()
-            .await?;
+        let base = Url::parse(BASE_URL)?;
+        let url = base.join(&format!("/env/{}/{}", config.user_id, key))?;
+
+        let res = client.delete(url).send().await?;
 
         if res.status().is_success() {
             Ok(())
@@ -107,8 +108,11 @@ impl Client {
             password: config.password.clone(),
         };
 
+        let base = Url::parse(BASE_URL)?;
+        let url = base.join(&format!("/env/{}", config.user_id))?;
+
         let res = client
-            .get(format!("{}/env/{}", BASE_URL, config.user_id.clone()))
+            .get(url)
             .json(&params)
             .send()
             .await
@@ -118,5 +122,16 @@ impl Client {
             .unwrap();
 
         Ok(res)
+    }
+
+    pub async fn create_user() -> Result<User, anyhow::Error> {
+        let client = reqwest::Client::new();
+
+        let base = Url::parse(BASE_URL)?;
+        let url = base.join("/user")?;
+
+        let user = client.post(url).send().await?.json::<User>().await?;
+
+        Ok(user)
     }
 }
