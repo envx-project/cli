@@ -1,0 +1,17 @@
+/target
+output/*
+zipped/*
+
+!.gitkeep
+rust-mangakakalot
+*.exe
+*.dll
+
+*.html
+*.zip
+
+.DS_Store
+
+one\ punch\ man/*
+
+out/
