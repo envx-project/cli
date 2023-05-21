@@ -1,67 +1,33 @@
-# rust-mangakakalot
+# env-cli
 
 Author: [@alexng353](https://github.com/alexng353)
 
-A very simple regex + reqwests parser and tricker for mangakakalot-affiliated sites, written in rust as my first "real" project.
+A very simple cli written for [ImLunaHey/envs](https://github.com/ImLunaHey/envs)
 
 ## Todo
 
 - find out how many bugs there are and fix em all
 
-## Done
-
-- add support for chapmanganato.com
-
 ### Usage
 
 ```bash
-# unix
-./rust-mangakakalot [command] || [url] [options]
+Interact with ImLunaHey/envs via CLI
 
-# windows
-rust-mangakakalot.exe [command] || [url] [options]
+Usage: env-cli [OPTIONS] <COMMAND>
 
 Commands:
-    download    Download manga from url
-    compress    Compress downloaded manga into zip files
-    help        Show this message
+  login      login to the service
+  variables  Print all variables as either key=value pairs, json, or a table
+  set        SET an environment variable with a key=value pair also supports interactive mode
+  unset      UNSET an environment variable by key also supports interactive mode
+  shell      Open a subshell with envcli variables available
+  run        Run a local command using variables from the active environment
+  help       Print this message or the help of the given subcommand(s)
 
 Options:
-    -l, --list                      List chapters
-    -f, --format                    Set the format of the zip file (default: .cbz)
-    -h, --help                      Show this message
-    -a, --autocompress              Automatically compress downloaded manga into zip files
-    -s [number], --skip [number]    Start downloading from chapter [number]
-    -c [n] or --chapter [n]         Download chapter by index (see --list)
-    -n [n] or --name [n]            Download chapter by name in url (see --list)
-    -r [n] [n], --range [n] [n]     Download chapters from [n] to [n]
-
-    -v, --verbose                   Show detailed information about the download process
-```
-
-### disclaimer
-
-Only been tested once on each site (mangakakalot, chapmanganato)
-
-- mangakakalot
-  - Devilchi (118 chapters)
-  - Solo Leveling (180 chapters)
-- chapmanganato
-  - Attack on Titan (53 chapters)
-
-I MADE IT SLOW ON PURPOSE.
-
-The default delay is 500ms between images and 3s between chapters so you don't get instantly banned from mangakakalot.
-
-If you put a .env in the same folder as the executable, it _should_ automatically read and parse your settings:
-
-below are the default settings
-
-```bash
-# .env
-IMG_DELAY=500 # value in millis
-OUTPUT_DIR="./output" # it can also take an absolute path
-CHAPTER_DELAY=3000 # value also in millis
+      --json     Output in JSON format
+  -h, --help     Print help
+  -V, --version  Print version
 ```
 
 # License
