@@ -1,38 +1,37 @@
-use super::*;
-use crate::controllers::variables::get_variables;
-use anyhow::Ok;
+use crate::utils::table::Table;
 
-/// Clean the cache
+use super::*;
+use anyhow::Ok;
+use std::collections::BTreeMap;
+
+/// Print all variables as key=value pairs
 #[derive(Parser)]
 pub struct Args {
+    /// Pretty print as table
     #[clap(short, long)]
-    kv: bool,
+    table: bool,
 }
 
 pub async fn command(args: Args, json: bool) -> Result<()> {
-    let variables = get_variables().await.unwrap();
+    let variables = crate::sdk::Client::get_variables().await.unwrap();
 
-    if args.kv {
-        if variables.len() == 0 {
-            println!("[]");
-            return Ok(());
+    if args.table {
+        {
+            let map = BTreeMap::from_iter(
+                variables
+                    .iter()
+                    .map(|env| (env.name.clone(), env.value.clone())),
+            );
+            Table::new("Variables".to_string(), map).print()?;
         }
-
-        let formatted_variables = variables
-            .iter()
-            .map(|env| format!("{}", env))
-            .collect::<Vec<String>>()
-            .join("\n");
-
-        println!("{}", formatted_variables);
-        return Ok(());
     } else if json {
         println!("{}", serde_json::to_string_pretty(&variables)?);
         return Ok(());
     } else {
-        unimplemented!();
+        for variable in variables {
+            println!("{}", variable);
+        }
     }
 
-    #[allow(unreachable_code)]
     Ok(())
 }
