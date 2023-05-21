@@ -4,7 +4,6 @@ use crate::utils::prompt::prompt_text;
 use anyhow::Ok;
 use base64::{engine::general_purpose, Engine as _};
 use rand::{thread_rng, Rng};
-use reqwest::Client;
 use serde::{Deserialize, Serialize};
 use std::result::Result::Ok as Good;
 
@@ -41,15 +40,7 @@ pub async fn command(args: Args, _json: bool) -> Result<()> {
         }
     }
 
-    let client = Client::new();
-
-    let user_id = client
-        .post(format!("{}/user", BASE_URL))
-        .send()
-        .await?
-        .json::<User>()
-        .await?
-        .id;
+    let user_id = crate::sdk::Client::create_user().await?.id;
 
     // serialize response to json and get {id: "id"}
 
