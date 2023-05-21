@@ -10,7 +10,7 @@ mod utils;
 #[macro_use]
 mod macros;
 
-/// Interact with mkkl-dl via CLI
+/// Interact with ImLunaHey/envs via CLI
 #[derive(Parser)]
 #[clap(author, version, about, long_about = None)]
 #[clap(propagate_version = true)]
