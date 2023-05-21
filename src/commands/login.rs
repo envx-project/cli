@@ -11,7 +11,7 @@ use std::result::Result::Ok as Good;
 /// login to the service
 #[derive(Parser)]
 pub struct Args {
-    /// Your password
+    /// Optional password, cli will prompt if not provided
     password: Option<String>,
 
     /// Generate a password automatically

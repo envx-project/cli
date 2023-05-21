@@ -4,7 +4,7 @@ use super::*;
 use anyhow::Ok;
 use std::collections::BTreeMap;
 
-/// Print all variables as key=value pairs
+/// Print all variables as either key=value pairs, json, or a table
 #[derive(Parser)]
 pub struct Args {
     /// Pretty print as table
