@@ -1,7 +1,8 @@
 use super::*;
 use crate::utils::prompt::{prompt_confirm, prompt_options};
 
-/// unset a variable
+/// UNSET an environment variable by key
+/// also supports interactive mode
 #[derive(Parser)]
 pub struct Args {
     key: Option<String>,

@@ -2,7 +2,8 @@ use super::*;
 use crate::utils::prompt::prompt_text;
 use anyhow::Ok;
 
-/// Clean the cache
+/// SET an environment variable with a key=value pair
+/// also supports interactive mode
 #[derive(Parser)]
 pub struct Args {
     kvpair: Option<String>,
