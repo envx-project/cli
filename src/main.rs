@@ -26,7 +26,7 @@ pub struct Args {
 
 // Generates the commands based on the modules in the commands directory
 // Specify the modules you want to include in the commands_enum! macro
-commands_enum!(clean, login, variables, set, unset, shell, run);
+commands_enum!(login, variables, set, unset, shell, run);
 
 #[tokio::main]
 async fn main() -> Result<()> {
