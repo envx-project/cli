@@ -1,32 +1,25 @@
-use crate::{
-    controllers::variables::get_variables,
-    utils::prompt::{prompt_confirm, prompt_options},
-};
-use anyhow::Ok;
-
-use reqwest::Client;
-
 use super::*;
-use crate::utils::config::*;
+use crate::utils::prompt::{prompt_confirm, prompt_options};
 
 /// unset a variable
 #[derive(Parser)]
 pub struct Args {
     key: Option<String>,
+
+    #[clap(short, long)]
+    force: bool,
 }
 
 pub async fn command(args: Args, _json: bool) -> Result<()> {
-    let client = Client::new();
-    let config = get_config()?;
-
     let key = match args.key {
         Some(key) => key.to_uppercase(),
         None => {
-            let variables = get_variables().await.unwrap();
+            let variables = crate::sdk::Client::get_variables().await.unwrap();
             let variables = variables
                 .iter()
                 .map(|variable| variable.name.clone())
                 .collect::<Vec<String>>();
+
             let key = match prompt_options("key", variables) {
                 Good(key) => key.to_uppercase(),
                 Err(_) => {
@@ -39,29 +32,17 @@ pub async fn command(args: Args, _json: bool) -> Result<()> {
         }
     };
 
-    match prompt_confirm(format!("Are you sure you want to unset {}?", key).as_str()) {
-        Good(true) => (),
-        _ => {
-            println!("Aborting");
-            std::process::exit(1);
+    if !args.force {
+        match prompt_confirm(format!("Are you sure you want to unset {}?", key.red()).as_str()) {
+            Good(true) => (),
+            _ => {
+                println!("Aborting");
+                std::process::exit(1);
+            }
         }
     }
 
-    let res = client
-        .delete(format!(
-            "{}/env/{}/{}",
-            BASE_URL,
-            config.user_id.clone(),
-            key
-        ))
-        .send()
-        .await?;
-
-    if res.status().is_success() {
-        println!("Successfully unset {}", key);
-    } else {
-        println!("Error: Could not unset {}", key);
-    }
+    crate::sdk::Client::delete_env(key).await?;
 
     Ok(())
 }

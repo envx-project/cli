@@ -1,11 +1,10 @@
 use anyhow::Result;
 use clap::{Parser, Subcommand};
-
+use commands::*;
 mod commands;
 pub mod constants;
-pub mod controllers;
-use commands::*;
-
+pub mod sdk;
+pub mod types;
 mod utils;
 
 #[macro_use]
