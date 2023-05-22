@@ -2,7 +2,7 @@
 
 Author: [@alexng353](https://github.com/alexng353)
 
-A very simple cli written for [ImLunaHey/envs](https://github.com/ImLunaHey/envs)
+A very simple cli written for [env-store/envs](https://github.com/env-store/envs)
 
 ## Todo
 
@@ -11,7 +11,7 @@ A very simple cli written for [ImLunaHey/envs](https://github.com/ImLunaHey/envs
 ### Usage
 
 ```bash
-Interact with ImLunaHey/envs via CLI
+Interact with env-store/envs via CLI
 
 Usage: env-cli [OPTIONS] <COMMAND>
 
