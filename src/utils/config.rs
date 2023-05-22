@@ -14,12 +14,13 @@ pub struct Config {
     pub password: String,
 }
 
+/// Get the configuration path ~/.config/envcli/config.json
 pub fn get_config_path() -> Result<PathBuf> {
     let mut path = home_dir().context("Failed to get home directory")?;
-
     path.push(".config");
     path.push("envcli");
     path.push("config.json");
+
     // if it doesn't exist, create it
     if !path.exists() {
         fs::create_dir_all(
@@ -34,6 +35,7 @@ pub fn get_config_path() -> Result<PathBuf> {
     Ok(path)
 }
 
+/// Read the configuration file and parse it into a Config struct
 pub fn get_config() -> Result<Config> {
     let path = get_config_path()?;
     let file = File::open(path)?;
@@ -45,6 +47,8 @@ pub fn get_config() -> Result<Config> {
     Ok(config)
 }
 
+/// Vulnerable to fs race conditions
+/// should rewrite using file locks
 pub fn write_config(config: &Config) -> Result<()> {
     let path = get_config_path()?;
     let file = File::create(path)?;
@@ -55,10 +59,12 @@ pub fn write_config(config: &Config) -> Result<()> {
     Ok(())
 }
 
+/// Get the local configuration path .envcli.json
 #[allow(dead_code)]
 pub fn local_get_config() -> Result<Config> {
     let mut path = std::env::current_dir()?;
     path.push(".envcli.json");
+
     let file = File::open(path)?;
     let mut reader = BufReader::new(file);
     let mut contents = String::new();
@@ -68,10 +74,12 @@ pub fn local_get_config() -> Result<Config> {
     Ok(config)
 }
 
+/// Write the local configuration file .envcli.json
 #[allow(dead_code)]
 pub fn write_local_config(config: &Config) -> Result<()> {
     let mut path = std::env::current_dir()?;
     path.push(".envcli.json");
+
     let file = File::create(path)?;
     let mut writer = BufWriter::new(file);
     let contents = serde_json::to_string_pretty(config)?;
