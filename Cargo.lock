@@ -319,6 +319,7 @@ dependencies = [
  "serde_json",
  "term_size",
  "textwrap",
+ "thiserror",
  "tokio",
  "url",
  "walkdir",

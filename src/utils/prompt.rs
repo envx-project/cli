@@ -1,8 +1,7 @@
+use anyhow::{Context, Result};
+use inquire::ui::{Attributes, RenderConfig, StyleSheet, Styled};
 use std::fmt::Display;
 
-use anyhow::{Context, Result};
-
-use inquire::ui::{Attributes, RenderConfig, StyleSheet, Styled};
 pub fn get_render_config() -> RenderConfig {
     RenderConfig::default_colored()
         .with_help_message(
@@ -66,6 +65,37 @@ pub fn prompt_text(message: &str) -> Result<String> {
     text.with_render_config(get_render_config())
         .prompt()
         .context("Failed to prompt for text")
+}
+
+#[allow(dead_code)]
+pub fn prompt_password(message: &str) -> Result<String> {
+    let password = inquire::Password::new(message);
+    password
+        .with_render_config(get_render_config())
+        .prompt()
+        .context("Failed to prompt for password")
+}
+
+#[allow(dead_code)]
+pub fn prompt_email(message: &str) -> Result<String> {
+    let validator = |input: &str| {
+        let regex = regex::Regex::new(r"^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$")
+            .context("Failed to create regex for email validation")?;
+
+        if regex.is_match(input) {
+            Ok(inquire::validator::Validation::Valid)
+        } else {
+            Ok(inquire::validator::Validation::Invalid(
+                "Please enter a valid email address".into(),
+            ))
+        }
+    };
+
+    inquire::Text::new(message)
+        .with_validator(validator)
+        .with_render_config(get_render_config())
+        .prompt()
+        .context("Failed to prompt for email")
 }
 
 #[allow(dead_code)]
