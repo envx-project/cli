@@ -51,6 +51,7 @@ pub fn write_config(config: &Config) -> Result<()> {
     let mut writer = BufWriter::new(file);
     let contents = serde_json::to_string_pretty(config)?;
     writer.write_all(contents.as_bytes())?;
+
     Ok(())
 }
 
@@ -75,5 +76,6 @@ pub fn write_local_config(config: &Config) -> Result<()> {
     let mut writer = BufWriter::new(file);
     let contents = serde_json::to_string_pretty(config)?;
     writer.write_all(contents.as_bytes())?;
+
     Ok(())
 }
