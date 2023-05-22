@@ -312,6 +312,7 @@ dependencies = [
  "inquire",
  "paste",
  "rand",
+ "rand_core",
  "regex",
  "reqwest",
  "serde",
