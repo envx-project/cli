@@ -4,7 +4,10 @@ use tokio::{io::AsyncWriteExt, process::Command};
 
 use crate::errors::ERR;
 
-pub(crate) async fn encrypt(recipient: String, text: String) -> anyhow::Result<String, anyhow::Error> {
+pub(crate) async fn encrypt(
+    recipient: String,
+    text: String,
+) -> anyhow::Result<String, anyhow::Error> {
     let mut gpg = Command::new("gpg")
         .arg("--batch")
         .arg("--yes")
