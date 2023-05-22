@@ -2,6 +2,7 @@
 // make a reader and writer that uses file locks
 
 use anyhow::{Context, Result};
+use home::home_dir;
 use serde::{Deserialize, Serialize};
 use std::fs::{self, File};
 use std::io::{BufReader, BufWriter, Read, Write};
@@ -14,8 +15,8 @@ pub struct Config {
 }
 
 pub fn get_config_path() -> Result<PathBuf> {
-    let mut path =
-        fs::canonicalize(std::env::var("HOME").context("Failed to get home directory")?)?;
+    let mut path = home_dir().context("Failed to get home directory")?;
+
     path.push(".config");
     path.push("envcli");
     path.push("config.json");
