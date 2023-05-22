@@ -4,7 +4,6 @@ use crate::utils::prompt::prompt_text;
 use anyhow::Ok;
 use base64::Engine;
 use rand::{rngs::OsRng, RngCore};
-
 use serde::{Deserialize, Serialize};
 use std::result::Result::Ok as Good;
 

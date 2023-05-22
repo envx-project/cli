@@ -1,4 +1,4 @@
-// configuration path = ~/.config/envcli/config.json
+// configuration path = ~/.config/envcli/gpgconf.json
 // make a reader and writer that uses file locks
 
 use anyhow::{Context, Result};
@@ -9,17 +9,24 @@ use std::io::{BufReader, BufWriter, Read, Write};
 use std::path::PathBuf;
 
 #[derive(Debug, Serialize, Deserialize)]
-pub struct Config {
-    pub user_id: String,
-    pub password: String,
+pub struct Key {
+    pub name: String,
+    pub email: String,
+    pub number: i32,
+    // pub passphrase: String,
 }
 
-/// Get the configuration path ~/.config/envcli/config.json
+#[derive(Debug, Serialize, Deserialize)]
+pub struct Config {
+    pub current_key: Key,
+    pub keys: Vec<Key>,
+}
+
 pub fn get_config_path() -> Result<PathBuf> {
     let mut path = home_dir().context("Failed to get home directory")?;
     path.push(".config");
     path.push("envcli");
-    path.push("config.json");
+    path.push("gpgconf.json");
 
     // if it doesn't exist, create it
     if !path.exists() {
@@ -31,7 +38,6 @@ pub fn get_config_path() -> Result<PathBuf> {
     Ok(path)
 }
 
-/// Read the configuration file and parse it into a Config struct
 pub fn get_config() -> Result<Config> {
     let path = get_config_path()?;
     let file = File::open(path)?;
@@ -47,35 +53,6 @@ pub fn get_config() -> Result<Config> {
 /// should rewrite using file locks
 pub fn write_config(config: &Config) -> Result<()> {
     let path = get_config_path()?;
-    let file = File::create(path)?;
-    let mut writer = BufWriter::new(file);
-    let contents = serde_json::to_string_pretty(config)?;
-    writer.write_all(contents.as_bytes())?;
-
-    Ok(())
-}
-
-/// Get the local configuration path .envcli.json
-#[allow(dead_code)]
-pub fn local_get_config() -> Result<Config> {
-    let mut path = std::env::current_dir()?;
-    path.push(".envcli.json");
-
-    let file = File::open(path)?;
-    let mut reader = BufReader::new(file);
-    let mut contents = String::new();
-    reader.read_to_string(&mut contents)?;
-    let config = serde_json::from_str::<Config>(&contents)?;
-
-    Ok(config)
-}
-
-/// Write the local configuration file .envcli.json
-#[allow(dead_code)]
-pub fn write_local_config(config: &Config) -> Result<()> {
-    let mut path = std::env::current_dir()?;
-    path.push(".envcli.json");
-
     let file = File::create(path)?;
     let mut writer = BufWriter::new(file);
     let contents = serde_json::to_string_pretty(config)?;

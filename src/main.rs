@@ -1,16 +1,18 @@
 use anyhow::Result;
 use clap::{Parser, Subcommand};
 use commands::*;
+
 mod commands;
-pub mod constants;
-pub mod sdk;
-pub mod types;
+mod consts;
+mod errors;
+mod sdk;
+mod types;
 mod utils;
 
 #[macro_use]
 mod macros;
 
-/// Interact with ImLunaHey/envs via CLI
+/// Interact with env-store/envs via CLI
 #[derive(Parser)]
 #[clap(author, version, about, long_about = None)]
 #[clap(propagate_version = true)]
@@ -25,7 +27,7 @@ pub struct Args {
 
 // Generates the commands based on the modules in the commands directory
 // Specify the modules you want to include in the commands_enum! macro
-commands_enum!(login, variables, set, unset, shell, run, encrypt, decrypt);
+commands_enum!(login, variables, set, unset, shell, run, encrypt, decrypt, genkey);
 
 #[tokio::main]
 async fn main() -> Result<()> {
