@@ -6,37 +6,40 @@ use anyhow::Ok;
 /// also supports interactive mode
 #[derive(Parser)]
 pub struct Args {
-    kvpair: Option<String>,
+    #[clap(trailing_var_arg = true)]
+    kvpairs: Vec<String>,
 }
 
 pub async fn command(args: Args, _json: bool) -> Result<()> {
-    let (key, value) = match args.kvpair {
-        Some(kvpair) => {
-            let split = &kvpair.split("=").collect::<Vec<&str>>();
+    if args.kvpairs.len() >= 1 {
+        for arg in args.kvpairs.clone() {
+            let split = &arg.splitn(2, "=").collect::<Vec<&str>>();
             if split.len() != 2 {
                 eprintln!("Error: Invalid key=value pair");
                 std::process::exit(1);
             }
-            (split[0].to_uppercase().to_string(), split[1].to_string())
+
+            let key = split[0].to_uppercase().to_string();
+            let value = split[1].to_string();
+
+            println!("Setting {}={}", key, value);
+            crate::sdk::Client::set_env(key, value).await?;
         }
-        None => {
-            let key = match prompt_text("key") {
-                Good(key) => key.to_uppercase(),
-                Err(_) => {
-                    eprintln!("Error: Could not read key");
-                    std::process::exit(1);
-                }
-            };
 
-            let value = match prompt_text("value") {
-                Good(value) => value,
-                Err(_) => {
-                    eprintln!("Error: Could not read value");
-                    std::process::exit(1);
-                }
-            };
+        return Ok(());
+    }
 
-            (key, value)
+    let key = match prompt_text("key") {
+        Good(key) => key.to_uppercase(),
+        Err(_) => {
+            return Err(anyhow::Error::msg("Error: Could not read key"));
+        }
+    };
+
+    let value = match prompt_text("value") {
+        Good(value) => value,
+        Err(_) => {
+            return Err(anyhow::Error::msg("Error: Could not read value"));
         }
     };
 
