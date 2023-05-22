@@ -8,6 +8,7 @@ pub mod decrypt;
 pub mod encrypt;
 pub mod genkey;
 pub mod login;
+pub mod rpgp;
 pub mod run;
 pub mod set;
 pub mod shell;

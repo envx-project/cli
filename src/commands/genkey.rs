@@ -70,7 +70,9 @@ pub async fn command(args: Args, _json: bool) -> Result<()> {
         Err(_) => {}
     }
 
-    let name = args.name.unwrap_or_else(|| prompt_text("What is your name?").unwrap());
+    let name = args
+        .name
+        .unwrap_or_else(|| prompt_text("What is your name?").unwrap());
     let email = args.email.unwrap_or_else(|| prompt_email("email").unwrap());
 
     match email_validator(&email) {
@@ -81,7 +83,9 @@ pub async fn command(args: Args, _json: bool) -> Result<()> {
         }
     }
 
-    let passphrase = args.passphrase.unwrap_or_else(|| prompt_password("password").unwrap());
+    let passphrase = args
+        .passphrase
+        .unwrap_or_else(|| prompt_password("password").unwrap());
 
     encryption::gpg_generate_key(&name, &email, &passphrase, &number).await?;
 

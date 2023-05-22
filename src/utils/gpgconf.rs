@@ -30,7 +30,11 @@ pub fn get_config_path() -> Result<PathBuf> {
 
     // if it doesn't exist, create it
     if !path.exists() {
-        fs::create_dir_all(path.parent().context("Failed to get parent directory").unwrap())?;
+        fs::create_dir_all(
+            path.parent()
+                .context("Failed to get parent directory")
+                .unwrap(),
+        )?;
         let file = File::create(&path)?;
         let mut writer = BufWriter::new(file);
         writer.write_all("".as_bytes())?;
