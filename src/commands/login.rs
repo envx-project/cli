@@ -64,6 +64,8 @@ pub async fn command(args: Args, _json: bool) -> Result<()> {
     let newconfig = Config {
         user_id: user_id.clone(),
         password: password.clone(),
+        primary_key: "".to_string(),
+        keys: vec![],
     };
 
     write_config(&newconfig)?;
