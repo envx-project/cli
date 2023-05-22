@@ -2,8 +2,9 @@ use super::*;
 use crate::utils::config::*;
 use crate::utils::prompt::prompt_text;
 use anyhow::Ok;
-use base64::{engine::general_purpose, Engine as _};
-use rand::{thread_rng, Rng};
+use base64::Engine;
+use rand::{rngs::OsRng, RngCore};
+
 use serde::{Deserialize, Serialize};
 use std::result::Result::Ok as Good;
 
@@ -42,15 +43,13 @@ pub async fn command(args: Args, _json: bool) -> Result<()> {
 
     let user_id = crate::sdk::Client::create_user().await?.id;
 
-    // serialize response to json and get {id: "id"}
-
     let password = match args.password {
         Some(password) => password,
         None => match args.generate {
             true => {
                 let mut array: [u8; 64] = [0; 64];
-                thread_rng().fill(&mut array[..]);
-                let password = general_purpose::STANDARD.encode(&array);
+                OsRng.try_fill_bytes(&mut array[..])?;
+                let password = base64::engine::general_purpose::STANDARD.encode(&array);
                 password
             }
             false => match prompt_text("password") {
