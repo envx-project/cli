@@ -13,7 +13,7 @@ pub struct Args {
 }
 
 pub async fn command(args: Args, json: bool) -> Result<()> {
-    let variables = crate::sdk::Client::get_variables().await.unwrap();
+    let variables = crate::sdk::Client::get_variables().await?;
 
     if args.table {
         {
