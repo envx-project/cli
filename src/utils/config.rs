@@ -12,6 +12,10 @@ use std::path::PathBuf;
 pub struct Config {
     pub user_id: String,
     pub password: String,
+    /// The fingerprint of the primary signing key
+    pub primary_key: String,
+    /// A vector of fingerprints of all usable public keys
+    pub keys: Vec<String>,
 }
 
 /// Get the configuration path ~/.config/envcli/config.json
@@ -23,7 +27,11 @@ pub fn get_config_path() -> Result<PathBuf> {
 
     // if it doesn't exist, create it
     if !path.exists() {
-        fs::create_dir_all(path.parent().context("Failed to get parent directory").unwrap())?;
+        fs::create_dir_all(
+            path.parent()
+                .context("Failed to get parent directory")
+                .unwrap(),
+        )?;
         let file = File::create(&path)?;
         let mut writer = BufWriter::new(file);
         writer.write_all("".as_bytes())?;
@@ -38,7 +46,8 @@ pub fn get_config() -> Result<Config> {
     let mut reader = BufReader::new(file);
     let mut contents = String::new();
     reader.read_to_string(&mut contents)?;
-    let config = serde_json::from_str::<Config>(&contents)?;
+    let config =
+        serde_json::from_str::<Config>(&contents).context("Failed to parse config file")?;
 
     Ok(config)
 }
@@ -48,6 +57,7 @@ pub fn get_config() -> Result<Config> {
 pub fn write_config(config: &Config) -> Result<()> {
     let path = get_config_path()?;
     let file = File::create(path)?;
+
     let mut writer = BufWriter::new(file);
     let contents = serde_json::to_string_pretty(config)?;
     writer.write_all(contents.as_bytes())?;
