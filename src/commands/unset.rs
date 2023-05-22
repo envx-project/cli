@@ -15,7 +15,7 @@ pub async fn command(args: Args, _json: bool) -> Result<()> {
     let key = match args.key {
         Some(key) => key.to_uppercase(),
         None => {
-            let variables = crate::sdk::Client::get_variables().await.unwrap();
+            let variables = crate::sdk::Client::get_variables().await?;
             let variables = variables
                 .iter()
                 .map(|variable| variable.name.clone())

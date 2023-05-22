@@ -101,7 +101,7 @@ impl Client {
     }
 
     pub async fn get_variables() -> Result<Vec<Env>, anyhow::Error> {
-        let config = get_config().unwrap();
+        let config = get_config()?;
         let client = reqwest::Client::new();
 
         let params = GetAllVariablesParams {
@@ -115,11 +115,9 @@ impl Client {
             .get(url)
             .json(&params)
             .send()
-            .await
-            .unwrap()
+            .await?
             .json::<Vec<Env>>()
-            .await
-            .unwrap();
+            .await?;
 
         Ok(res)
     }
