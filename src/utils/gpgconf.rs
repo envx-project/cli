@@ -22,6 +22,7 @@ pub struct Config {
     pub keys: Vec<Key>,
 }
 
+#[allow(dead_code)]
 pub fn get_config_path() -> Result<PathBuf> {
     let mut path = home_dir().context("Failed to get home directory")?;
     path.push(".config");
@@ -42,6 +43,7 @@ pub fn get_config_path() -> Result<PathBuf> {
     Ok(path)
 }
 
+#[allow(dead_code)]
 pub fn get_config() -> Result<Config> {
     let path = get_config_path()?;
     let file = File::open(path)?;
@@ -55,6 +57,7 @@ pub fn get_config() -> Result<Config> {
 
 /// Vulnerable to fs race conditions
 /// should rewrite using file locks
+#[allow(dead_code)]
 pub fn write_config(config: &Config) -> Result<()> {
     let path = get_config_path()?;
     let file = File::create(path)?;
