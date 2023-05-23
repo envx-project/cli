@@ -6,7 +6,7 @@ use anyhow::Context;
 use pgp::types::KeyTrait;
 use std::fs;
 
-/// Encrypt a string using GPG
+/// Generate a key using rPGP and write it to disk
 #[derive(Parser)]
 pub struct Args {
     #[clap(short, long)]
