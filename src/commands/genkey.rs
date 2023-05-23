@@ -3,7 +3,7 @@ use crate::utils::encryption;
 use crate::utils::prompt::{prompt_email, prompt_password, prompt_text};
 use anyhow::Context;
 
-/// Encrypt a string using GPG
+/// Generate a key using GPG
 #[derive(Parser)]
 pub struct Args {
     /// Interactive mode
