@@ -1,7 +1,7 @@
 use super::*;
 use crate::utils::config::get_config;
 use crate::utils::prompt::{prompt_confirm, prompt_email, prompt_password, prompt_text};
-use crate::utils::rpgp::{rsa_gen_key, SignedRsaKeyPair};
+use crate::utils::rpgp::{get_vault_location, rsa_gen_key, SignedRsaKeyPair};
 use anyhow::Context;
 use pgp::types::KeyTrait;
 use std::fs;
@@ -32,12 +32,7 @@ fn email_validator(email: &str) -> anyhow::Result<(), anyhow::Error> {
 }
 
 fn write_key_to_disk(key: SignedRsaKeyPair) -> anyhow::Result<()> {
-    let path = home::home_dir()
-        .context("Failed to get home directory")
-        .unwrap()
-        .join(".config")
-        .join("envcli")
-        .join("keys");
+    let path = rpgp::get_vault_location()?;
 
     let fingerprint: String = hex::encode(key.public_key.fingerprint());
     let fingerprint = fingerprint.to_uppercase();

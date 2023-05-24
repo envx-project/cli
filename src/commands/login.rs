@@ -51,6 +51,7 @@ pub async fn command(args: Args, _json: bool) -> Result<()> {
                 let password = base64::engine::general_purpose::STANDARD.encode(&array);
                 password
             }
+
             false => match prompt_text("password") {
                 Good(password) => password,
                 Err(_) => {
