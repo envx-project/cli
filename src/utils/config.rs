@@ -18,6 +18,13 @@ pub struct Config {
     pub keys: Vec<String>,
 }
 
+pub fn get_envcli_dir() -> Result<PathBuf> {
+    let mut path = home_dir().context("Failed to get home directory")?;
+    path.push(".config");
+    path.push("envcli");
+    Ok(path)
+}
+
 /// Get the configuration path ~/.config/envcli/config.json
 pub fn get_config_path() -> Result<PathBuf> {
     let mut path = home_dir().context("Failed to get home directory")?;

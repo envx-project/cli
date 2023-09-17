@@ -6,6 +6,7 @@ pub(super) use std::result::Result::Ok as Good;
 
 pub mod decrypt;
 pub mod encrypt;
+pub mod gen;
 pub mod genkey;
 pub mod login;
 pub mod rpgp;
