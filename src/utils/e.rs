@@ -76,12 +76,16 @@ pub fn encrypt(msg: &str, pubkey_str: &str) -> Result<String, anyhow::Error> {
     Ok(new_msg.to_armored_string(None)?)
 }
 
-pub fn decrypt(armored: &str, seckey: &SignedSecretKey) -> Result<String, anyhow::Error> {
+pub fn decrypt(
+    armored: &str,
+    seckey: &SignedSecretKey,
+    password: String,
+) -> Result<String, anyhow::Error> {
     let buf = Cursor::new(armored);
     let (msg, _) = composed::message::Message::from_armor_single(buf)
         .context("Failed to convert &str to armored message")?;
     let (decryptor, _) = msg
-        .decrypt(|| String::from(""), &[seckey])
+        .decrypt(|| String::from(password), &[seckey])
         .context("Decrypting the message")?;
 
     for msg in decryptor {
