@@ -95,6 +95,7 @@ pub async fn command(args: Args, _json: bool) -> Result<()> {
     config.keys.push(fingerprint.clone());
 
     if config.primary_key.is_empty() {
+        println!("Setting primary key to {}...", fingerprint);
         config.primary_key = fingerprint;
     }
 
