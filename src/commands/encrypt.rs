@@ -1,28 +1,36 @@
+use anyhow::Context;
+
+use crate::utils::{
+    config::get_config,
+    e::{encrypt, get_vault_location},
+};
+
 use super::*;
 
 /// Encrypt a string using GPG
 #[derive(Parser)]
 pub struct Args {
-    // /// recipient's public key
-    // recipient: String,
+    /// recipient's public key fingerprint
+    recipient: String,
 
-    // /// string to encrypt
-    // text: String,
+    /// string to encrypt
+    message: String,
 }
 
 pub async fn command(args: Args, _json: bool) -> Result<()> {
-    let fingerprint = "734956E603EC58A94843A27D42449196796A2EEB";
-    let passphrase = "joever";
-    let keypair = crate::utils::rpgp::read_vault(fingerprint, passphrase)?;
+    let config = get_config().context("Failed to get config")?;
 
-    // encrypt some arbitrary data
-    let data = b"hello world";
+    let primary_key = config.primary_key.clone();
 
-    let encrypted = crate::utils::rpgp::encrypt(
-        keypair,
-        "971DBD09E27B4D4C06393604EFB7449DD97A113C",
-        "cock and ball torture",
-    )?;
+    let primary_key_location = get_vault_location()?.join(primary_key).join("public.key");
+
+    let primary_public_key =
+        std::fs::read_to_string(primary_key_location).context("Failed to read primary key")?;
+
+    let encrypted = encrypt(&args.message, primary_public_key.as_str())?;
+
+    println!("{}", encrypted);
+
     Ok(())
 }
 
