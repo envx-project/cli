@@ -5,7 +5,6 @@ use commands::*;
 mod commands;
 mod consts;
 mod errors;
-mod sdk;
 mod types;
 mod utils;
 
@@ -27,7 +26,7 @@ pub struct Args {
 
 // Generates the commands based on the modules in the commands directory
 // Specify the modules you want to include in the commands_enum! macro
-commands_enum!(login, variables, set, unset, shell, run, encrypt, decrypt, gen);
+commands_enum!(variables, set, unset, shell, run, encrypt, decrypt, gen, delete_key);
 
 #[tokio::main]
 async fn main() -> Result<()> {

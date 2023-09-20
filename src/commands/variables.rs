@@ -1,37 +1,15 @@
-use crate::utils::table::Table;
-
 use super::*;
+use crate::utils::prompt::prompt_text;
 use anyhow::Ok;
-use std::collections::BTreeMap;
 
-/// Print all variables as either key=value pairs, json, or a table
+/// SET an environment variable with a key=value pair
+/// also supports interactive mode
 #[derive(Parser)]
 pub struct Args {
-    /// Pretty print as table
-    #[clap(short, long)]
-    table: bool,
+    #[clap(trailing_var_arg = true)]
+    kvpairs: Vec<String>,
 }
 
-pub async fn command(args: Args, json: bool) -> Result<()> {
-    let variables = crate::sdk::Client::get_variables().await?;
-
-    if args.table {
-        {
-            let map = BTreeMap::from_iter(
-                variables
-                    .iter()
-                    .map(|env| (env.name.clone(), env.value.clone())),
-            );
-            Table::new("Variables".to_string(), map).print()?;
-        }
-    } else if json {
-        println!("{}", serde_json::to_string_pretty(&variables)?);
-        return Ok(());
-    } else {
-        for variable in variables {
-            println!("{}", variable);
-        }
-    }
-
+pub async fn command(args: Args, _json: bool) -> Result<()> {
     Ok(())
 }
