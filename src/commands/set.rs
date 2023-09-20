@@ -11,39 +11,39 @@ pub struct Args {
 }
 
 pub async fn command(args: Args, _json: bool) -> Result<()> {
-    if args.kvpairs.len() >= 1 {
-        for arg in args.kvpairs.clone() {
-            let split = &arg.splitn(2, "=").collect::<Vec<&str>>();
-            if split.len() != 2 {
-                eprintln!("Error: Invalid key=value pair");
-                std::process::exit(1);
-            }
+    // if args.kvpairs.len() >= 1 {
+    //     for arg in args.kvpairs.clone() {
+    //         let split = &arg.splitn(2, "=").collect::<Vec<&str>>();
+    //         if split.len() != 2 {
+    //             eprintln!("Error: Invalid key=value pair");
+    //             std::process::exit(1);
+    //         }
 
-            let key = split[0].to_uppercase().to_string();
-            let value = split[1].to_string();
+    //         let key = split[0].to_uppercase().to_string();
+    //         let value = split[1].to_string();
 
-            println!("Setting {}={}", key, value);
-            crate::sdk::Client::set_env(key, value).await?;
-        }
+    //         println!("Setting {}={}", key, value);
+    //         crate::sdk::Client::set_env(key, value).await?;
+    //     }
 
-        return Ok(());
-    }
+    //     return Ok(());
+    // }
 
-    let key = match prompt_text("key") {
-        Good(key) => key.to_uppercase(),
-        Err(_) => {
-            return Err(anyhow::Error::msg("Error: Could not read key"));
-        }
-    };
+    // let key = match prompt_text("key") {
+    //     Good(key) => key.to_uppercase(),
+    //     Err(_) => {
+    //         return Err(anyhow::Error::msg("Error: Could not read key"));
+    //     }
+    // };
 
-    let value = match prompt_text("value") {
-        Good(value) => value,
-        Err(_) => {
-            return Err(anyhow::Error::msg("Error: Could not read value"));
-        }
-    };
+    // let value = match prompt_text("value") {
+    //     Good(value) => value,
+    //     Err(_) => {
+    //         return Err(anyhow::Error::msg("Error: Could not read value"));
+    //     }
+    // };
 
-    crate::sdk::Client::set_env(key, value).await?;
+    // crate::sdk::Client::set_env(key, value).await?;
 
     Ok(())
 }
