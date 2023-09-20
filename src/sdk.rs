@@ -11,21 +11,15 @@ pub struct NewUserParams {
     pub pubkey_hash: String,
 }
 
-pub(crate) struct Client {
-    pub(crate) api_url: String,
-}
-impl Client {
-    pub(crate) fn new() -> Result<Self> {
-        Ok(Self {
-            api_url: "http://localhost:3000".to_string(),
-        })
-    }
+const API_URL: &str = "http://localhost:3000";
 
-    pub async fn new_user(&self, user: &NewUserParams) -> Result<()> {
+pub(crate) struct SDK {}
+impl SDK {
+    pub async fn new_user(user: &NewUserParams) -> Result<()> {
         let client = reqwest::Client::new();
 
         let res = client
-            .post(&format!("{}/users", self.api_url))
+            .post(&format!("{}/user/new", API_URL))
             .json(&user)
             .send()
             .await?;

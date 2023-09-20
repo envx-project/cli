@@ -1,5 +1,5 @@
 use super::*;
-use crate::sdk::{self, NewUserParams};
+use crate::sdk::{self, NewUserParams, SDK};
 use crate::utils::config::{self, Key};
 use crate::utils::prompt::{prompt_email, prompt_password, prompt_text};
 use crate::utils::rpgp::{
@@ -50,7 +50,6 @@ fn email_validator(email: &str) -> anyhow::Result<(), anyhow::Error> {
 }
 
 pub async fn command(args: Args, _json: bool) -> Result<()> {
-    let sdk = sdk::Client::new().context("Failed to create SDK client")?;
     let mut config = config::get_config().context("Failed to get config")?;
 
     let name = args
@@ -121,7 +120,7 @@ pub async fn command(args: Args, _json: bool) -> Result<()> {
         pubkey_hash: hash_string(&pub_key),
     };
 
-    sdk.new_user(&new_user).await?;
+    SDK::new_user(&new_user).await?;
 
     Ok(())
 }
