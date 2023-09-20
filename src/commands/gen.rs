@@ -1,9 +1,13 @@
 use super::*;
-use crate::utils::config;
-use crate::utils::e::{generate_key_pair, get_vault_location};
+use crate::utils::config::{self, Key};
+use crate::utils::e::{
+    generate_key_pair, generate_primary_user_id, get_vault_location, hash_string,
+};
 use crate::utils::prompt::{prompt_email, prompt_password, prompt_text};
 use anyhow::Context;
 use pgp::types::KeyTrait;
+use reqwest::Client;
+use serde_json::json;
 use std::fs;
 use std::str;
 
@@ -66,7 +70,8 @@ pub async fn command(args: Args, _json: bool) -> Result<()> {
         .passphrase
         .unwrap_or_else(|| prompt_password("password").unwrap());
 
-    let key_pair = generate_key_pair(name, email, passphrase).expect("Failed to generate key pair");
+    let key_pair = generate_key_pair(name.clone(), email.clone(), passphrase)
+        .expect("Failed to generate key pair");
 
     let priv_key = key_pair
         .secret_key
@@ -89,17 +94,43 @@ pub async fn command(args: Args, _json: bool) -> Result<()> {
     let key_dir = get_vault_location()?.join(fingerprint.clone());
     fs::create_dir_all(&key_dir).context("Failed to create key directory")?;
 
-    fs::write(key_dir.join("private.key"), priv_key).expect("Failed to write private key to file");
-    fs::write(key_dir.join("public.key"), pub_key).expect("Failed to write public key to file");
+    fs::write(key_dir.join("private.key"), &priv_key).expect("Failed to write private key to file");
+    fs::write(key_dir.join("public.key"), &pub_key).expect("Failed to write public key to file");
 
-    config.keys.push(fingerprint.clone());
+    let hashed_note = generate_primary_user_id(name.clone(), email.clone());
+    let key_to_insert: Key = Key {
+        fingerprint: fingerprint.clone(),
+        note: "".to_string(),
+        primary_user_id: format!("{} <{}>", &name, &email),
+        hashed_note: hashed_note.clone(),
+    };
+
+    config.keys.push(key_to_insert);
 
     if config.primary_key.is_empty() {
-        println!("Setting primary key to {}...", fingerprint);
-        config.primary_key = fingerprint;
+        println!("Setting primary key to {}...", &fingerprint);
+        config.primary_key = fingerprint.clone();
     }
 
     config::write_config(&config).context("Failed to write config")?;
+
+    let client = Client::new();
+
+    let url = "http://localhost:3000";
+
+    let pubkey_hash = hash_string(&pub_key);
+
+    let body = json!({
+        "public_key": &pub_key,
+        "fingerprint": &fingerprint,
+        "primary_user_id": hashed_note.clone(),
+        "public_key_hash": pubkey_hash,
+    });
+
+    let response = client.post(url).json(&body).send().await?;
+
+    let status = response.status();
+    println!("Response status: {}", status);
 
     Ok(())
 }
