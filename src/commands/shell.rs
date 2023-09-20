@@ -1,5 +1,6 @@
 use super::*;
 use std::collections::BTreeMap;
+use std::vec;
 
 /// winapi is only used on windows
 #[cfg(target_os = "windows")]
@@ -32,11 +33,11 @@ pub async fn command(_args: Args, _json: bool) -> Result<()> {
     let mut all_variables = BTreeMap::<String, String>::new();
     all_variables.insert("IN_ENVCLI_SHELL".to_owned(), "true".to_owned());
 
-    let variables = crate::sdk::Client::get_variables().await?;
+    // let variables = crate::sdk::Client::get_variables().await?;
 
-    for variable in variables {
-        all_variables.insert(variable.name, variable.value);
-    }
+    // for variable in variables {
+    //     all_variables.insert(variable.name, variable.value);
+    // }
 
     let shell = std::env::var("SHELL").unwrap_or(match std::env::consts::OS {
         "windows" => match windows_shell_detection().await {

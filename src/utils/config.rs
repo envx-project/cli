@@ -8,14 +8,21 @@ use std::fs::{self, File};
 use std::io::{BufReader, BufWriter, Read, Write};
 use std::path::PathBuf;
 
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct Key {
+    pub fingerprint: String,
+    pub note: String,
+    pub primary_user_id: String,
+    pub hashed_note: String,
+}
+
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Config {
-    pub user_id: String,
-    pub password: String,
+    pub salt: String,
     /// The fingerprint of the primary signing key
     pub primary_key: String,
     /// A vector of fingerprints of all usable public keys
-    pub keys: Vec<String>,
+    pub keys: Vec<Key>,
 }
 
 pub fn get_envcli_dir() -> Result<PathBuf> {

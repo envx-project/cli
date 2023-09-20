@@ -4,6 +4,9 @@ use rand::prelude::*;
 use smallvec::*;
 use std::io::Cursor;
 
+use super::config::{self, get_config};
+use crypto_hash::{hex_digest, Algorithm};
+
 #[derive(Debug)]
 pub struct KeyPair {
     pub secret_key: pgp::SignedSecretKey,
@@ -26,13 +29,16 @@ pub fn generate_key_pair(
     password: String,
 ) -> Result<KeyPair, anyhow::Error> {
     let mut key_params = composed::key::SecretKeyParamsBuilder::default();
+
+    // name email mix, + salt and hash as the primary_user_id
     key_params
+        // change to 4096 later
         .key_type(composed::KeyType::Rsa(2048))
         .can_create_certificates(false)
         .can_sign(true)
         .can_encrypt(true)
         .passphrase(Some(password.clone()))
-        .primary_user_id(format!("{} <{}>", name, email))
+        .primary_user_id(generate_primary_user_id(name.clone(), email.clone()))
         .preferred_symmetric_algorithms(smallvec![crypto::sym::SymmetricKeyAlgorithm::AES256]);
 
     let secret_key_params = key_params
@@ -95,4 +101,13 @@ pub fn decrypt(
     }
 
     Err(anyhow::Error::msg("Failed to find message"))
+}
+
+pub fn hash_string(input: &str) -> String {
+    let hash = hex_digest(Algorithm::SHA512, input.as_bytes());
+    hash.to_string()
+}
+
+pub fn generate_primary_user_id(name: String, email: String) -> String {
+    hash_string(&format!("{}{}{}", name, email, &get_config().unwrap().salt)).to_uppercase()
 }

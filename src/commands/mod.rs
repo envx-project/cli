@@ -5,9 +5,9 @@ pub(super) use colored::Colorize;
 pub(super) use std::result::Result::Ok as Good;
 
 pub mod decrypt;
+pub mod delete_key;
 pub mod encrypt;
 pub mod gen;
-pub mod login;
 pub mod run;
 pub mod set;
 pub mod shell;
