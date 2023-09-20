@@ -2,7 +2,7 @@ use anyhow::Context;
 
 use crate::utils::{
     config::get_config,
-    e::{encrypt, get_vault_location},
+    rpgp::{encrypt, get_vault_location},
 };
 
 use super::*;

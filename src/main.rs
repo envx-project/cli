@@ -5,6 +5,7 @@ use commands::*;
 mod commands;
 mod consts;
 mod errors;
+mod sdk;
 mod types;
 mod utils;
 

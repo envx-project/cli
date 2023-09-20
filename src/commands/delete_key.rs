@@ -27,7 +27,7 @@ pub async fn command(args: Args, _json: bool) -> Result<()> {
 
     println!("Deleting keys: {:?}", selected);
 
-    let vault_location = crate::utils::e::get_vault_location()?;
+    let vault_location = crate::utils::rpgp::get_vault_location()?;
 
     for key in selected {
         let key_dir = vault_location.join(&key);
