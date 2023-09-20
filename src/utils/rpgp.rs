@@ -1,4 +1,4 @@
-use anyhow::{Context, Result};
+use anyhow::{Context, Ok, Result};
 use pgp::{composed, composed::signed_key::*, crypto, types::SecretKeyTrait, Deserializable};
 use rand::prelude::*;
 use smallvec::*;
@@ -110,4 +110,17 @@ pub fn hash_string(input: &str) -> String {
 
 pub fn generate_primary_user_id(name: String, email: String) -> String {
     hash_string(&format!("{}{}{}", name, email, &get_config().unwrap().salt)).to_uppercase()
+}
+
+pub fn get_primary_key() -> Result<String> {
+    let config = get_config().context("Failed to get config")?;
+
+    let primary_key = config.primary_key.clone();
+
+    let primary_key_location = get_vault_location()?.join(primary_key).join("public.key");
+
+    let primary_public_key =
+        std::fs::read_to_string(primary_key_location).context("Failed to read primary key")?;
+
+    Ok(primary_public_key)
 }
