@@ -1,13 +1,12 @@
 use super::*;
+use crate::sdk::{self, NewUserParams};
 use crate::utils::config::{self, Key};
-use crate::utils::e::{
+use crate::utils::prompt::{prompt_email, prompt_password, prompt_text};
+use crate::utils::rpgp::{
     generate_key_pair, generate_primary_user_id, get_vault_location, hash_string,
 };
-use crate::utils::prompt::{prompt_email, prompt_password, prompt_text};
 use anyhow::Context;
 use pgp::types::KeyTrait;
-use reqwest::Client;
-use serde_json::json;
 use std::fs;
 use std::str;
 
@@ -51,6 +50,7 @@ fn email_validator(email: &str) -> anyhow::Result<(), anyhow::Error> {
 }
 
 pub async fn command(args: Args, _json: bool) -> Result<()> {
+    let sdk = sdk::Client::new().context("Failed to create SDK client")?;
     let mut config = config::get_config().context("Failed to get config")?;
 
     let name = args
@@ -114,23 +114,14 @@ pub async fn command(args: Args, _json: bool) -> Result<()> {
 
     config::write_config(&config).context("Failed to write config")?;
 
-    let client = Client::new();
+    let new_user = NewUserParams {
+        fingerprint: fingerprint.clone(),
+        user_id: format!("{} <{}>", &name, &email),
+        pubkey: pub_key.clone(),
+        pubkey_hash: hash_string(&pub_key),
+    };
 
-    let url = "http://localhost:3000";
-
-    let pubkey_hash = hash_string(&pub_key);
-
-    let body = json!({
-        "public_key": &pub_key,
-        "fingerprint": &fingerprint,
-        "primary_user_id": hashed_note.clone(),
-        "public_key_hash": pubkey_hash,
-    });
-
-    let response = client.post(url).json(&body).send().await?;
-
-    let status = response.status();
-    println!("Response status: {}", status);
+    sdk.new_user(&new_user).await?;
 
     Ok(())
 }

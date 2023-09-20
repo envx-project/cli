@@ -1,48 +1,16 @@
-use anyhow::{Context, Ok};
-use base64::Engine;
-use pgp::composed::PublicOrSecret;
-use pgp::composed::{key::SecretKeyParamsBuilder, KeyType};
-use pgp::crypto::{hash::HashAlgorithm, sym::SymmetricKeyAlgorithm};
-use pgp::types::{CompressionAlgorithm, KeyTrait, PublicKeyTrait, SecretKeyTrait};
-use pgp::{SecretKey, SignedPublicKey, SignedSecretKey};
+use anyhow::{Context, Result};
+use pgp::{composed, composed::signed_key::*, crypto, types::SecretKeyTrait, Deserializable};
+use rand::prelude::*;
 use smallvec::*;
-use std::fmt::Display;
-use std::io::{Cursor, Read};
+use std::io::Cursor;
 
-use rand::CryptoRng;
-use rand::Rng;
-use rand::SeedableRng;
-use rand_chacha::ChaCha20Rng;
+use super::config::{self, get_config};
+use crypto_hash::{hex_digest, Algorithm};
 
-#[derive(Debug, Clone)]
-pub(crate) struct SignedRsaKeyPair {
-    pub secret_key: SignedSecretKey,
-    pub public_key: SignedPublicKey,
-}
-
-impl SignedRsaKeyPair {
-    /// Get the hex encoded fingerprint of the public key
-    pub fn fingerprint(&self) -> String {
-        let fingerprint = self.public_key.fingerprint();
-        let hex = hex::encode(fingerprint);
-        hex.to_uppercase()
-    }
-
-    /// Get the armored ascii string of the public key
-    pub fn public_key(&self) -> String {
-        self.public_key.to_armored_string(None).unwrap()
-    }
-
-    /// Get the armored ascii string of the private key
-    pub fn secret_key(&self) -> String {
-        self.secret_key.to_armored_string(None).unwrap()
-    }
-}
-
-impl Display for SignedRsaKeyPair {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", self.public_key.to_armored_string(None).unwrap())
-    }
+#[derive(Debug)]
+pub struct KeyPair {
+    pub secret_key: pgp::SignedSecretKey,
+    pub public_key: pgp::SignedPublicKey,
 }
 
 pub(crate) fn get_vault_location() -> anyhow::Result<std::path::PathBuf, anyhow::Error> {
@@ -55,123 +23,91 @@ pub(crate) fn get_vault_location() -> anyhow::Result<std::path::PathBuf, anyhow:
     Ok(path)
 }
 
-pub(crate) fn rsa_gen_key(
-    name: &str,
-    description: &str,
-    email: &str,
-    password: &str,
-) -> anyhow::Result<SignedRsaKeyPair, anyhow::Error> {
-    let user_id = format!("{} ({}) <{}>", name, description, email);
+pub fn generate_key_pair(
+    name: String,
+    email: String,
+    password: String,
+) -> Result<KeyPair, anyhow::Error> {
+    let mut key_params = composed::key::SecretKeyParamsBuilder::default();
 
-    let mut key_params = SecretKeyParamsBuilder::default();
+    // name email mix, + salt and hash as the primary_user_id
     key_params
-        .preferred_symmetric_algorithms(smallvec![SymmetricKeyAlgorithm::AES256,])
-        .preferred_hash_algorithms(smallvec![HashAlgorithm::SHA2_256,])
-        .preferred_compression_algorithms(smallvec![CompressionAlgorithm::ZLIB,])
-        .key_type(KeyType::Rsa(4096))
-        .can_create_certificates(true)
+        // change to 4096 later
+        .key_type(composed::KeyType::Rsa(2048))
+        .can_create_certificates(false)
         .can_sign(true)
         .can_encrypt(true)
-        .passphrase(Some(password.clone().into()))
-        .primary_user_id(user_id);
+        .passphrase(Some(password.clone()))
+        .primary_user_id(generate_primary_user_id(name.clone(), email.clone()))
+        .preferred_symmetric_algorithms(smallvec![crypto::sym::SymmetricKeyAlgorithm::AES256]);
 
     let secret_key_params = key_params
         .build()
-        .context("Failed to build secret key params")?;
+        .expect("Must be able to create secret key params");
 
     let secret_key = secret_key_params
         .generate()
-        .context("Failed to generate secret key")?;
+        .expect("Failed to generate a plain key.");
 
-    let passwd_fn = || password.to_string();
+    let passwd_fn = || password.clone();
+
     let signed_secret_key = secret_key
-        .clone()
         .sign(passwd_fn)
-        .context("Failed to sign secret key")?;
+        .expect("Secret Key must be able to sign its own metadata");
 
     let public_key = signed_secret_key.public_key();
     let signed_public_key = public_key
-        .clone()
         .sign(&signed_secret_key, passwd_fn)
-        .context("Failed to sign public key")?;
+        .expect("Public key must be able to sign its own metadata");
 
-    Ok(SignedRsaKeyPair {
-        secret_key: signed_secret_key,
-        public_key: signed_public_key,
-    })
-}
-
-pub(crate) fn read_vault(
-    fingerprint: &str,
-    password: &str,
-) -> anyhow::Result<SignedRsaKeyPair, anyhow::Error> {
-    let vault_location = get_vault_location()?.join(fingerprint.to_uppercase());
-    let priv_key = std::fs::read(vault_location.clone().join("priv.key"))?;
-
-    let cursor_wrapped_priv_key = Cursor::new(priv_key);
-
-    // make a keypair from the private key
-    let mut dearmored = pgp::composed::from_armor_many(cursor_wrapped_priv_key)?;
-
-    let unknown_key = dearmored.0.next().context("Failed to get key")??;
-    let passwd_fn = || password.to_string();
-
-    let signed_secret_key = unknown_key.into_secret();
-    let signed_public_key = signed_secret_key
-        .public_key()
-        .sign(&signed_secret_key, passwd_fn)
-        .context("Failed to sign public key")?;
-
-    let keypair = SignedRsaKeyPair {
+    let key_pair = KeyPair {
         secret_key: signed_secret_key,
         public_key: signed_public_key,
     };
 
-    anyhow::Ok(keypair)
+    Ok(key_pair)
 }
 
-pub(crate) fn read_pub_key(fingerprint: &str) -> anyhow::Result<String, anyhow::Error> {
-    Ok("".to_string())
+pub fn encrypt(msg: &str, pubkey_str: &str) -> Result<String, anyhow::Error> {
+    let (pubkey, _) = SignedPublicKey::from_string(pubkey_str)?;
+    // Requires a file name as the first arg, in this case I pass "none", as it's not used
+    let msg = composed::message::Message::new_literal("none", msg);
+
+    let mut rng = StdRng::from_entropy();
+    let new_msg = msg.encrypt_to_keys(
+        &mut rng,
+        crypto::sym::SymmetricKeyAlgorithm::AES128,
+        &[&pubkey],
+    )?;
+    Ok(new_msg.to_armored_string(None)?)
 }
 
-pub(crate) fn encrypt(
-    keypair: SignedRsaKeyPair,
-    fingerprint: &str,
-    message: &str,
-) -> anyhow::Result<String, anyhow::Error> {
-    let vault_location = get_vault_location()?.join(fingerprint.to_uppercase());
-    let pub_key = std::fs::read(vault_location.clone().join("pub.key"))?;
+pub fn decrypt(
+    armored: &str,
+    seckey: &SignedSecretKey,
+    password: String,
+) -> Result<String, anyhow::Error> {
+    let buf = Cursor::new(armored);
+    let (msg, _) = composed::message::Message::from_armor_single(buf)
+        .context("Failed to convert &str to armored message")?;
+    let (decryptor, _) = msg
+        .decrypt(|| String::from(password), &[seckey])
+        .context("Decrypting the message")?;
 
-    let cursor_wrapped_pub_key = Cursor::new(pub_key);
+    for msg in decryptor {
+        let bytes = msg?.get_content()?.unwrap();
+        let clear_text = String::from_utf8(bytes)?;
+        return Ok(clear_text);
+    }
 
-    // make a keypair from the public key
-    let mut dearmored = pgp::composed::from_armor_many(cursor_wrapped_pub_key)?;
+    Err(anyhow::Error::msg("Failed to find message"))
+}
 
-    let unknown_key = dearmored.0.next().context("Failed to get key")??;
-    let public_key = unknown_key.into_public();
+pub fn hash_string(input: &str) -> String {
+    let hash = hex_digest(Algorithm::SHA512, input.as_bytes());
+    hash.to_string()
+}
 
-    let mut rng = ChaCha20Rng::from_entropy();
-
-    let encrypted_message = public_key.encrypt(&mut rng, message.as_bytes())?;
-
-    // let encrypted_message = encrypted_message
-
-    // .first()
-    // .iter()
-    // .map(|x| {
-    //     let y = x.as_bytes();
-    //     // println!("{:?}", y);
-    //     y.to_owned()
-    // })
-    // .collect::<Vec<_>>();
-
-    let utf8 = base64::engine::general_purpose::STANDARD.encode(encrypted_message.first().unwrap());
-
-    println!("{}", utf8);
-
-    // println!("{:?}", encrypted_message.clone());
-
-    // pgp::crypto::rsa::encrypt(rng, n, e, plaintext)
-
-    Ok("".to_string())
+pub fn generate_primary_user_id(name: String, email: String) -> String {
+    hash_string(&format!("{}{}{}", name, email, &get_config().unwrap().salt)).to_uppercase()
 }
