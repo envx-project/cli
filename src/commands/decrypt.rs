@@ -5,7 +5,7 @@ use crate::utils::{
 };
 use anyhow::{Context, Result};
 use hex::ToHex;
-use pgp::{composed, types::KeyTrait, Deserializable, Message, SignedSecretKey};
+use pgp::{composed, Deserializable, SignedSecretKey};
 use std::{io::Cursor, vec};
 
 /// Decrypt a string using GPG
