@@ -12,7 +12,7 @@ pub struct NewUserParams {
     pub pubkey_hash: String,
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Debug)]
 pub struct SetEnvParams {
     pub message: String,
     pub allowed_keys: Vec<String>,
@@ -47,6 +47,12 @@ impl SDK {
     pub async fn set_env(body: SetEnvParams) -> Result<()> {
         let client = reqwest::Client::new();
 
+        let body = json!({
+            "message": body.message,
+            "allowed_keys": body.allowed_keys,
+            "project_id": if let Some(project_id) = body.project_id { project_id } else {  "null".to_string() }
+        });
+
         let res = client
             .post(&format!("{}/secrets/new", API_URL))
             .json(&body)
@@ -55,14 +61,12 @@ impl SDK {
 
         let status = res.status();
 
-        dbg!(status);
-
         if status.is_success() {
             Ok(())
         } else {
             Err(anyhow::Error::msg(format!(
                 "Failed to set new secret: {}",
-                res.text().await?
+                "err" // res.text().await?
             )))
         }
     }
