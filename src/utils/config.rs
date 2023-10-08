@@ -23,8 +23,13 @@ pub struct Config {
     pub primary_key: String,
     /// A vector of fingerprints of all usable public keys
     pub keys: Vec<Key>,
+    /// Use the SDK or not
+    pub online: bool,
+    /// Custom URL for the SDK
+    pub sdk_url: Option<String>,
 }
 
+#[allow(dead_code)]
 pub fn get_envcli_dir() -> Result<PathBuf> {
     let mut path = home_dir().context("Failed to get home directory")?;
     path.push(".config");
