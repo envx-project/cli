@@ -4,7 +4,7 @@ use rand::prelude::*;
 use smallvec::*;
 use std::io::Cursor;
 
-use super::config::{self, get_config};
+use super::config::get_config;
 use crypto_hash::{hex_digest, Algorithm};
 
 #[derive(Debug)]

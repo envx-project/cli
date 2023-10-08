@@ -32,6 +32,7 @@ pub fn prompt_options<T: Display>(message: &str, options: Vec<T>) -> Result<T> {
         .context("Failed to prompt for options")
 }
 
+#[allow(dead_code)]
 pub fn prompt_confirm(message: &str) -> Result<bool> {
     let confirm = inquire::Confirm::new(message);
     confirm
