@@ -1,11 +1,8 @@
 // configuration path = ~/.config/envcli/config.json
-// make a reader and writer that uses file locks
 
 use anyhow::{Context, Result};
 use home::home_dir;
 use serde::{Deserialize, Serialize};
-use serde_json::{Map, Value};
-use std::collections::BTreeMap;
 use std::fs::{self, File};
 use std::io::{BufReader, BufWriter, Read, Write};
 use std::path::PathBuf;
@@ -29,39 +26,6 @@ pub struct Config {
     pub online: bool,
     /// Custom URL for the SDK
     pub sdk_url: Option<String>,
-}
-
-impl Config {
-    pub fn to_btreemap(&self) -> Result<BTreeMap<String, String>> {
-        // Convert Config to JSON value
-        let v: Value =
-            serde_json::to_value(&self).context("Failed to convert config to JSON value")?;
-
-        // Convert JSON value into a BTreeMap
-        if let Value::Object(map) = v {
-            Ok(map.into_iter().map(|(k, v)| (k, v.to_string())).collect())
-        } else {
-            panic!("Expected an object");
-        }
-    }
-}
-
-pub fn keys_to_map(keys: Vec<Key>) -> anyhow::Result<BTreeMap<String, String>, anyhow::Error> {
-    let mut map = BTreeMap::new();
-    for key in keys {
-        // Check for duplicate fingerprints
-        if map.contains_key(&key.fingerprint) {
-            return Err(anyhow::anyhow!(
-                "Duplicate fingerprint found for: {}",
-                key.fingerprint
-            ));
-        }
-        map.insert(
-            key.fingerprint.chars().skip(30).collect(),
-            key.primary_user_id,
-        );
-    }
-    Ok(map)
 }
 
 #[allow(dead_code)]
