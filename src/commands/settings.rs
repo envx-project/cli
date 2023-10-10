@@ -24,8 +24,20 @@ pub struct Args {
 pub async fn command(args: Args, _json: bool) -> Result<()> {
     let config = get_config()?;
 
-    let primary_key = match args.primary_key_value {
-        Some(s) => s,
+    let primary_key = match &args.primary_key_value {
+        Some(s) => {
+            if s.len() == 40 {
+                s.into()
+            } else {
+                config
+                    .keys
+                    .iter()
+                    .find(|j| j.fingerprint.contains(&s.as_str()))
+                    .expect("Requested fingerprint not in config")
+                    .fingerprint
+                    .clone()
+            }
+        }
         None => {
             if args.set_primary_key {
                 prompt_select(
@@ -44,6 +56,10 @@ pub async fn command(args: Args, _json: bool) -> Result<()> {
         }
     };
 
+    if args.primary_key_value.is_some() || args.set_primary_key {
+        println!("Setting {} as primary key...", primary_key)
+    }
+
     let new_config = Config {
         salt: config.salt,
         keys: config.keys,
@@ -59,6 +75,7 @@ pub async fn command(args: Args, _json: bool) -> Result<()> {
     };
 
     write_config(&new_config)?;
+    println!("Set config");
 
     Ok(())
 }
