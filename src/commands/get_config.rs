@@ -1,7 +1,7 @@
 use super::*;
 use crate::utils::config::get_config;
-use crate::utils::config::keys_to_map;
 use crate::utils::table::Table;
+use crate::utils::to_btreemap::ToBTreeMap;
 use anyhow::Context;
 use anyhow::Result;
 
@@ -22,7 +22,7 @@ pub async fn command(args: Args, json: bool) -> Result<()> {
     };
 
     if args.keys_only {
-        let key_map = keys_to_map(config.keys)?;
+        let key_map = config.keys.to_btreemap()?;
         Table::new("Fingerprint | Key ID".into(), key_map).print()?;
         return Ok(());
     };
