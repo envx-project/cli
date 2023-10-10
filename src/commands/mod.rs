@@ -7,6 +7,7 @@ pub mod decrypt;
 pub mod delete_key;
 pub mod encrypt;
 pub mod gen;
+pub mod get_config;
 pub mod run;
 pub mod set;
 pub mod settings;
