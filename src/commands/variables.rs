@@ -1,15 +1,10 @@
 use super::*;
-use crate::utils::prompt::prompt_text;
 use anyhow::Ok;
 
-/// SET an environment variable with a key=value pair
-/// also supports interactive mode
+/// Get all environment variables for the current configured directory
 #[derive(Parser)]
-pub struct Args {
-    #[clap(trailing_var_arg = true)]
-    kvpairs: Vec<String>,
-}
+pub struct Args {}
 
-pub async fn command(args: Args, _json: bool) -> Result<()> {
+pub async fn command(_args: Args, _json: bool) -> Result<()> {
     Ok(())
 }
