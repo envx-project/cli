@@ -1,10 +1,10 @@
+use super::*;
+use crate::utils::config::get_config;
 use anyhow::Ok;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 
-use super::*;
-
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Debug)]
 pub struct NewUserParams {
     pub fingerprint: String,
     pub user_id: String,
@@ -19,7 +19,11 @@ pub struct SetEnvParams {
     pub project_id: Option<String>,
 }
 
-const API_URL: &str = "http://localhost:3000";
+pub fn get_api_url() -> Result<String> {
+    Ok(get_config()?
+        .sdk_url
+        .unwrap_or("http://localhost:3000".into()))
+}
 
 pub(crate) struct SDK {}
 impl SDK {
@@ -27,7 +31,7 @@ impl SDK {
         let client = reqwest::Client::new();
 
         let res = client
-            .post(&format!("{}/user/new", API_URL))
+            .post(&format!("{}/user/new", get_api_url()?))
             .json(&user)
             .send()
             .await?;
@@ -47,14 +51,19 @@ impl SDK {
     pub async fn set_env(body: SetEnvParams) -> Result<()> {
         let client = reqwest::Client::new();
 
+        let project_id = match body.project_id {
+            Some(pid) => pid,
+            None => "null".into(),
+        };
+
         let body = json!({
             "message": body.message,
             "allowed_keys": body.allowed_keys,
-            "project_id": if let Some(project_id) = body.project_id { project_id } else {  "null".to_string() }
+            "project_id": project_id
         });
 
         let res = client
-            .post(&format!("{}/secrets/new", API_URL))
+            .post(&format!("{}/secrets/new", get_api_url()?))
             .json(&body)
             .send()
             .await?;
