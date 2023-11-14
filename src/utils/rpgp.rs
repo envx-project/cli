@@ -1,10 +1,11 @@
 use anyhow::{Context, Ok, Result};
+use hex::ToHex;
 use pgp::{composed, composed::signed_key::*, crypto, types::SecretKeyTrait, Deserializable};
 use rand::prelude::*;
 use smallvec::*;
 use std::io::Cursor;
 
-use super::config::get_config;
+use super::config::{get_config, Config};
 use crypto_hash::{hex_digest, Algorithm};
 
 #[derive(Debug)]
@@ -123,4 +124,56 @@ pub fn get_primary_key() -> Result<String> {
         std::fs::read_to_string(primary_key_location).context("Failed to read primary key")?;
 
     Ok(primary_public_key)
+}
+
+pub fn decrypt_full(message: String, config: &Config) -> Result<String, anyhow::Error> {
+    let buf = Cursor::new(message.clone());
+    let (msg, _) = composed::message::Message::from_armor_single(buf)
+        .context("Failed to convert &str to armored message")?;
+
+    let recipients = msg
+        .get_recipients()
+        .iter()
+        .map(|e| e.encode_hex_upper())
+        .collect::<Vec<String>>();
+
+    let keys = config.keys.clone();
+
+    let mut available_keys: Vec<String> = vec![];
+
+    for key in keys.iter().map(|k| k.fingerprint.clone()) {
+        let it_fits = recipients.iter().any(|r| key.contains(r));
+        if it_fits {
+            available_keys.push(key);
+        }
+    }
+
+    if available_keys.len() == 0 {
+        eprintln!("No keys available to decrypt this message");
+        return Err(anyhow::anyhow!("No keys available to decrypt this message"));
+    }
+
+    let primary_key = config.primary_key.clone();
+
+    let (key, fingerprint) = if available_keys.iter().any(|k| k.contains(&primary_key)) {
+        println!("Using primary key");
+        get_key(primary_key)
+    } else {
+        println!("Using first available key: {}", available_keys[0].clone());
+        get_key(available_keys[0].clone())
+    };
+
+    println!("Using key: {}", fingerprint);
+
+    let decrypted = decrypt(message.as_str(), &key, String::from("asdf"))?;
+
+    Ok(decrypted)
+}
+
+fn get_key(fingerprint: String) -> (SignedSecretKey, String) {
+    let key_dir = get_vault_location().unwrap().join(fingerprint.clone());
+    let priv_key = std::fs::read_to_string(key_dir.join("private.key")).unwrap();
+    let (seckey, _) = SignedSecretKey::from_string(priv_key.as_str()).unwrap();
+
+    (seckey, fingerprint)
 }
