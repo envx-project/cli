@@ -27,7 +27,8 @@ pub struct Args {
 // Generates the commands based on the modules in the commands directory
 // Specify the modules you want to include in the commands_enum! macro
 commands_enum!(
-    variables, set, unset, shell, run, encrypt, decrypt, gen, delete_key, settings, get_config
+    variables, set, unset, shell, run, encrypt, decrypt, gen, delete_key, settings, get_config,
+    init, set_local, read_local
 );
 
 #[tokio::main]
