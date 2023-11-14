@@ -1,5 +1,6 @@
 // configuration path = ~/.config/envcli/config.json
 
+use super::rpgp::get_vault_location;
 use anyhow::{Context, Result};
 use colored::Colorize;
 use home::home_dir;
@@ -16,7 +17,7 @@ pub struct Key {
     pub hashed_note: String,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Config {
     pub salt: String,
     /// The fingerprint of the primary signing key
@@ -27,6 +28,38 @@ pub struct Config {
     pub online: bool,
     /// Custom URL for the SDK
     pub sdk_url: Option<String>,
+}
+
+impl Config {
+    pub fn write(&self, global: bool) -> Result<()> {
+        if global {
+            write_config(self)?;
+        } else {
+            write_local_config(self)?;
+        }
+        Ok(())
+    }
+
+    pub fn primary_key(&self) -> Result<String> {
+        let primary_key = self.primary_key.clone();
+        let primary_key_location = get_vault_location()?
+            .join(primary_key.clone())
+            .join("public.key");
+
+        let primary_public_key = fs::read_to_string(primary_key_location)
+            .context("Failed to read primary public key")?;
+
+        Ok(primary_public_key)
+    }
+}
+
+pub fn get_local_or_global_config() -> Result<Config> {
+    let local_config = get_local_config();
+    if local_config.is_ok() {
+        return local_config;
+    }
+
+    get_config()
 }
 
 #[allow(dead_code)]
@@ -110,7 +143,6 @@ pub fn get_local_config() -> Result<Config, anyhow::Error> {
 }
 
 /// Write the local configuration file .envcli.json
-#[allow(dead_code)]
 pub fn write_local_config(config: &Config) -> Result<()> {
     let mut path = std::env::current_dir()?;
     path.push(".envcli.json");
