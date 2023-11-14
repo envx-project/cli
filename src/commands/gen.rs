@@ -1,10 +1,11 @@
 use super::*;
-use crate::sdk::{self, NewUserParams, SDK};
+use crate::sdk::{NewUserParams, SDK};
 use crate::utils::config::{self, Key};
 use crate::utils::prompt::{prompt_email, prompt_password, prompt_text};
 use crate::utils::rpgp::{
     generate_key_pair, generate_primary_user_id, get_vault_location, hash_string,
 };
+use crate::utils::vecu8::ToHex;
 use anyhow::Context;
 use pgp::types::KeyTrait;
 use std::fs;
@@ -37,6 +38,9 @@ pub struct Args {
     /// Generate another key
     #[clap(long = "new-key")]
     force_generate_new_key: bool,
+
+    #[clap(long)]
+    export: bool,
 }
 
 fn email_validator(email: &str) -> anyhow::Result<(), anyhow::Error> {
@@ -76,19 +80,21 @@ pub async fn command(args: Args, _json: bool) -> Result<()> {
         .secret_key
         .to_armored_string(None)
         .expect("Failed to convert private key to armored ASCII string");
+
     let pub_key = key_pair
         .public_key
         .to_armored_string(None)
         .expect("Failed to convert public key to armored ASCII string");
 
-    let fingerprint: String = key_pair
-        .secret_key
-        .fingerprint()
-        .iter()
-        .map(|byte| format!("{:02X}", byte))
-        .collect();
+    let fingerprint: String = key_pair.secret_key.fingerprint().to_hex();
 
     println!("Fingerprint: {}", fingerprint);
+
+    if args.export {
+        println!("PRIVATE:\n{}", priv_key);
+        println!("\nPUBLIC:\n{}", pub_key);
+        return Ok(());
+    }
 
     let key_dir = get_vault_location()?.join(fingerprint.clone());
     fs::create_dir_all(&key_dir).context("Failed to create key directory")?;
@@ -102,6 +108,7 @@ pub async fn command(args: Args, _json: bool) -> Result<()> {
         note: "".to_string(),
         primary_user_id: format!("{} <{}>", &name, &email),
         hashed_note: hashed_note.clone(),
+        pubkey_only: None,
     };
 
     config.keys.push(key_to_insert);
@@ -115,12 +122,14 @@ pub async fn command(args: Args, _json: bool) -> Result<()> {
 
     let new_user = NewUserParams {
         fingerprint: fingerprint.clone(),
-        user_id: format!("{} <{}>", &name, &email),
+        user_id: hashed_note.clone(),
         pubkey: pub_key.clone(),
         pubkey_hash: hash_string(&pub_key),
     };
 
-    SDK::new_user(&new_user).await?;
+    if config.online {
+        SDK::new_user(&new_user).await?;
+    }
 
     Ok(())
 }

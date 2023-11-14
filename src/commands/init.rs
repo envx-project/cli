@@ -17,5 +17,7 @@ pub async fn command(args: Args, _json: bool) -> Result<()> {
 
     new_config.write(false)?;
 
+    std::fs::write(".envcli.vault", "[]")?;
+
     Ok(())
 }
