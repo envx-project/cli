@@ -1,6 +1,7 @@
 // configuration path = ~/.config/envcli/config.json
 
 use anyhow::{Context, Result};
+use colored::Colorize;
 use home::home_dir;
 use serde::{Deserialize, Serialize};
 use std::fs::{self, File};
@@ -85,17 +86,27 @@ pub fn write_config(config: &Config) -> Result<()> {
 
 /// Get the local configuration path .envcli.json
 #[allow(dead_code)]
-pub fn local_get_config() -> Result<Config> {
+pub fn get_local_config() -> Result<Config, anyhow::Error> {
     let mut path = std::env::current_dir()?;
-    path.push(".envcli.json");
+    loop {
+        let file_path = path.join(".envcli.json");
+        if file_path.exists() {
+            let file = File::open(file_path)?;
+            let mut reader = BufReader::new(file);
+            let mut contents = String::new();
+            reader.read_to_string(&mut contents)?;
+            let config =
+                serde_json::from_str::<Config>(&contents).context("Failed to parse config file")?;
 
-    let file = File::open(path)?;
-    let mut reader = BufReader::new(file);
-    let mut contents = String::new();
-    reader.read_to_string(&mut contents)?;
-    let config = serde_json::from_str::<Config>(&contents)?;
+            return Ok(config);
+        }
 
-    Ok(config)
+        if !path.pop() {
+            return Err(anyhow::anyhow!(
+                "No .envcli.json found.\nTry `envcli init`".bright_red()
+            ));
+        }
+    }
 }
 
 /// Write the local configuration file .envcli.json

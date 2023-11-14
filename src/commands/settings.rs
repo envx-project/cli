@@ -1,81 +1,64 @@
+use super::*;
 use crate::utils::{
-    config::{get_config, write_config, Config},
+    config::{get_config, get_local_config, write_config, Config},
     prompt::prompt_select,
 };
 
-use super::*;
-
-/// Set options in the settings.json. It will break if you edit it manually and do it wrong
+/// Set settings in the settings.json.
+/// It will break if you edit it manually and do it wrong.
+/// Rust hates when the data is not correct :(
 #[derive(Parser)]
 pub struct Args {
+    /// Set globally or locally
     #[clap(short, long)]
-    online: Option<bool>,
+    global: bool,
 
-    #[clap(short, long)]
-    url: Option<String>,
-
-    #[clap(long = "pk-value")]
-    primary_key_value: Option<String>,
-
-    #[clap(short = 'p', long)]
-    set_primary_key: bool,
+    #[clap(trailing_var_arg = true)]
+    args: Vec<String>,
 }
 
 pub async fn command(args: Args, _json: bool) -> Result<()> {
-    let config = get_config()?;
+    if args.args.len() == 0 {
+        println!("No arguments passed, try `envcli settings help`");
+        return Ok(());
+    };
 
-    let primary_key = match &args.primary_key_value {
-        Some(s) => {
-            if s.len() == 40 {
-                s.into()
-            } else {
-                config
-                    .keys
-                    .iter()
-                    .find(|j| j.fingerprint.contains(&s.as_str()))
-                    .expect("Requested fingerprint not in config")
-                    .fingerprint
-                    .clone()
-            }
-        }
+    let command = match args.args.get(0) {
+        Some(s) => s.to_owned(),
         None => {
-            if args.set_primary_key {
-                prompt_select(
-                    "Select the primary key you want to use",
-                    config
-                        .keys
-                        .clone()
-                        .iter()
-                        .map(|e| e.fingerprint.as_str())
-                        .collect::<Vec<&str>>(),
-                )?
-                .into()
-            } else {
-                config.primary_key.clone()
-            }
+            return Err(anyhow::anyhow!(
+                "No first argument (how did you even do that)"
+            ))
         }
     };
 
-    if args.primary_key_value.is_some() || args.set_primary_key {
-        println!("Setting {} as primary key...", primary_key)
+    let config = if args.global {
+        get_config()?
+    } else {
+        get_local_config()?
+    };
+
+    match command.as_str() {
+        "set" => {
+            println!("hi");
+        }
+        "get" => {
+            println!("hi");
+        }
+        "help" => {
+            unimplemented!()
+        }
+        _ => {
+            return Err(anyhow::anyhow!(
+                "Bad command {}. Try `envcli settings help`",
+                command
+            ))
+        }
     }
 
-    let new_config = Config {
-        salt: config.salt,
-        keys: config.keys,
-        online: args.online.unwrap_or(config.online),
-        primary_key,
-        sdk_url: match args.url {
-            Some(url) => Some(url),
-            None => match config.sdk_url {
-                Some(url) => Some(url),
-                None => None,
-            },
-        },
-    };
+    Ok(())
+}
 
-    write_config(&new_config)?;
-    println!("Set config");
-
+fn set(args: Vec<String>) -> Result<()> {
     Ok(())
 }
