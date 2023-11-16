@@ -39,7 +39,7 @@ pub fn generate_key_pair(
         .can_sign(true)
         .can_encrypt(true)
         .passphrase(Some(password.clone()))
-        .primary_user_id(generate_primary_user_id(name.clone(), email.clone()))
+        .primary_user_id(generate_hashed_primary_user_id(name.clone(), email.clone()))
         .preferred_symmetric_algorithms(smallvec![crypto::sym::SymmetricKeyAlgorithm::AES256]);
 
     let secret_key_params = key_params
@@ -133,7 +133,7 @@ pub fn hash_string(input: &str) -> String {
     hash.to_string()
 }
 
-pub fn generate_primary_user_id(name: String, email: String) -> String {
+pub fn generate_hashed_primary_user_id(name: String, email: String) -> String {
     hash_string(&format!("{}{}{}", name, email, &get_config().unwrap().salt)).to_uppercase()
 }
 
