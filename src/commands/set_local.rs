@@ -26,9 +26,9 @@ pub async fn command(args: Args, _json: bool) -> Result<()> {
         Err(_) => vec![],
     };
 
-    if args.kvpairs.len() >= 1 {
+    if !args.kvpairs.is_empty() {
         for arg in args.kvpairs.clone() {
-            let split = arg.splitn(2, "=").collect::<Vec<&str>>();
+            let split = arg.splitn(2, '=').collect::<Vec<&str>>();
             if split.len() != 2 {
                 return Err(anyhow!("Invalid key=value pair"));
             }

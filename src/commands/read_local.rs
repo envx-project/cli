@@ -22,7 +22,7 @@ pub async fn command(_args: Args, _json: bool) -> Result<()> {
         .iter()
         .map(|x| {
             let decrypted = decrypt_full(x.clone(), &config)?;
-            Ok(KVPair::from_json(decrypted)?)
+            KVPair::from_json(decrypted)
         })
         .collect::<Result<Vec<KVPair>>>()?;
 

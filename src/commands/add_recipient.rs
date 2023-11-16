@@ -17,7 +17,7 @@ pub async fn command(_args: Args, _json: bool) -> Result<()> {
         Err(_) => vec![],
     };
 
-    if variables.len() == 0 {
+    if variables.is_empty() {
         println!("No variables found in vault");
         return Ok(());
     }

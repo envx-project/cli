@@ -15,7 +15,7 @@ pub struct Args {
 }
 
 pub async fn command(args: Args, _json: bool) -> Result<()> {
-    if args.args.len() == 0 {
+    if args.args.is_empty() {
         println!("No arguments passed, try `envcli settings help`");
         return Ok(());
     };
