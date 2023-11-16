@@ -19,3 +19,6 @@ out/
 .vscode
 
 *.key
+
+# envcli config file
+.envcli.json

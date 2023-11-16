@@ -17,7 +17,7 @@ impl Table {
         Self { name, rows }
     }
     pub fn get_string(&self) -> Result<String> {
-        let title_str = format!("{}", self.name);
+        let title_str = self.name.to_string();
         let title_width = console::measure_text_width(title_str.as_str());
 
         let max_right_content = self

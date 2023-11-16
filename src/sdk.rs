@@ -25,6 +25,7 @@ pub fn get_api_url() -> Result<String> {
         .unwrap_or("http://localhost:3000".into()))
 }
 
+#[allow(clippy::upper_case_acronyms)]
 pub(crate) struct SDK {}
 impl SDK {
     pub async fn new_user(user: &NewUserParams) -> Result<()> {
@@ -41,7 +42,7 @@ impl SDK {
         if status.is_success() {
             Ok(())
         } else {
-            Err(anyhow::Error::msg(format!(
+            Err(anyhow!(format!(
                 "Failed to create user: {}",
                 res.text().await?
             )))
@@ -73,7 +74,7 @@ impl SDK {
         if status.is_success() {
             Ok(())
         } else {
-            Err(anyhow::Error::msg(format!(
+            Err(anyhow!(format!(
                 "Failed to set new secret: {}",
                 "err" // res.text().await?
             )))
