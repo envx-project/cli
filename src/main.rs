@@ -42,7 +42,9 @@ commands_enum!(
     set_local,
     read_local,
     add_recipient,
-    import
+    import,
+    export,
+    list_keys
 );
 
 #[tokio::main]

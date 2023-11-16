@@ -7,4 +7,3 @@ impl ToHex for Vec<u8> {
         hex::encode(self)
     }
 }
-

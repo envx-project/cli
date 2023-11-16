@@ -1,8 +1,5 @@
 use super::*;
-use crate::utils::{
-    config::{get_config, get_local_config, write_config, Config},
-    prompt::prompt_select,
-};
+use crate::utils::config::{get_config, get_local_config};
 
 /// Set settings in the settings.json.
 /// It will break if you edit it manually and do it wrong.
@@ -18,21 +15,17 @@ pub struct Args {
 }
 
 pub async fn command(args: Args, _json: bool) -> Result<()> {
-    if args.args.len() == 0 {
+    if args.args.is_empty() {
         println!("No arguments passed, try `envcli settings help`");
         return Ok(());
     };
 
     let command = match args.args.get(0) {
         Some(s) => s.to_owned(),
-        None => {
-            return Err(anyhow::anyhow!(
-                "No first argument (how did you even do that)"
-            ))
-        }
+        None => return Err(anyhow!("No first argument (how did you even do that)")),
     };
 
-    let config = if args.global {
+    let _config = if args.global {
         get_config()?
     } else {
         get_local_config()?
@@ -40,7 +33,7 @@ pub async fn command(args: Args, _json: bool) -> Result<()> {
 
     match command.as_str() {
         "set" => {
-            println!("hi");
+            set(args.args)?;
         }
         "get" => {
             println!("hi");
@@ -49,7 +42,7 @@ pub async fn command(args: Args, _json: bool) -> Result<()> {
             unimplemented!()
         }
         _ => {
-            return Err(anyhow::anyhow!(
+            return Err(anyhow!(
                 "Bad command {}. Try `envcli settings help`",
                 command
             ))
@@ -59,6 +52,6 @@ pub async fn command(args: Args, _json: bool) -> Result<()> {
     Ok(())
 }
 
-fn set(args: Vec<String>) -> Result<()> {
+fn set(_args: Vec<String>) -> Result<()> {
     Ok(())
 }

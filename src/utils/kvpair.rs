@@ -1,7 +1,7 @@
-use std::str::FromStr;
-
-use anyhow::Context;
+use anyhow::{Context, Result};
 use serde::{Deserialize, Serialize};
+use std::fmt;
+use std::str::FromStr;
 
 #[derive(Debug, Deserialize, Serialize)]
 pub struct KVPair {
@@ -14,16 +14,18 @@ impl KVPair {
         Self { key, value }
     }
 
-    pub fn from_json(json: String) -> anyhow::Result<Self> {
-        Ok(serde_json::from_str::<KVPair>(&json).context("Failed to parse KVPair")?)
+    pub fn from_json(json: String) -> Result<Self> {
+        serde_json::from_str::<KVPair>(&json).context("Failed to parse KVPair")
     }
 
-    pub fn to_string(&self) -> String {
-        format!("{}={}", self.key, self.value)
+    pub fn to_json(&self) -> Result<String> {
+        serde_json::to_string(&self).context("Failed to serialize KVPair")
     }
+}
 
-    pub fn to_json(&self) -> anyhow::Result<String> {
-        Ok(serde_json::to_string(&self).context("Failed to serialize KVPair")?)
+impl fmt::Display for KVPair {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}={}", self.key, self.value)
     }
 }
 
@@ -31,7 +33,7 @@ impl FromStr for KVPair {
     type Err = anyhow::Error;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let split = &s.splitn(2, "=").collect::<Vec<&str>>();
+        let split = &s.splitn(2, '=').collect::<Vec<&str>>();
         if split.len() != 2 {
             anyhow::bail!("Invalid key=value pair");
         }

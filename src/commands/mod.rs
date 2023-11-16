@@ -1,4 +1,4 @@
-pub(super) use anyhow::{Context, Result};
+pub(super) use anyhow::{anyhow, Context, Result};
 pub(super) use clap::Parser;
 pub(super) use colored::Colorize;
 pub(super) use std::result::Result::Ok as Good;
@@ -7,10 +7,12 @@ pub mod add_recipient;
 pub mod decrypt;
 pub mod delete_key;
 pub mod encrypt;
+pub mod export;
 pub mod gen;
 pub mod get_config;
 pub mod import;
 pub mod init;
+pub mod list_keys;
 pub mod read_local;
 pub mod run;
 pub mod set;
