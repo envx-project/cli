@@ -1,5 +1,6 @@
 // configuration path = ~/.config/envcli/config.json
 
+use super::key::Key;
 use super::rpgp::get_vault_location;
 use anyhow::{Context, Result};
 use colored::Colorize;
@@ -8,27 +9,6 @@ use serde::{Deserialize, Serialize};
 use std::fs::{self, File};
 use std::io::{BufReader, BufWriter, Read, Write};
 use std::path::PathBuf;
-
-#[derive(Debug, Serialize, Deserialize, Clone)]
-pub struct Key {
-    pub fingerprint: String,
-    pub note: String,
-    pub primary_user_id: String,
-    pub hashed_note: String,
-    pub pubkey_only: Option<bool>,
-}
-
-impl Key {
-    pub fn public_key(&self) -> Result<String> {
-        let key_location = get_vault_location()?
-            .join(self.fingerprint.clone())
-            .join("public.key");
-
-        let key = fs::read_to_string(key_location).context("Failed to read public key")?;
-
-        Ok(key)
-    }
-}
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Config {

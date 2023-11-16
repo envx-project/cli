@@ -1,7 +1,6 @@
-use std::str::FromStr;
-
-use anyhow::Context;
+use anyhow::{Context, Result};
 use serde::{Deserialize, Serialize};
+use std::str::FromStr;
 
 #[derive(Debug, Deserialize, Serialize)]
 pub struct KVPair {
@@ -14,7 +13,7 @@ impl KVPair {
         Self { key, value }
     }
 
-    pub fn from_json(json: String) -> anyhow::Result<Self> {
+    pub fn from_json(json: String) -> Result<Self> {
         Ok(serde_json::from_str::<KVPair>(&json).context("Failed to parse KVPair")?)
     }
 
@@ -22,7 +21,7 @@ impl KVPair {
         format!("{}={}", self.key, self.value)
     }
 
-    pub fn to_json(&self) -> anyhow::Result<String> {
+    pub fn to_json(&self) -> Result<String> {
         Ok(serde_json::to_string(&self).context("Failed to serialize KVPair")?)
     }
 }

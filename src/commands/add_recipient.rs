@@ -30,6 +30,15 @@ pub async fn command(_args: Args, _json: bool) -> Result<()> {
         .primary_key()
         .context("Failed to get primary key, try generating a new one with `envcli gen`")?;
 
+    // println!("List of Possible Recipients:");
+    // for key in config.keys.iter() {
+    //     println!("    {}", key.fingerprint);
+    // }
+    //
+    // if "a" == "a" {
+    //     return Ok(());
+    // }
+
     let secondary_pubkey = config.keys.first().unwrap().public_key()?;
 
     let encrypted = encrypt_multi(&decrypted, vec![&primary_pubkey, &secondary_pubkey])?;

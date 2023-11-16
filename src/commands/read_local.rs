@@ -20,13 +20,18 @@ pub async fn command(_args: Args, _json: bool) -> Result<()> {
 
     let decrypted_variables = variables
         .iter()
-        .map(|x| -> anyhow::Result<KVPair> {
+        .map(|x| {
             let decrypted = decrypt_full(x.clone(), &config)?;
             Ok(KVPair::from_json(decrypted)?)
         })
-        .collect::<anyhow::Result<Vec<KVPair>>>()?;
+        .collect::<Result<Vec<KVPair>>>()?;
 
-    dbg!(&decrypted_variables);
+    let decrypted_variables = decrypted_variables
+        .iter()
+        .map(|x| x.to_string())
+        .collect::<Vec<String>>();
+
+    println!("{}", decrypted_variables.join("\n"));
 
     Ok(())
 }

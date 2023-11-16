@@ -7,6 +7,7 @@ pub mod add_recipient;
 pub mod decrypt;
 pub mod delete_key;
 pub mod encrypt;
+pub mod export;
 pub mod gen;
 pub mod get_config;
 pub mod import;

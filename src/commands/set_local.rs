@@ -52,7 +52,7 @@ pub async fn command(args: Args, _json: bool) -> Result<()> {
 
         dbg!(&variables);
 
-        std::fs::write(".envcli.vault", serde_json::to_string_pretty(&variables)?)
+        std::fs::write(".envcli.vault", serde_json::to_string(&variables)?)
             .context("Failed to write to .envcli.vault")?;
 
         return Ok(());
