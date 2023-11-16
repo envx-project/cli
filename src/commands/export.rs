@@ -31,9 +31,7 @@ pub async fn command(args: Args, _json: bool) -> Result<()> {
         .keys
         .iter()
         .find(|k| k.fingerprint.starts_with(&fingerprint))
-        .context("Failed to find key")?;
-
-    println!("Exporting key {}", &key.fingerprint);
+        .context("Failed to find key".red())?;
 
     let key = if args.secret_key {
         key.secret_key()?
@@ -41,7 +39,7 @@ pub async fn command(args: Args, _json: bool) -> Result<()> {
         key.public_key()?
     };
 
-    println!("\n{}\n", key);
+    println!("{}", key);
 
     Ok(())
 }
