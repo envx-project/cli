@@ -1,6 +1,7 @@
 use super::*;
 use crate::sdk::{NewUserParams, SDK};
-use crate::utils::config::{self, Key};
+use crate::utils::config::{self};
+use crate::utils::key::Key;
 use crate::utils::prompt::{prompt_email, prompt_password, prompt_text};
 use crate::utils::rpgp::{
     generate_key_pair, generate_primary_user_id, get_vault_location, hash_string,

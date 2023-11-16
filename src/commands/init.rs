@@ -1,23 +1,23 @@
+use std::fs;
+
 use super::*;
-use crate::utils::config::{get_config, Config};
+use crate::utils::config::get_config;
 use anyhow::Result;
 
 /// Initialize a new env-store
 #[derive(Debug, Parser)]
-pub struct Args {
-    /// Args to pass to the command
-    #[clap(trailing_var_arg = true)]
-    args: Vec<String>,
-}
+pub struct Args {}
 
-pub async fn command(args: Args, _json: bool) -> Result<()> {
-    let config = get_config()?;
+pub async fn command(_args: Args, _json: bool) -> Result<()> {
+    get_config()?.write(false)?;
 
-    let new_config = config.clone();
+    println!("Initialized new envcli store");
 
-    new_config.write(false)?;
-
-    std::fs::write(".envcli.vault", "[]")?;
+    if !std::path::Path::new(".envcli.vault").exists() {
+        println!("Creating new empty vault");
+        fs::write(".envcli.vault", "[]")
+            .context("Failed to create new vault file, try running `envcli init`")?;
+    }
 
     Ok(())
 }

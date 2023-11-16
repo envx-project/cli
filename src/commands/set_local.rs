@@ -1,7 +1,6 @@
 use super::*;
-use crate::utils::{config::get_local_or_global_config, rpgp::encrypt};
+use crate::utils::{config::get_local_or_global_config, kvpair::KVPair, rpgp::encrypt};
 use anyhow::Context;
-use serde_json::json;
 
 /// set a local variable
 #[derive(Debug, Parser)]
@@ -27,23 +26,16 @@ pub async fn command(args: Args, _json: bool) -> Result<()> {
         Err(_) => vec![],
     };
 
-    if args.kvpairs.len() >= 1 {
+    if !args.kvpairs.is_empty() {
         for arg in args.kvpairs.clone() {
-            let split = &arg.splitn(2, "=").collect::<Vec<&str>>();
+            let split = arg.splitn(2, '=').collect::<Vec<&str>>();
             if split.len() != 2 {
-                eprintln!("Error: Invalid key=value pair");
-                std::process::exit(1);
+                return Err(anyhow!("Invalid key=value pair"));
             }
+            let [key, value] = [split[0].to_uppercase(), split[1].to_string()];
 
-            let key = split[0].to_uppercase().to_string();
-            let value = split[1].to_string();
-
-            let kvpair = json!({
-                "key": key,
-                "value": value
-            });
-
-            let message = encrypt(kvpair.to_string().as_str(), &pubkey)?;
+            let kvpair = KVPair::new(key, value);
+            let message = encrypt(kvpair.to_json()?.as_str(), &pubkey)?;
 
             println!("{}", &message);
 
@@ -52,7 +44,7 @@ pub async fn command(args: Args, _json: bool) -> Result<()> {
 
         dbg!(&variables);
 
-        std::fs::write(".envcli.vault", serde_json::to_string_pretty(&variables)?)
+        std::fs::write(".envcli.vault", serde_json::to_string(&variables)?)
             .context("Failed to write to .envcli.vault")?;
 
         return Ok(());

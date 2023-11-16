@@ -20,7 +20,7 @@ pub struct Args {
 pub async fn command(args: Args, _json: bool) -> Result<()> {
     println!("Importing keys...");
 
-    let mut config = get_local_or_global_config().context("Failed to get config")?;
+    let _config = get_local_or_global_config().context("Failed to get config")?;
 
     let file = std::fs::read_to_string(&args.path).context("Failed to read file")?;
 

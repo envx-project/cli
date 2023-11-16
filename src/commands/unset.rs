@@ -1,5 +1,5 @@
 use super::*;
-use crate::utils::prompt::prompt_text;
+
 use anyhow::Ok;
 
 /// SET an environment variable with a key=value pair
@@ -10,6 +10,6 @@ pub struct Args {
     kvpairs: Vec<String>,
 }
 
-pub async fn command(args: Args, _json: bool) -> Result<()> {
+pub async fn command(_args: Args, _json: bool) -> Result<()> {
     Ok(())
 }
