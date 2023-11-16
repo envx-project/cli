@@ -11,7 +11,7 @@ pub struct Args {
     args: Vec<String>,
 }
 
-pub async fn command(args: Args, _json: bool) -> Result<()> {
+pub async fn command(_args: Args, _json: bool) -> Result<()> {
     let mut config = crate::utils::config::get_config().context("Failed to get config")?;
 
     let selected = prompt_multi_options(

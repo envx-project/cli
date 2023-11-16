@@ -1,4 +1,4 @@
-pub(super) use anyhow::{Context, Result};
+pub(super) use anyhow::{anyhow, Context, Result};
 pub(super) use clap::Parser;
 pub(super) use colored::Colorize;
 pub(super) use std::result::Result::Ok as Good;

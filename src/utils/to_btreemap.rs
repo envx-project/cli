@@ -11,7 +11,7 @@ impl ToBTreeMap for Config {
     fn to_btreemap(&self) -> Result<BTreeMap<String, String>> {
         // Convert Config to JSON value
         let v: Value =
-            serde_json::to_value(&self).context("Failed to convert config to JSON value")?;
+            serde_json::to_value(self).context("Failed to convert config to JSON value")?;
 
         // Convert JSON value into a BTreeMap
         if let Value::Object(map) = v {

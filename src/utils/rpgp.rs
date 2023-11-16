@@ -115,11 +115,11 @@ pub fn decrypt(
     let buf = Cursor::new(armored);
     let (msg, _) = composed::message::Message::from_armor_single(buf)
         .context("Failed to convert &str to armored message")?;
-    let (decryptor, _) = msg
-        .decrypt(|| String::from(password), &[seckey])
+    let (mut decryptor, _) = msg
+        .decrypt(|| password, &[seckey])
         .context("Decrypting the message")?;
 
-    for msg in decryptor {
+    if let Some(msg) = decryptor.next() {
         let bytes = msg?.get_content()?.unwrap();
         let clear_text = String::from_utf8(bytes)?;
         return Ok(clear_text);

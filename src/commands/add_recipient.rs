@@ -1,5 +1,5 @@
 use super::*;
-use crate::utils::config::{get_config, get_local_or_global_config, Config};
+use crate::utils::config::{get_local_or_global_config};
 use crate::utils::rpgp::{decrypt_full, encrypt_multi};
 
 /// Initialize a new env-store
