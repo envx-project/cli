@@ -4,7 +4,7 @@ use crate::utils::config::{self};
 use crate::utils::key::Key;
 use crate::utils::prompt::{prompt_email, prompt_password, prompt_text};
 use crate::utils::rpgp::{
-    generate_key_pair, generate_primary_user_id, get_vault_location, hash_string,
+    generate_hashed_primary_user_id, generate_key_pair, get_vault_location, hash_string,
 };
 use crate::utils::vecu8::ToHex;
 use anyhow::Context;
@@ -103,7 +103,7 @@ pub async fn command(args: Args, _json: bool) -> Result<()> {
     fs::write(key_dir.join("private.key"), &priv_key).expect("Failed to write private key to file");
     fs::write(key_dir.join("public.key"), &pub_key).expect("Failed to write public key to file");
 
-    let hashed_note = generate_primary_user_id(name.clone(), email.clone());
+    let hashed_note = generate_hashed_primary_user_id(name.clone(), email.clone());
     let key_to_insert: Key = Key {
         fingerprint: fingerprint.clone(),
         note: "".to_string(),
