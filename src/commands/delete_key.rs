@@ -6,24 +6,21 @@ use anyhow::{bail, Context};
 /// Delete a key
 #[derive(Debug, Parser)]
 pub struct Args {
-    /// Args to pass to the command
-    #[clap(trailing_var_arg = true)]
-    args: Vec<String>,
+    /// Fingerprint of the key to delete
+    #[clap(short, long)]
+    key: Option<String>,
 }
 
-pub async fn command(_args: Args, _json: bool) -> Result<()> {
+pub async fn command(args: Args, _json: bool) -> Result<()> {
     let mut config = crate::utils::config::get_config().context("Failed to get config")?;
 
-    let selected = prompt_multi_options(
-        "Select keys to delete",
-        config
-            .keys
-            .clone()
-            .iter()
-            .map(|k| k.fingerprint.clone())
-            .collect(),
-    )
-    .context("Failed to prompt for options")?;
+    let selected: Vec<String> = match args.key {
+        Some(key) => vec![key],
+        None => prompt_multi_options(
+            "Select keys to delete",
+            config.keys.iter().map(|k| k.fingerprint.clone()).collect(),
+        )?,
+    };
 
     println!("Deleting keys: {:?}", selected);
 

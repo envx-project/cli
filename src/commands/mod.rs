@@ -12,6 +12,7 @@ pub mod gen;
 pub mod get_config;
 pub mod import;
 pub mod init;
+pub mod list_keys;
 pub mod read_local;
 pub mod run;
 pub mod set;

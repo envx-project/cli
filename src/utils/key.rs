@@ -22,6 +22,16 @@ impl Key {
 
         Ok(key)
     }
+
+    pub fn secret_key(&self) -> Result<String> {
+        let key_location = get_vault_location()?
+            .join(self.fingerprint.clone())
+            .join("private.key");
+
+        let key = fs::read_to_string(key_location).context("Failed to read secret key")?;
+
+        Ok(key)
+    }
 }
 
 pub trait VecKeyTrait {
