@@ -51,13 +51,16 @@ commands_enum!(
 async fn main() -> Result<()> {
     let cli = Args::parse();
 
-    println!(
-        "{} {} {} {}",
-        "env-cli".cyan(),
-        env!("CARGO_PKG_VERSION").magenta(),
-        "by".blue(),
-        "alexng353".yellow()
-    );
+    let command = std::env::args().nth(1).unwrap_or_default();
+    if command != "export" {
+        println!(
+            "{} {} {} {}",
+            "env-cli".cyan(),
+            env!("CARGO_PKG_VERSION").magenta(),
+            "by".blue(),
+            "alexng353".yellow()
+        );
+    }
 
     match Commands::exec(cli).await {
         Ok(_) => {}
