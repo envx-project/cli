@@ -26,9 +26,9 @@ pub async fn command(args: Args, _json: bool) -> Result<()> {
     let pubkey = get_primary_key()
         .context("Failed to get primary key, try generating a new one with `envcli gen`")?;
 
-    if args.kvpairs.len() >= 1 {
+    if !args.kvpairs.is_empty() {
         for arg in args.kvpairs.clone() {
-            let split = &arg.splitn(2, "=").collect::<Vec<&str>>();
+            let split = &arg.splitn(2, '=').collect::<Vec<&str>>();
             if split.len() != 2 {
                 eprintln!("Error: Invalid key=value pair");
                 std::process::exit(1);
@@ -83,7 +83,7 @@ async fn set_variable(
         "value": value
     });
 
-    let message = encrypt(kvpair.to_string().as_str(), &pubkey)?;
+    let message = encrypt(kvpair.to_string().as_str(), pubkey)?;
 
     let body = SetEnvParams {
         message,

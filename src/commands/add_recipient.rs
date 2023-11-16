@@ -1,5 +1,5 @@
 use super::*;
-use crate::utils::config::{get_config, get_local_or_global_config, Config};
+use crate::utils::config::{get_local_or_global_config};
 use crate::utils::rpgp::{decrypt_full, encrypt_multi};
 
 /// Initialize a new env-store
@@ -17,7 +17,7 @@ pub async fn command(_args: Args, _json: bool) -> Result<()> {
         Err(_) => vec![],
     };
 
-    if variables.len() == 0 {
+    if variables.is_empty() {
         println!("No variables found in vault");
         return Ok(());
     }
@@ -29,6 +29,15 @@ pub async fn command(_args: Args, _json: bool) -> Result<()> {
     let primary_pubkey = config
         .primary_key()
         .context("Failed to get primary key, try generating a new one with `envcli gen`")?;
+
+    // println!("List of Possible Recipients:");
+    // for key in config.keys.iter() {
+    //     println!("    {}", key.fingerprint);
+    // }
+    //
+    // if "a" == "a" {
+    //     return Ok(());
+    // }
 
     let secondary_pubkey = config.keys.first().unwrap().public_key()?;
 

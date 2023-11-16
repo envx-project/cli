@@ -1,5 +1,5 @@
 use super::*;
-use anyhow::bail;
+
 /// Run a local command using variables from the active environment
 #[derive(Debug, Parser)]
 pub struct Args {
@@ -8,7 +8,7 @@ pub struct Args {
     args: Vec<String>,
 }
 
-pub async fn command(args: Args, _json: bool) -> Result<()> {
+pub async fn command(_args: Args, _json: bool) -> Result<()> {
     // let variables = Client::get_variables().await?;
 
     // // a bit janky :/
