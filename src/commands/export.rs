@@ -1,5 +1,6 @@
 use super::*;
 use crate::utils::{config::get_local_or_global_config, key::VecKeyTrait, prompt::prompt_options};
+use crossterm::{cursor::MoveToPreviousLine, execute};
 
 /// Export a public or secret key
 #[derive(Parser)]
@@ -38,6 +39,8 @@ pub async fn command(args: Args, _json: bool) -> Result<()> {
     } else {
         key.public_key()?
     };
+
+    execute!(std::io::stdout(), MoveToPreviousLine(2),)?;
 
     println!("{}", key);
 
