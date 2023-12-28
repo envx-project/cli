@@ -21,5 +21,7 @@ pub mod set;
 pub mod set_local;
 pub mod settings;
 pub mod shell;
+pub mod sign;
 pub mod unset;
 pub mod variables;
+pub mod verify;
