@@ -2,6 +2,7 @@
 
 use super::key::Key;
 use super::rpgp::get_vault_location;
+use super::settings::Settings;
 use anyhow::{Context, Result};
 use colored::Colorize;
 use home::home_dir;
@@ -21,6 +22,8 @@ pub struct Config {
     pub online: bool,
     /// Custom URL for the SDK
     pub sdk_url: Option<String>,
+    /// Settings that apply to all environments
+    pub settings: Option<Settings>,
 }
 
 impl Config {
@@ -44,6 +47,19 @@ impl Config {
 
         Ok(primary_public_key)
     }
+
+    pub fn add_key(&self, key: Key) -> Result<Config> {
+        unimplemented!()
+    }
+
+    pub fn get_settings(&self) -> Result<Settings> {
+        let settings = self.settings.clone();
+        if let Some(settings) = settings {
+            Ok(settings)
+        } else {
+            Ok(Settings::default())
+        }
+    }
 }
 
 pub fn get_local_or_global_config() -> Result<Config> {
@@ -66,17 +82,10 @@ pub fn get_envcli_dir() -> Result<PathBuf> {
 /// Get the configuration path ~/.config/envcli/config.json
 pub fn get_config_path() -> Result<PathBuf> {
     let mut path = home_dir().context("Failed to get home directory")?;
-    path.push(".config");
-    path.push("envcli");
-    path.push("config.json");
-
+    path.push(".config/envcli/config.json");
     // if it doesn't exist, create it
     if !path.exists() {
-        fs::create_dir_all(
-            path.parent()
-                .context("Failed to get parent directory")
-                .unwrap(),
-        )?;
+        fs::create_dir_all(path.parent().unwrap())?;
         let file = File::create(&path)?;
         let mut writer = BufWriter::new(file);
         writer.write_all("".as_bytes())?;
@@ -87,14 +96,8 @@ pub fn get_config_path() -> Result<PathBuf> {
 /// Read the configuration file and parse it into a Config struct
 pub fn get_config() -> Result<Config> {
     let path = get_config_path()?;
-    let file = File::open(path)?;
-    let mut reader = BufReader::new(file);
-    let mut contents = String::new();
-    reader.read_to_string(&mut contents)?;
-    let config =
-        serde_json::from_str::<Config>(&contents).context("Failed to parse config file")?;
-
-    Ok(config)
+    let contents = fs::read_to_string(path)?;
+    Ok(serde_json::from_str::<Config>(&contents).context("Failed to parse config file")?)
 }
 
 /// Vulnerable to fs race conditions
