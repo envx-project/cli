@@ -44,7 +44,9 @@ commands_enum!(
     add_recipient,
     import,
     export,
-    list_keys
+    list_keys,
+    config,
+    behaviour
 );
 
 #[tokio::main]
