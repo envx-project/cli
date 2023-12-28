@@ -46,7 +46,9 @@ commands_enum!(
     export,
     list_keys,
     config,
-    behaviour
+    behaviour,
+    verify,
+    sign
 );
 
 #[tokio::main]
