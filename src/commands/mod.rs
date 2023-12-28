@@ -4,6 +4,8 @@ pub(super) use colored::Colorize;
 pub(super) use std::result::Result::Ok as Good;
 
 pub mod add_recipient;
+pub mod behaviour;
+pub mod config;
 pub mod decrypt;
 pub mod delete_key;
 pub mod encrypt;
