@@ -150,13 +150,23 @@ pub fn decrypt_full(message: String, config: &Config) -> Result<String, anyhow::
         .map(|e| e.encode_hex_upper())
         .collect();
 
-    let mut available_keys: Vec<String> = vec![];
-    for key in config.keys.iter().map(|k| k.fingerprint.clone()) {
-        let it_fits = recipients.iter().any(|r| key.contains(r));
-        if it_fits {
-            available_keys.push(key);
-        }
-    }
+    let keyring = config
+        .keys
+        .iter()
+        .map(|k| k.fingerprint.clone())
+        .collect::<Vec<String>>();
+
+    let available_keys: Vec<String> = keyring
+        .iter()
+        .filter(|&keyring_key| {
+            recipients.iter().any(|recipient_key| {
+                keyring_key
+                    .to_lowercase()
+                    .contains(&recipient_key.to_lowercase())
+            })
+        })
+        .cloned()
+        .collect();
 
     dbg!(available_keys.clone());
 
