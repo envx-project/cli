@@ -1,3 +1,4 @@
+pub mod auth;
 pub mod btreemap;
 pub mod config;
 pub mod key;
