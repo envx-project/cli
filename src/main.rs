@@ -48,7 +48,6 @@ commands_enum!(
     run,
     set_local,
     set,
-    settings,
     shell,
     sign,
     unset,
@@ -60,7 +59,7 @@ commands_enum!(
 
 #[tokio::main]
 async fn main() -> Result<()> {
-    let config = crate::utils::config::get_local_or_global_config()?;
+    let config = crate::utils::config::get_config()?;
     let global_silent = config.silent.unwrap_or_default();
 
     let cli = Args::parse();

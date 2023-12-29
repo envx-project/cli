@@ -1,5 +1,5 @@
 use super::*;
-use crate::utils::config::get_local_or_global_config;
+use crate::utils::config::get_config;
 
 #[derive(Parser)]
 pub struct Args {
@@ -9,7 +9,7 @@ pub struct Args {
 }
 
 pub async fn command(_args: Args, _json: bool) -> Result<()> {
-    let config = get_local_or_global_config().context("Failed to get config")?;
+    let config = get_config().context("Failed to get config")?;
 
     println!("Keys:");
     for key in config.keys.iter() {

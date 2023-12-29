@@ -38,6 +38,9 @@ pub fn get_api_url() -> Result<String> {
 #[allow(clippy::upper_case_acronyms)]
 pub(crate) struct SDK {}
 impl SDK {
+    #[deprecated(
+        note = "Please use `new_user` instead. This function will be removed in a future release."
+    )]
     pub async fn new_user_old(user: &NewUserParams) -> Result<()> {
         let client = reqwest::Client::new();
 
@@ -76,38 +79,6 @@ impl SDK {
             .await?;
 
         Ok(res)
-    }
-
-    pub async fn set_env_old(body: SetEnvParams) -> Result<()> {
-        let client = reqwest::Client::new();
-
-        let project_id = match body.project_id {
-            Some(pid) => pid,
-            None => "null".into(),
-        };
-
-        let body = json!({
-            "message": body.message,
-            "allowed_keys": body.allowed_keys,
-            "project_id": project_id
-        });
-
-        let res = client
-            .post(&format!("{}/secrets/new", get_api_url()?))
-            .json(&body)
-            .send()
-            .await?;
-
-        let status = res.status();
-
-        if status.is_success() {
-            Ok(())
-        } else {
-            Err(anyhow!(format!(
-                "Failed to set new secret: {}",
-                "err" // res.text().await?
-            )))
-        }
     }
 
     pub async fn get_project_info(

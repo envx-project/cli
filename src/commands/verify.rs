@@ -1,10 +1,7 @@
-use std::env::args;
-
-use crate::utils::config::get_local_or_global_config;
-
 use super::*;
+use crate::utils::config::get_config;
 use anyhow::Ok;
-use pgp::{composed, Deserializable, SignedPublicKey, SignedSecretKey};
+use pgp::{composed, Deserializable, SignedPublicKey};
 
 /// Get all environment variables for the current configured directory
 #[derive(Parser)]
@@ -28,7 +25,7 @@ xS01Yh2Y03he2rIJCQ==
 =NzL+
 -----END PGP MESSAGE-----";
 
-    let config = get_local_or_global_config().context("Failed to get config")?;
+    let config = get_config().context("Failed to get config")?;
 
     let key = config
         .keys

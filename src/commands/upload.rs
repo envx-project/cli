@@ -1,7 +1,7 @@
 use super::*;
 use crate::{
     sdk::SDK,
-    utils::{config::get_specific_config, prompt::prompt_text},
+    utils::{config::get_config, prompt::prompt_text},
 };
 
 #[derive(Parser)]
@@ -16,8 +16,7 @@ pub struct Args {
 }
 
 pub async fn command(args: Args, _json: bool) -> Result<()> {
-    let global = false;
-    let mut config = get_specific_config(global)?;
+    let mut config = get_config()?;
 
     let key = config.get_key(&args.key)?;
 
@@ -34,7 +33,7 @@ pub async fn command(args: Args, _json: bool) -> Result<()> {
         }
     }
 
-    config.write(global)?;
+    config.write()?;
 
     Ok(())
 }
