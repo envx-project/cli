@@ -1,5 +1,5 @@
 use super::*;
-use crate::utils::{config::get_local_or_global_config, kvpair::KVPair, rpgp::encrypt};
+use crate::utils::{config::get_config, kvpair::KVPair, rpgp::encrypt};
 use anyhow::Context;
 
 /// set a local variable
@@ -13,7 +13,7 @@ pub struct Args {
 }
 
 pub async fn command(args: Args, _json: bool) -> Result<()> {
-    let config = get_local_or_global_config()?;
+    let config = get_config()?;
     let pubkey = config
         .primary_key()
         .context("Failed to get primary key, try generating a new one with `envcli gen`")?;

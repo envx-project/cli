@@ -22,37 +22,49 @@ pub struct Args {
     /// Output in JSON format
     #[clap(global = true, long)]
     json: bool,
+
+    #[clap(long)]
+    silent: bool,
 }
 
 // Generates the commands based on the modules in the commands directory
 // Specify the modules you want to include in the commands_enum! macro
 commands_enum!(
-    variables,
-    set,
-    unset,
-    shell,
-    run,
-    encrypt,
+    auth,
+    config,
     decrypt,
-    gen,
+    delete,
     delete_key,
-    settings,
-    get_config,
-    init,
-    set_local,
-    read_local,
-    add_recipient,
-    import,
+    encrypt,
     export,
-    list_keys
+    gen,
+    get_config,
+    get_project,
+    import,
+    init,
+    list_keys,
+    read_local,
+    run,
+    set_local,
+    set,
+    shell,
+    sign,
+    unset,
+    variables,
+    verify,
+    add_user_to_project,
+    upload
 );
 
 #[tokio::main]
 async fn main() -> Result<()> {
-    let cli = Args::parse();
+    let config = crate::utils::config::get_config()?;
+    let global_silent = config.silent.unwrap_or_default();
 
+    let cli = Args::parse();
     let command = std::env::args().nth(1).unwrap_or_default();
-    if command != "export" {
+
+    if command != "export" && !cli.silent && !global_silent {
         println!(
             "{} {} {} {}",
             "env-cli".cyan(),

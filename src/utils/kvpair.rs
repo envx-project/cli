@@ -3,10 +3,10 @@ use serde::{Deserialize, Serialize};
 use std::fmt;
 use std::str::FromStr;
 
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct KVPair {
-    key: String,
-    value: String,
+    pub key: String,
+    pub value: String,
 }
 
 impl KVPair {

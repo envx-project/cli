@@ -1,8 +1,10 @@
 use super::config::{get_config, Config};
+use anyhow::anyhow;
 use anyhow::{Context, Ok, Result};
 use colored::Colorize;
 use crypto_hash::{hex_digest, Algorithm};
 use hex::ToHex;
+use pgp::composed::message::Message;
 use pgp::{composed, composed::signed_key::*, crypto, types::SecretKeyTrait, Deserializable};
 use rand::prelude::*;
 use smallvec::*;
@@ -39,7 +41,7 @@ pub fn generate_key_pair(
         .can_sign(true)
         .can_encrypt(true)
         .passphrase(Some(password.clone()))
-        .primary_user_id(generate_primary_user_id(name.clone(), email.clone()))
+        .primary_user_id(generate_hashed_primary_user_id(name.clone(), email.clone()))
         .preferred_symmetric_algorithms(smallvec![crypto::sym::SymmetricKeyAlgorithm::AES256]);
 
     let secret_key_params = key_params
@@ -133,21 +135,8 @@ pub fn hash_string(input: &str) -> String {
     hash.to_string()
 }
 
-pub fn generate_primary_user_id(name: String, email: String) -> String {
+pub fn generate_hashed_primary_user_id(name: String, email: String) -> String {
     hash_string(&format!("{}{}{}", name, email, &get_config().unwrap().salt)).to_uppercase()
-}
-
-pub fn get_primary_key() -> Result<String> {
-    let config = get_config().context("Failed to get config")?;
-
-    let primary_key = config.primary_key.clone();
-
-    let primary_key_location = get_vault_location()?.join(primary_key).join("public.key");
-
-    let primary_public_key =
-        std::fs::read_to_string(primary_key_location).context("Failed to read primary key")?;
-
-    Ok(primary_public_key)
 }
 
 pub fn decrypt_full(message: String, config: &Config) -> Result<String, anyhow::Error> {
@@ -178,7 +167,6 @@ pub fn decrypt_full(message: String, config: &Config) -> Result<String, anyhow::
 
     let primary_key = &config.primary_key;
     let (key, _) = if available_keys.iter().any(|k| k.contains(primary_key)) {
-        println!("Using primary key: {}", &primary_key);
         get_key(primary_key)?
     } else {
         println!("Using key: {}", &available_keys[0]);
@@ -190,13 +178,55 @@ pub fn decrypt_full(message: String, config: &Config) -> Result<String, anyhow::
     Ok(decrypted)
 }
 
+pub fn decrypt_full_many(
+    messages: Vec<String>,
+    config: &Config,
+) -> Result<Vec<String>, anyhow::Error> {
+    let first = messages.first().ok_or_else(|| anyhow!("No messages"))?;
+    let msg = Message::from_string(first.as_str())?.0;
+
+    let recipients: Vec<String> = msg
+        .get_recipients()
+        .iter()
+        .map(|e| e.encode_hex_upper())
+        .collect();
+
+    let mut available_keys: Vec<String> = vec![];
+    for key in config.keys.iter().map(|k| k.fingerprint.clone()) {
+        let it_fits = recipients.iter().any(|r| key.contains(r));
+        if it_fits {
+            available_keys.push(key);
+        }
+    }
+
+    if available_keys.is_empty() {
+        return Err(anyhow::anyhow!(
+            "{}",
+            "No keys available to decrypt this message".red()
+        ));
+    }
+
+    let primary_key = &config.primary_key;
+    let (key, _) = if available_keys.iter().any(|k| k.contains(primary_key)) {
+        get_key(primary_key)?
+    } else {
+        println!("Using key: {}", &available_keys[0]);
+        get_key(&available_keys[0])?
+    };
+
+    let decrypted = messages
+        .iter()
+        .map(|m| decrypt(m.as_str(), &key, String::from("asdf")))
+        .collect::<Result<Vec<String>, anyhow::Error>>()?;
+
+    Ok(decrypted)
+}
+
 fn get_key<T>(fingerprint: T) -> Result<(SignedSecretKey, String)>
 where
     T: AsRef<Path> + Into<String>,
 {
     let location = get_vault_location()?.join(&fingerprint).join("private.key");
-
-    dbg!(&location);
 
     let priv_key = fs::read_to_string(location).context("Failed to read private key")?;
     let (seckey, _) = SignedSecretKey::from_string(priv_key.as_str())

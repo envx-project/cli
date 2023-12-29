@@ -1,11 +1,9 @@
 use super::*;
-use crate::sdk::{NewUserParams, SDK};
+use crate::sdk::SDK;
 use crate::utils::config::{self};
 use crate::utils::key::Key;
 use crate::utils::prompt::{prompt_email, prompt_password, prompt_text};
-use crate::utils::rpgp::{
-    generate_key_pair, generate_primary_user_id, get_vault_location, hash_string,
-};
+use crate::utils::rpgp::{generate_hashed_primary_user_id, generate_key_pair, get_vault_location};
 use crate::utils::vecu8::ToHex;
 use anyhow::Context;
 use pgp::types::KeyTrait;
@@ -19,6 +17,10 @@ pub struct Args {
     /// Interactive mode
     #[clap(short, long)]
     interactive: bool,
+
+    /// Username
+    #[clap(short, long)]
+    username: Option<String>,
 
     /// Your real name
     #[clap(short, long)]
@@ -60,6 +62,11 @@ pub async fn command(args: Args, _json: bool) -> Result<()> {
     let name = args
         .name
         .unwrap_or_else(|| prompt_text("What is your name?").unwrap());
+
+    let username = args
+        .username
+        .unwrap_or_else(|| prompt_text("What is your username?").unwrap());
+
     let email = args.email.unwrap_or_else(|| prompt_email("email").unwrap());
 
     match email_validator(&email) {
@@ -103,13 +110,14 @@ pub async fn command(args: Args, _json: bool) -> Result<()> {
     fs::write(key_dir.join("private.key"), &priv_key).expect("Failed to write private key to file");
     fs::write(key_dir.join("public.key"), &pub_key).expect("Failed to write public key to file");
 
-    let hashed_note = generate_primary_user_id(name.clone(), email.clone());
+    let hashed_note = generate_hashed_primary_user_id(name.clone(), email.clone());
     let key_to_insert: Key = Key {
         fingerprint: fingerprint.clone(),
         note: "".to_string(),
         primary_user_id: format!("{} <{}>", &name, &email),
         hashed_note: hashed_note.clone(),
         pubkey_only: None,
+        uuid: None,
     };
 
     config.keys.push(key_to_insert);
@@ -121,15 +129,8 @@ pub async fn command(args: Args, _json: bool) -> Result<()> {
 
     config::write_config(&config).context("Failed to write config")?;
 
-    let new_user = NewUserParams {
-        fingerprint: fingerprint.clone(),
-        user_id: hashed_note.clone(),
-        pubkey: pub_key.clone(),
-        pubkey_hash: hash_string(&pub_key),
-    };
-
     if config.online {
-        SDK::new_user(&new_user).await?;
+        SDK::new_user(&username, &pub_key).await?;
     }
 
     Ok(())

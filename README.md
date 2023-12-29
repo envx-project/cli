@@ -1,6 +1,6 @@
 # env-cli
 
-## this CLI is in alpha and is not guaranteed to work.
+## this CLI is in alpha and is not guaranteed to work
 
 Author: [@alexng353](https://github.com/alexng353)
 
@@ -8,7 +8,7 @@ A very simple cli written for [env-store/envs](https://github.com/env-store/envs
 
 ## Todo
 
-- find out how many bugs there are and fix em all
+- Revert to a single global configuration file
 
 ### Usage
 
@@ -32,7 +32,7 @@ Options:
   -V, --version  Print version
 ```
 
-# Attributions
+## Attributions
 
 This project is licensed under the MIT License. A copy of the MIT License can be found in the [LICENSE](LICENSE) file.
 

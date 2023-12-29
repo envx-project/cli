@@ -9,7 +9,7 @@ use anyhow::Result;
 pub struct Args {}
 
 pub async fn command(_args: Args, _json: bool) -> Result<()> {
-    get_config()?.write(false)?;
+    get_config()?.write()?;
 
     println!("Initialized new envcli store");
 

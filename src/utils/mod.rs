@@ -1,8 +1,12 @@
+pub mod auth;
+pub mod btreemap;
+pub mod choice;
 pub mod config;
 pub mod key;
 pub mod kvpair;
+pub mod partial_variable;
 pub mod prompt;
 pub mod rpgp;
+pub mod settings;
 pub mod table;
-pub mod to_btreemap;
 pub mod vecu8;

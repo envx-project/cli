@@ -10,6 +10,7 @@ pub struct Key {
     pub primary_user_id: String,
     pub hashed_note: String,
     pub pubkey_only: Option<bool>,
+    pub uuid: Option<String>,
 }
 
 impl Key {
