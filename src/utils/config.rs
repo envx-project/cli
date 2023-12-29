@@ -140,6 +140,19 @@ impl Config {
         }
         Err(anyhow::anyhow!("Failed to find project"))
     }
+
+    pub fn set_project(&mut self, project_id: &str) -> Result<()> {
+        let path = std::env::current_dir()?;
+        let new_project = Project {
+            project_id: project_id.to_string(),
+            path,
+        };
+
+        self.projects.push(new_project);
+        self.write()?;
+
+        Ok(())
+    }
 }
 
 /// Get the configuration path ~/.config/envcli/config.json
