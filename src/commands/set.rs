@@ -91,7 +91,7 @@ async fn set_variable(
         project_id: project_id.map(|id| id.to_owned()),
     };
 
-    crate::sdk::SDK::set_env(body).await?;
+    crate::sdk::SDK::set_env_old(body).await?;
 
     Ok(())
 }
