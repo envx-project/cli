@@ -1,6 +1,6 @@
 use crate::{
     sdk::SDK,
-    utils::{btreemap::ToBTreeMap, config::get_local_or_global_config, table::Table},
+    utils::{btreemap::ToBTreeMap, config::get_config, table::Table},
 };
 
 use super::*;
@@ -17,7 +17,7 @@ pub struct Args {
 }
 
 pub async fn command(args: Args, _json: bool) -> Result<()> {
-    let config = get_local_or_global_config()?;
+    let config = get_config()?;
 
     let key = config.get_key(&args.key)?;
 

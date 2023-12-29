@@ -1,5 +1,5 @@
 use super::*;
-use crate::utils::{config::get_local_or_global_config, kvpair::KVPair, rpgp::decrypt_full};
+use crate::utils::{config::get_config, kvpair::KVPair, rpgp::decrypt_full};
 use anyhow::Context;
 use std::vec;
 
@@ -8,7 +8,7 @@ use std::vec;
 pub struct Args {}
 
 pub async fn command(_args: Args, _json: bool) -> Result<()> {
-    let config = get_local_or_global_config()?;
+    let config = get_config()?;
 
     let mut file = std::fs::File::open(".envcli.vault")
         .context("Failed to open .envcli.vault, try running `envcli init`")?;

@@ -21,7 +21,6 @@ pub mod read_local;
 pub mod run;
 pub mod set;
 pub mod set_local;
-pub mod settings;
 pub mod shell;
 pub mod sign;
 pub mod unset;

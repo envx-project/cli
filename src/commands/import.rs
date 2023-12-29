@@ -1,8 +1,8 @@
 use super::*;
+use crate::utils::key::Key;
 use crate::utils::prompt::prompt_text;
-use crate::utils::rpgp::{generate_hashed_primary_user_id, get_vault_location};
+use crate::utils::rpgp::get_vault_location;
 use crate::utils::vecu8::ToHex;
-use crate::utils::{config::get_local_or_global_config, key::Key};
 use clap::Subcommand;
 use pgp::{types::KeyTrait, Deserializable};
 use std::fs;
@@ -22,7 +22,6 @@ pub enum Commands {
 }
 
 pub async fn command(args: Args, _json: bool) -> Result<()> {
-    let config = get_local_or_global_config()?;
     let mut vault_path = get_vault_location()?;
     match args.command {
         Commands::Pubkey { path } => {
