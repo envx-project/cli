@@ -1,6 +1,6 @@
 use super::*;
+use crate::utils::choice::Choice;
 use crate::utils::config::get_config;
-use crate::{sdk::SDK, utils::choice::Choice};
 use serde::{Deserialize, Serialize};
 
 /// Get all environment variables for a project
