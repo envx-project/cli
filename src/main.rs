@@ -44,6 +44,7 @@ commands_enum!(
     init,
     link,
     list_keys,
+    project,
     read_local,
     run,
     set_local,

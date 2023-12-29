@@ -323,4 +323,23 @@ impl SDK {
 
         Ok(res)
     }
+
+    pub async fn new_project(partial_fingerprint: &str) -> Result<String> {
+        // POST /projects/new
+        let config = get_config()?;
+        let key = config.get_key(&partial_fingerprint)?;
+
+        let client = reqwest::Client::new();
+        let auth_token = get_token(&key.fingerprint, &key.uuid.clone().unwrap()).await?;
+
+        let res = client
+            .post(&format!("{}/projects/new", get_api_url()?))
+            .header(header::AUTHORIZATION, format!("Bearer {}", auth_token))
+            .send()
+            .await?
+            .text()
+            .await?;
+
+        Ok(res)
+    }
 }
