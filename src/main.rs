@@ -43,6 +43,7 @@ commands_enum!(
     import,
     init,
     list_keys,
+    link,
     read_local,
     run,
     set_local,
@@ -51,7 +52,6 @@ commands_enum!(
     sign,
     unset,
     variables,
-    verify,
     add_user_to_project,
     upload
 );
