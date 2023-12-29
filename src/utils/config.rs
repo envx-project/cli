@@ -107,7 +107,11 @@ impl Config {
         let key = self
             .keys
             .iter()
-            .find(|k| k.fingerprint.contains(&partial_fingerprint))
+            .find(|k| {
+                k.fingerprint
+                    .to_lowercase()
+                    .contains(&partial_fingerprint.to_lowercase())
+            })
             .context("Failed to find key")?;
 
         Ok(key.clone())
@@ -193,8 +197,8 @@ pub fn get_config_path() -> Result<PathBuf> {
 
 /// Read the configuration file and parse it into a Config struct
 pub fn get_config() -> Result<Config> {
-    let path = get_config_path()?;
-    let contents = fs::read_to_string(path)?;
+    let path = get_config_path().context("Failed to get config path")?;
+    let contents = fs::read_to_string(path).context("Failed to read config file")?;
     Ok(serde_json::from_str::<Config>(&contents).context("Failed to parse config file")?)
 }
 
