@@ -37,7 +37,7 @@ pub struct Args {
 }
 
 pub async fn command(args: Args, _json: bool) -> Result<()> {
-    let config = crate::utils::config::get_local_or_global_config()?;
+    let config = crate::utils::config::get_config()?;
     let key = match args.key {
         Some(k) => k.to_owned(),
         None => config.primary_key.clone(),
@@ -46,7 +46,7 @@ pub async fn command(args: Args, _json: bool) -> Result<()> {
 
     let project_id = match args.project_id {
         Some(p) => p,
-        None => config.default_project_id.unwrap_or_default(),
+        None => "".to_string(),
     };
 
     if project_id.is_empty() {

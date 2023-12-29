@@ -1,5 +1,4 @@
-use crate::utils::{config::get_local_or_global_config, key::VecKeyTrait};
-use crypto_hash::{hex_digest, Algorithm};
+use crate::utils::config::get_config;
 
 use super::*;
 use anyhow::Ok;
@@ -17,7 +16,7 @@ pub struct Args {
 }
 
 pub async fn command(args: Args, _json: bool) -> Result<()> {
-    let config = get_local_or_global_config().context("Failed to get config")?;
+    let config = get_config().context("Failed to get config")?;
 
     let key = config
         .keys

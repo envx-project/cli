@@ -1,5 +1,5 @@
 use super::*;
-use crate::utils::{config::get_local_or_global_config, key::VecKeyTrait, prompt::prompt_options};
+use crate::utils::{config::get_config, key::VecKeyTrait, prompt::prompt_options};
 
 /// Export a public or secret key
 #[derive(Parser)]
@@ -14,7 +14,7 @@ pub struct Args {
 }
 
 pub async fn command(args: Args, _json: bool) -> Result<()> {
-    let config = get_local_or_global_config().context("Failed to get config")?;
+    let config = get_config().context("Failed to get config")?;
 
     let keys: Vec<&str> = config.keys.all_fingerprints();
 

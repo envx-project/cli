@@ -1,8 +1,7 @@
 use crate::{
     sdk::{get_api_url, SDK},
     utils::{
-        auth::get_token, config::get_local_or_global_config, partialkey::PartialVariable,
-        rpgp::encrypt_multi,
+        auth::get_token, config::get_config, partialkey::PartialVariable, rpgp::encrypt_multi,
     },
 };
 use reqwest::header;
@@ -28,7 +27,7 @@ pub struct Args {
 }
 
 pub async fn command(args: Args, _json: bool) -> Result<()> {
-    let config = get_local_or_global_config()?;
+    let config = get_config()?;
 
     let key = config.get_key(&args.key)?;
     let uuid = key.uuid.clone().unwrap();

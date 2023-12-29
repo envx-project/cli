@@ -4,11 +4,10 @@ use super::key::Key;
 use super::rpgp::get_vault_location;
 use super::settings::Settings;
 use anyhow::{Context, Result};
-use colored::Colorize;
 use home::home_dir;
 use serde::{Deserialize, Serialize};
 use std::fs::{self, File};
-use std::io::{BufReader, BufWriter, Read, Write};
+use std::io::{BufWriter, Write};
 use std::path::PathBuf;
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -24,19 +23,37 @@ pub struct Config {
     pub sdk_url: Option<String>,
     /// Settings that apply to all environments
     pub settings: Option<Settings>,
-    /// Default project ID
-    pub default_project_id: Option<String>,
     /// Silence startup message
     pub silent: Option<bool>,
+    /// Projects
+    pub projects: Vec<Project>,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct Project {
+    pub project_id: String,
+    pub path: PathBuf,
+}
+
+impl Default for Config {
+    fn default() -> Self {
+        Self {
+            salt: "".into(),
+            primary_key: "".into(),
+            keys: vec![],
+            online: false,
+            sdk_url: None,
+            settings: None,
+            silent: None,
+            projects: vec![],
+        }
+    }
 }
 
 impl Config {
-    pub fn write(&self, global: bool) -> Result<()> {
-        if global {
-            write_config(self)?;
-        } else {
-            write_local_config(self)?;
-        }
+    pub fn write(&self) -> Result<()> {
+        write_config(self)?;
+
         Ok(())
     }
 
@@ -52,7 +69,10 @@ impl Config {
         Ok(primary_public_key)
     }
 
-    pub fn add_key(&self, key: Key) -> Result<Config> {
+    // TODO: write an implementation to add key to config
+    /// Add a key to the config and write it to disk
+    #[allow(dead_code)]
+    pub fn add_key(&self, _key: Key) -> Result<Config> {
         unimplemented!()
     }
 
@@ -75,35 +95,33 @@ impl Config {
         Ok(key.clone())
     }
 
-    pub fn set_project_id(&mut self, project_id: &str) -> Result<()> {
-        self.default_project_id = Some(project_id.to_string());
+    #[allow(dead_code)]
+    pub fn init_project(&mut self, project_id: &str, path: PathBuf) -> Result<()> {
+        let project = Project {
+            project_id: project_id.to_string(),
+            path,
+        };
+
+        self.projects.push(project);
+        self.write()?;
+
         Ok(())
     }
-}
 
-pub fn get_specific_config(global: bool) -> Result<Config> {
-    if global {
-        get_config()
-    } else {
-        get_local_config()
+    #[allow(dead_code)]
+    pub fn get_project(&self) -> Result<&Project> {
+        let mut path = std::env::current_dir()?;
+        loop {
+            let project = self.projects.iter().find(|p| p.path == path);
+            if let Some(project) = project {
+                return Ok(project);
+            }
+            if !path.pop() {
+                break;
+            }
+        }
+        Err(anyhow::anyhow!("Failed to find project"))
     }
-}
-
-pub fn get_local_or_global_config() -> Result<Config> {
-    let local_config = get_local_config();
-    if local_config.is_ok() {
-        return local_config;
-    }
-
-    get_config()
-}
-
-#[allow(dead_code)]
-pub fn get_envcli_dir() -> Result<PathBuf> {
-    let mut path = home_dir().context("Failed to get home directory")?;
-    path.push(".config");
-    path.push("envcli");
-    Ok(path)
 }
 
 /// Get the configuration path ~/.config/envcli/config.json
@@ -133,44 +151,6 @@ pub fn write_config(config: &Config) -> Result<()> {
     let path = get_config_path()?;
     let file = File::create(path)?;
 
-    let mut writer = BufWriter::new(file);
-    let contents = serde_json::to_string_pretty(config)?;
-    writer.write_all(contents.as_bytes())?;
-
-    Ok(())
-}
-
-/// Get the local configuration path .envcli.json
-#[allow(dead_code)]
-pub fn get_local_config() -> Result<Config, anyhow::Error> {
-    let mut path = std::env::current_dir()?;
-    loop {
-        let file_path = path.join(".envcli.json");
-        if file_path.exists() {
-            let file = File::open(file_path)?;
-            let mut reader = BufReader::new(file);
-            let mut contents = String::new();
-            reader.read_to_string(&mut contents)?;
-            let config =
-                serde_json::from_str::<Config>(&contents).context("Failed to parse config file")?;
-
-            return Ok(config);
-        }
-
-        if !path.pop() {
-            return Err(anyhow::anyhow!(
-                "No .envcli.json found.\nTry `envcli init`".bright_red()
-            ));
-        }
-    }
-}
-
-/// Write the local configuration file .envcli.json
-pub fn write_local_config(config: &Config) -> Result<()> {
-    let mut path = std::env::current_dir()?;
-    path.push(".envcli.json");
-
-    let file = File::create(path)?;
     let mut writer = BufWriter::new(file);
     let contents = serde_json::to_string_pretty(config)?;
     writer.write_all(contents.as_bytes())?;

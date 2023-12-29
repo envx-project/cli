@@ -1,5 +1,6 @@
+// TODO: remove this file
 use super::*;
-use crate::utils::config::get_local_or_global_config;
+use crate::utils::config::get_config;
 use crate::utils::rpgp::{decrypt_full, encrypt_multi};
 
 /// Initialize a new env-store
@@ -7,7 +8,7 @@ use crate::utils::rpgp::{decrypt_full, encrypt_multi};
 pub struct Args {}
 
 pub async fn command(_args: Args, _json: bool) -> Result<()> {
-    let config = get_local_or_global_config()?;
+    let config = get_config()?;
 
     let mut vault = std::fs::File::open(".envcli.vault")
         .context("Failed to open .envcli.vault, try running `envcli init`")?;
@@ -29,15 +30,6 @@ pub async fn command(_args: Args, _json: bool) -> Result<()> {
     let primary_pubkey = config
         .primary_key()
         .context("Failed to get primary key, try generating a new one with `envcli gen`")?;
-
-    // println!("List of Possible Recipients:");
-    // for key in config.keys.iter() {
-    //     println!("    {}", key.fingerprint);
-    // }
-    //
-    // if "a" == "a" {
-    //     return Ok(());
-    // }
 
     let secondary_pubkey = config.keys.first().unwrap().public_key()?;
 

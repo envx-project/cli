@@ -8,9 +8,6 @@ use super::*;
 
 #[derive(Debug, Parser)]
 pub struct Args {
-    #[clap(short, long)]
-    global: bool,
-
     setting: String,
 }
 
@@ -49,7 +46,7 @@ pub async fn command(args: Args, _json: bool) -> Result<()> {
     let settings = Settings::from_btreemap(&settings_btreemap)?;
 
     config.settings = Some(settings);
-    config.write(true)?;
+    config.write()?;
 
     Ok(())
 }
