@@ -5,6 +5,7 @@ use crate::{
         auth::get_token,
         config::get_config,
         kvpair::KVPair,
+        partialkey::PartialVariable,
         rpgp::{decrypt_full_many, encrypt_multi},
     },
 };
@@ -56,6 +57,25 @@ impl SDK {
                 res.text().await?
             )))
         }
+    }
+
+    pub async fn new_user(username: &str, public_key: &str) -> Result<String> {
+        let client = reqwest::Client::new();
+
+        let body = json!({
+            "username": username,
+            "public_key": public_key
+        });
+
+        let res = client
+            .post(&format!("{}/user/new", get_api_url()?))
+            .json(&body)
+            .send()
+            .await?
+            .text()
+            .await?;
+
+        Ok(res)
     }
 
     pub async fn set_env_old(body: SetEnvParams) -> Result<()> {
@@ -207,7 +227,7 @@ impl SDK {
         project_id: &str,
         partial_fingerprint: &str,
         user_id: &str,
-    ) -> Result<Vec<KVPair>> {
+    ) -> Result<(Vec<KVPair>, Vec<PartialVariable>)> {
         // url : /project/:id/variables
         let client = reqwest::Client::new();
         let auth_token = get_token(&partial_fingerprint, &user_id).await?;
@@ -221,16 +241,97 @@ impl SDK {
             .header(header::AUTHORIZATION, format!("Bearer {}", auth_token))
             .send()
             .await?
-            .json::<Vec<String>>()
+            .json::<Vec<PartialVariable>>()
             .await?;
 
-        let decrypted = decrypt_full_many(encrypted, &get_config().unwrap())?;
+        let decrypted = decrypt_full_many(
+            encrypted
+                .clone()
+                .iter()
+                .map(|e| e.value.clone())
+                .collect::<Vec<String>>(),
+            &get_config().unwrap(),
+        )?;
+
+        // splice decrypted and encrypted into a Vector of PartialKey
+        let partials = decrypted
+            .iter()
+            .zip(encrypted.iter())
+            .map(|(d, e)| PartialVariable {
+                id: e.id.clone(),
+                value: d.clone(),
+                project_id: e.project_id.clone(),
+            })
+            .collect::<Vec<PartialVariable>>();
 
         let parsed = decrypted
             .iter()
             .map(|d| KVPair::from_json(d.clone()).unwrap())
             .collect::<Vec<KVPair>>();
 
-        Ok(parsed)
+        Ok((parsed, partials))
+    }
+
+    pub async fn get_user(
+        partial_fingerprint: &str,
+        user_id: &str,
+        user_to_get: &str,
+    ) -> Result<(String, String)> {
+        // url: /user/:id
+        let client = reqwest::Client::new();
+        let auth_token = get_token(&partial_fingerprint, &user_id).await?;
+
+        #[derive(Serialize, Deserialize, Debug)]
+        pub struct StrippedUser {
+            pub id: String,
+            pub public_key: String,
+        }
+
+        let user = client
+            .get(&format!("{}/user/{}", get_api_url()?, user_to_get))
+            .header(header::AUTHORIZATION, format!("Bearer {}", auth_token))
+            .send()
+            .await?
+            .json::<StrippedUser>()
+            .await?;
+
+        Ok((user.id, user.public_key))
+    }
+
+    pub async fn add_user_to_project(
+        partial_fingerprint: &str,
+        user_id: &str,
+        user_to_add: &str,
+        project_id: &str,
+    ) -> Result<()> {
+        // url: /project/:id/add-user
+        let client = reqwest::Client::new();
+        let auth_token = get_token(&partial_fingerprint, &user_id).await?;
+
+        let body = json!({
+            "user_id": user_to_add
+        });
+
+        let res = client
+            .post(&format!(
+                "{}/project/{}/add-user",
+                get_api_url()?,
+                project_id
+            ))
+            .header(header::AUTHORIZATION, format!("Bearer {}", auth_token))
+            .json(&body)
+            .send()
+            .await?;
+
+        let status = res.status();
+
+        if status.is_success() {
+            Ok(())
+        } else {
+            Err(anyhow!(format!(
+                "Failed to add user to project: {}",
+                res.text().await?
+            )))
+        }
     }
 }
