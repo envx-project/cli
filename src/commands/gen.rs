@@ -133,7 +133,7 @@ pub async fn command(args: Args, _json: bool) -> Result<()> {
 
     if config.online {
         let id = SDK::new_user(&username, &pub_key).await?;
-
+        println!("User ID: {}", id);
         config
             .set_uuid(&fingerprint, &id)
             .context("Failed to set UUID")?;
