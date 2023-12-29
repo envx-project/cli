@@ -24,20 +24,46 @@ use std::mem::zeroed;
 /// Open a subshell with envcli variables available
 #[derive(Parser)]
 pub struct Args {
-    // /// Service to pull variables from (defaults to linked service)
-    // #[clap(short, long)]
-    // service: Option<String>,
+    /// Project ID
+    #[clap(short, long)]
+    project_id: Option<String>,
+
+    /// Key to use for signing
+    #[clap(short, long)]
+    key: Option<String>,
+
+    #[clap(short, long)]
+    silent: bool,
 }
 
-pub async fn command(_args: Args, _json: bool) -> Result<()> {
+pub async fn command(args: Args, _json: bool) -> Result<()> {
+    let config = crate::utils::config::get_local_or_global_config()?;
+    let key = match args.key {
+        Some(k) => k.to_owned(),
+        None => config.primary_key.clone(),
+    };
+    let key = config.get_key(&key)?;
+
+    let project_id = match args.project_id {
+        Some(p) => p,
+        None => config.default_project_id.unwrap_or_default(),
+    };
+
+    if project_id.is_empty() {
+        return Err(anyhow::anyhow!("No project ID provided"));
+    }
+
     let mut all_variables = BTreeMap::<String, String>::new();
     all_variables.insert("IN_ENVCLI_SHELL".to_owned(), "true".to_owned());
 
-    // let variables = crate::sdk::Client::get_variables().await?;
+    let variables =
+        crate::sdk::SDK::get_variables(&project_id, &key.fingerprint, &key.uuid.clone().unwrap())
+            .await?
+            .0;
 
-    // for variable in variables {
-    //     all_variables.insert(variable.name, variable.value);
-    // }
+    for variable in variables {
+        all_variables.insert(variable.key, variable.value);
+    }
 
     let shell = std::env::var("SHELL").unwrap_or(match std::env::consts::OS {
         "windows" => match windows_shell_detection().await {
@@ -58,7 +84,9 @@ pub async fn command(_args: Args, _json: bool) -> Result<()> {
         _ => vec![],
     };
 
-    println!("Entering subshell with envcli variables available. Type 'exit' to exit.\n");
+    if !args.silent {
+        println!("Entering subshell with envcli variables available. Type 'exit' to exit.\n");
+    }
 
     // a bit janky :/
     ctrlc::set_handler(move || {

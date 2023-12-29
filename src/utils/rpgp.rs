@@ -180,7 +180,6 @@ pub fn decrypt_full(message: String, config: &Config) -> Result<String, anyhow::
 
     let primary_key = &config.primary_key;
     let (key, _) = if available_keys.iter().any(|k| k.contains(primary_key)) {
-        println!("Using primary key: {}", &primary_key);
         get_key(primary_key)?
     } else {
         println!("Using key: {}", &available_keys[0]);
@@ -222,7 +221,6 @@ pub fn decrypt_full_many(
 
     let primary_key = &config.primary_key;
     let (key, _) = if available_keys.iter().any(|k| k.contains(primary_key)) {
-        println!("Using primary key: {}", &primary_key);
         get_key(primary_key)?
     } else {
         println!("Using key: {}", &available_keys[0]);
