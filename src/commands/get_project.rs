@@ -1,7 +1,5 @@
 use super::*;
-use crate::{sdk::SDK, utils::auth::get_token};
-use anyhow::bail;
-use reqwest::header;
+use crate::sdk::SDK;
 use serde::{Deserialize, Serialize};
 
 #[derive(Parser)]

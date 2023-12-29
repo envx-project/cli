@@ -1,7 +1,6 @@
 pub(super) use anyhow::{anyhow, Context, Result};
 pub(super) use clap::Parser;
 pub(super) use colored::Colorize;
-pub(super) use std::result::Result::Ok as Good;
 
 pub mod add_recipient;
 pub mod add_user_to_project;
@@ -22,8 +21,6 @@ pub mod read_local;
 pub mod run;
 pub mod set;
 pub mod set_local;
-pub mod set_multi;
-pub mod set_single;
 pub mod settings;
 pub mod shell;
 pub mod sign;

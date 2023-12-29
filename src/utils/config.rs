@@ -24,6 +24,8 @@ pub struct Config {
     pub sdk_url: Option<String>,
     /// Settings that apply to all environments
     pub settings: Option<Settings>,
+    /// Default project ID
+    pub default_project_id: Option<String>,
 }
 
 impl Config {
@@ -69,6 +71,11 @@ impl Config {
             .context("Failed to find key")?;
 
         Ok(key.clone())
+    }
+
+    pub fn set_project_id(&mut self, project_id: &str) -> Result<()> {
+        self.default_project_id = Some(project_id.to_string());
+        Ok(())
     }
 }
 
