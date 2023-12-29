@@ -129,7 +129,7 @@ pub async fn command(args: Args, _json: bool) -> Result<()> {
     };
 
     if config.online {
-        SDK::new_user(&new_user).await?;
+        SDK::new_user_old(&new_user).await?;
     }
 
     Ok(())
