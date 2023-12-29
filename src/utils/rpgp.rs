@@ -168,8 +168,6 @@ pub fn decrypt_full(message: String, config: &Config) -> Result<String, anyhow::
         .cloned()
         .collect();
 
-    dbg!(available_keys.clone());
-
     if available_keys.is_empty() {
         return Err(anyhow::anyhow!(
             "{}",
@@ -209,9 +207,6 @@ pub fn decrypt_full_many(
         .map(|k| k.fingerprint.clone())
         .collect::<Vec<String>>();
 
-    dbg!(recipients.clone());
-    dbg!(keyring.clone());
-
     let available_keys: Vec<String> = keyring
         .iter()
         .filter(|&keyring_key| {
@@ -223,8 +218,6 @@ pub fn decrypt_full_many(
         })
         .cloned()
         .collect();
-
-    dbg!(available_keys.clone());
 
     if available_keys.is_empty() {
         return Err(anyhow::anyhow!(
