@@ -5,7 +5,7 @@ use crate::{
         auth::get_token,
         config::get_config,
         kvpair::KVPair,
-        partialkey::PartialVariable,
+        partial_variable::{PartialVariable, ToKVPair, ToParsed},
         rpgp::{decrypt_full_many, encrypt_multi},
     },
 };
@@ -113,6 +113,7 @@ impl SDK {
         Ok(res.iter().map(|r| r.id.clone()).collect())
     }
 
+    /// You're probably looking for `get_variables_pruned` instead
     pub async fn get_variables(
         project_id: &str,
         partial_fingerprint: &str,
@@ -151,6 +152,7 @@ impl SDK {
                 id: e.id.clone(),
                 value: d.clone(),
                 project_id: e.project_id.clone(),
+                created_at: e.created_at.clone(),
             })
             .collect::<Vec<PartialVariable>>();
 
@@ -160,6 +162,17 @@ impl SDK {
             .collect::<Vec<KVPair>>();
 
         Ok((parsed, partials))
+    }
+
+    pub async fn get_variables_pruned(
+        project_id: &str,
+        partial_fingerprint: &str,
+        user_id: &str,
+    ) -> Result<Vec<KVPair>> {
+        let (kvpairs, partial) =
+            Self::get_variables(project_id, partial_fingerprint, user_id).await?;
+        let pruned = partial.zip_to_parsed(kvpairs.clone()).to_kvpair();
+        Ok(pruned)
     }
 
     pub async fn get_user(

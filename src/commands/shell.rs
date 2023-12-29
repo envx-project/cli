@@ -56,10 +56,12 @@ pub async fn command(args: Args, _json: bool) -> Result<()> {
     let mut all_variables = BTreeMap::<String, String>::new();
     all_variables.insert("IN_ENVCLI_SHELL".to_owned(), "true".to_owned());
 
-    let variables =
-        crate::sdk::SDK::get_variables(&project_id, &key.fingerprint, &key.uuid.clone().unwrap())
-            .await?
-            .0;
+    let variables = crate::sdk::SDK::get_variables_pruned(
+        &project_id,
+        &key.fingerprint,
+        &key.uuid.clone().unwrap(),
+    )
+    .await?;
 
     for variable in variables {
         all_variables.insert(variable.key, variable.value);
