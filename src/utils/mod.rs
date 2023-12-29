@@ -3,6 +3,7 @@ pub mod btreemap;
 pub mod config;
 pub mod key;
 pub mod kvpair;
+pub mod partialkey;
 pub mod prompt;
 pub mod rpgp;
 pub mod settings;

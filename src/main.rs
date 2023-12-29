@@ -52,7 +52,9 @@ commands_enum!(
     sign,
     unset,
     variables,
-    verify
+    verify,
+    add_user_to_project,
+    upload
 );
 
 #[tokio::main]

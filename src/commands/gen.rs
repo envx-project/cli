@@ -110,6 +110,7 @@ pub async fn command(args: Args, _json: bool) -> Result<()> {
         primary_user_id: format!("{} <{}>", &name, &email),
         hashed_note: hashed_note.clone(),
         pubkey_only: None,
+        uuid: None,
     };
 
     config.keys.push(key_to_insert);

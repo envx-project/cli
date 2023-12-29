@@ -1,4 +1,4 @@
-use super::{config::Config, key::Key, settings::Settings};
+use super::{config::Config, key::Key, kvpair::KVPair, settings::Settings};
 use anyhow::{Context, Result};
 use serde_json::Value;
 use std::collections::BTreeMap;
@@ -69,6 +69,20 @@ impl ToBTreeMap for Vec<Key> {
                 key.fingerprint.chars().skip(30).collect(),
                 key.primary_user_id.clone(),
             );
+        }
+        Ok(map)
+    }
+}
+
+impl ToBTreeMap for Vec<KVPair> {
+    fn to_btreemap(&self) -> Result<BTreeMap<String, String>> {
+        let mut map = BTreeMap::new();
+        for kvpair in self.iter() {
+            // Check for duplicate keys
+            if map.contains_key(&kvpair.key) {
+                eprintln!("Duplicate key found: {}", kvpair.key);
+            }
+            map.insert(kvpair.key.clone(), kvpair.value.clone());
         }
         Ok(map)
     }
