@@ -4,6 +4,7 @@ pub(super) use colored::Colorize;
 pub(super) use std::result::Result::Ok as Good;
 
 pub mod add_recipient;
+pub mod add_user_to_project;
 pub mod auth;
 pub mod behaviour;
 pub mod config;
@@ -27,5 +28,6 @@ pub mod settings;
 pub mod shell;
 pub mod sign;
 pub mod unset;
+pub mod upload;
 pub mod variables;
 pub mod verify;
