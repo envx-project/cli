@@ -33,6 +33,7 @@ commands_enum!(
     auth,
     config,
     decrypt,
+    delete,
     delete_key,
     encrypt,
     export,

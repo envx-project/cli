@@ -1,5 +1,6 @@
 pub mod auth;
 pub mod btreemap;
+pub mod choice;
 pub mod config;
 pub mod key;
 pub mod kvpair;
