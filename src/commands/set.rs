@@ -1,97 +1,62 @@
 use super::*;
 use crate::{
-    sdk::SetEnvParams,
-    utils::{
-        config::get_config,
-        prompt::prompt_text,
-        rpgp::{encrypt, get_primary_key},
-    },
+    sdk::SDK,
+    utils::{config::get_local_or_global_config, kvpair::KVPair},
 };
-use anyhow::{Context, Ok};
-use serde_json::json;
+use anyhow::Ok;
 
-/// SET an environment variable with a key=value pair
-/// also supports interactive mode
+/// Set a variable
 #[derive(Parser)]
 pub struct Args {
+    /// Key to use for signing
     #[clap(short, long)]
-    fingerprint: Option<String>,
+    key: Option<String>,
 
+    /// KVPairs
     #[clap(trailing_var_arg = true)]
     kvpairs: Vec<String>,
+
+    /// Project ID
+    #[clap(short, long)]
+    project_id: Option<String>,
 }
 
 pub async fn command(args: Args, _json: bool) -> Result<()> {
-    let config = get_config()?;
-    let pubkey = get_primary_key()
-        .context("Failed to get primary key, try generating a new one with `envcli gen`")?;
+    let config = get_local_or_global_config()?;
+    let key = match args.key {
+        Some(k) => k.to_owned(),
+        None => config.primary_key.clone(),
+    };
+    let key = config.get_key(&key)?;
 
-    if !args.kvpairs.is_empty() {
-        for arg in args.kvpairs.clone() {
-            let split = &arg.splitn(2, '=').collect::<Vec<&str>>();
-            if split.len() != 2 {
-                eprintln!("Error: Invalid key=value pair");
-                std::process::exit(1);
-            }
+    let project_id = match args.project_id {
+        Some(p) => p,
+        None => config.default_project_id.unwrap_or_default(),
+    };
 
-            let key = split[0].to_uppercase().to_string();
-            let value = split[1].to_string();
-
-            set_variable(
-                &key,
-                &value,
-                &pubkey,
-                &config.primary_key,
-                Some("alphabeta"),
-            )
-            .await?;
-        }
-
-        return Ok(());
+    if project_id.is_empty() {
+        return Err(anyhow::anyhow!("No project ID provided"));
     }
 
-    let key = match prompt_text("key") {
-        Good(key) => key.to_uppercase(),
-        Err(_) => {
-            return Err(anyhow::Error::msg("Error: Could not read key"));
-        }
-    };
+    let kvpairs = args
+        .kvpairs
+        .iter()
+        .map(|k| {
+            let (key, value) = k.split_once('=').unwrap();
+            KVPair::new(key.to_uppercase(), value.to_string())
+        })
+        .collect::<Vec<KVPair>>();
 
-    let value = match prompt_text("value") {
-        Good(value) => value,
-        Err(_) => {
-            return Err(anyhow::Error::msg("Error: Could not read value"));
-        }
-    };
+    let ids = SDK::set_many(
+        kvpairs,
+        &key.fingerprint,
+        &project_id,
+        &key.uuid.clone().unwrap(),
+    )
+    .await?;
 
-    set_variable(&key, &value, &pubkey, &config.primary_key, None).await?;
-
-    Ok(())
-}
-
-async fn set_variable(
-    key: &str,
-    value: &str,
-    pubkey: &str,
-    primary_key: &str,
-    project_id: Option<&str>,
-) -> Result<()> {
-    println!("Setting {}={}", key, value);
-
-    let kvpair = json!({
-        "key": key,
-        "value": value
-    });
-
-    let message = encrypt(kvpair.to_string().as_str(), pubkey)?;
-
-    let body = SetEnvParams {
-        message,
-        allowed_keys: vec![primary_key.to_string()],
-        project_id: project_id.map(|id| id.to_owned()),
-    };
-
-    crate::sdk::SDK::set_env_old(body).await?;
+    println!("Uploaded {} variables", ids.len());
+    println!("IDs: {:?}", ids);
 
     Ok(())
 }
