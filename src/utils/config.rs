@@ -95,6 +95,24 @@ impl Config {
         Ok(key.clone())
     }
 
+    pub fn get_key_or_default(&self, partial_fingerprint: Option<String>) -> Result<Key> {
+        let partial_fingerprint = match partial_fingerprint {
+            Some(p) => p,
+            None => self.primary_key.clone(),
+        };
+        if partial_fingerprint.is_empty() {
+            return Err(anyhow::anyhow!("No key provided"));
+        }
+
+        let key = self
+            .keys
+            .iter()
+            .find(|k| k.fingerprint.contains(&partial_fingerprint))
+            .context("Failed to find key")?;
+
+        Ok(key.clone())
+    }
+
     #[allow(dead_code)]
     pub fn init_project(&mut self, project_id: &str, path: PathBuf) -> Result<()> {
         let project = Project {

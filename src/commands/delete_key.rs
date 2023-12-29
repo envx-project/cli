@@ -1,9 +1,11 @@
+// TODO: also delete keys on the server side
+
 use crate::utils::prompt::prompt_multi_options;
 
 use super::*;
 use anyhow::{bail, Context};
 
-/// Delete a key
+/// Delete a key (Caution, keys will still stay on the server for now)
 #[derive(Debug, Parser)]
 pub struct Args {
     /// Fingerprint of the key to delete
