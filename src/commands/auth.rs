@@ -1,24 +1,31 @@
 use super::*;
-use crate::utils::auth::get_token;
+use crate::{
+    sdk::get_api_url,
+    utils::{auth::get_token, config::get_config},
+};
 use anyhow::bail;
 use reqwest::header;
 
+/// Test authentication with the server
 #[derive(Parser)]
 pub struct Args {
     /// Key to sign with
     #[clap(short, long)]
-    key: String,
+    key: Option<String>,
 }
 
 pub async fn command(args: Args, _json: bool) -> Result<()> {
+    let config = get_config()?;
+    let key = config.get_key_or_default(args.key)?;
+
     let client = reqwest::Client::new();
 
-    let auth_token = get_token(&args.key, "dd2bc69b-cabe-4e35-903e-ef76485bd757")
+    let auth_token = get_token(&key.fingerprint, &key.uuid.clone().unwrap())
         .await
         .context("Failed to get token")?;
 
     let res = client
-        .post("http://localhost:3000/test-auth")
+        .post(format!("{}/test-auth", get_api_url()?))
         .header(header::AUTHORIZATION, format!("Bearer {}", auth_token))
         .send()
         .await?;

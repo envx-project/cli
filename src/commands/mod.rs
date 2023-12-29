@@ -2,10 +2,8 @@ pub(super) use anyhow::{anyhow, Context, Result};
 pub(super) use clap::Parser;
 pub(super) use colored::Colorize;
 
-pub mod add_recipient;
 pub mod add_user_to_project;
 pub mod auth;
-pub mod behaviour;
 pub mod config;
 pub mod decrypt;
 pub mod delete_key;

@@ -15,14 +15,6 @@ use serde::{Deserialize, Serialize};
 use serde_json::json;
 
 #[derive(Serialize, Deserialize, Debug)]
-pub struct NewUserParams {
-    pub fingerprint: String,
-    pub user_id: String,
-    pub pubkey: String,
-    pub pubkey_hash: String,
-}
-
-#[derive(Serialize, Deserialize, Debug)]
 pub struct SetEnvParams {
     pub message: String,
     pub allowed_keys: Vec<String>,
@@ -38,30 +30,6 @@ pub fn get_api_url() -> Result<String> {
 #[allow(clippy::upper_case_acronyms)]
 pub(crate) struct SDK {}
 impl SDK {
-    #[deprecated(
-        note = "Please use `new_user` instead. This function will be removed in a future release."
-    )]
-    pub async fn new_user_old(user: &NewUserParams) -> Result<()> {
-        let client = reqwest::Client::new();
-
-        let res = client
-            .post(&format!("{}/user/new", get_api_url()?))
-            .json(&user)
-            .send()
-            .await?;
-
-        let status = res.status();
-
-        if status.is_success() {
-            Ok(())
-        } else {
-            Err(anyhow!(format!(
-                "Failed to create user: {}",
-                res.text().await?
-            )))
-        }
-    }
-
     pub async fn new_user(username: &str, public_key: &str) -> Result<String> {
         let client = reqwest::Client::new();
 
@@ -99,55 +67,6 @@ impl SDK {
             .await?;
 
         Ok(project_info)
-    }
-
-    pub async fn set_env(
-        key: &str,
-        value: &str,
-        partial_fingerprint: &str,
-        project_id: &str,
-        user_id: &str,
-    ) -> Result<String> {
-        let client = reqwest::Client::new();
-        let auth_token = get_token(&partial_fingerprint, &user_id).await?;
-
-        let project_info = Self::get_project_info(project_id, partial_fingerprint, user_id).await?;
-
-        let recipients = project_info
-            .users
-            .iter()
-            .map(|u| u.public_key.as_str())
-            .collect::<Vec<&str>>();
-
-        let kvpair = json!({
-            "key": key,
-            "value": value
-        })
-        .to_string();
-        let message = encrypt_multi(&kvpair, recipients)?;
-
-        let body = json!({
-            "project_id": project_id,
-            "value": message,
-        });
-
-        #[derive(Serialize, Deserialize, Debug)]
-        pub struct NewVariableReturnType {
-            pub id: String,
-        }
-
-        let res = client
-            .post(&format!("{}/variable/new", get_api_url()?))
-            .header(header::AUTHORIZATION, format!("Bearer {}", auth_token))
-            .json(&body)
-            .send()
-            .await?;
-
-        let res = res.json::<NewVariableReturnType>().await?;
-
-        dbg!("Got here 2");
-
-        Ok(res.id)
     }
 
     pub async fn set_many(
