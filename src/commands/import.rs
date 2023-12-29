@@ -55,6 +55,7 @@ pub async fn command(args: Args, _json: bool) -> Result<()> {
                 pubkey_only: Some(true),
                 primary_user_id,
                 hashed_note,
+                uuid: None,
             };
 
             vault_path.push(format!("{}/public.key", &key.fingerprint));

@@ -60,6 +60,24 @@ impl Config {
             Ok(Settings::default())
         }
     }
+
+    pub fn get_key(&self, partial_fingerprint: &str) -> Result<Key> {
+        let key = self
+            .keys
+            .iter()
+            .find(|k| k.fingerprint.contains(partial_fingerprint))
+            .context("Failed to find key")?;
+
+        Ok(key.clone())
+    }
+}
+
+pub fn get_specific_config(global: bool) -> Result<Config> {
+    if global {
+        get_config()
+    } else {
+        get_local_config()
+    }
 }
 
 pub fn get_local_or_global_config() -> Result<Config> {
