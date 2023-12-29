@@ -22,6 +22,9 @@ pub struct Args {
     /// Output in JSON format
     #[clap(global = true, long)]
     json: bool,
+
+    #[clap(long)]
+    silent: bool,
 }
 
 // Generates the commands based on the modules in the commands directory
@@ -57,10 +60,13 @@ commands_enum!(
 
 #[tokio::main]
 async fn main() -> Result<()> {
-    let cli = Args::parse();
+    let config = crate::utils::config::get_local_or_global_config()?;
+    let global_silent = config.silent.unwrap_or_default();
 
+    let cli = Args::parse();
     let command = std::env::args().nth(1).unwrap_or_default();
-    if command != "export" {
+
+    if command != "export" && !cli.silent && !global_silent {
         println!(
             "{} {} {} {}",
             "env-cli".cyan(),
