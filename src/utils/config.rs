@@ -26,6 +26,8 @@ pub struct Config {
     pub settings: Option<Settings>,
     /// Default project ID
     pub default_project_id: Option<String>,
+    /// Silence startup message
+    pub silent: Option<bool>,
 }
 
 impl Config {
