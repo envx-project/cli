@@ -33,6 +33,7 @@ commands_enum!(
     add_user_to_project,
     auth,
     config,
+    debug,
     decrypt,
     delete_key,
     encrypt,

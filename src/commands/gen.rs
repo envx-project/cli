@@ -1,3 +1,5 @@
+// TODO: add uuid to config after uploading
+
 use super::*;
 use crate::sdk::SDK;
 use crate::utils::config::{self};
@@ -130,7 +132,11 @@ pub async fn command(args: Args, _json: bool) -> Result<()> {
     config::write_config(&config).context("Failed to write config")?;
 
     if config.online {
-        SDK::new_user(&username, &pub_key).await?;
+        let id = SDK::new_user(&username, &pub_key).await?;
+
+        config
+            .set_uuid(&fingerprint, &id)
+            .context("Failed to set UUID")?;
     }
 
     Ok(())
