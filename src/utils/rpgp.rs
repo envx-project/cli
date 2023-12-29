@@ -1,8 +1,10 @@
 use super::config::{get_config, Config};
+use anyhow::anyhow;
 use anyhow::{Context, Ok, Result};
 use colored::Colorize;
 use crypto_hash::{hex_digest, Algorithm};
 use hex::ToHex;
+use pgp::composed::message::Message;
 use pgp::{composed, composed::signed_key::*, crypto, types::SecretKeyTrait, Deserializable};
 use rand::prelude::*;
 use smallvec::*;
@@ -190,13 +192,56 @@ pub fn decrypt_full(message: String, config: &Config) -> Result<String, anyhow::
     Ok(decrypted)
 }
 
+pub fn decrypt_full_many(
+    messages: Vec<String>,
+    config: &Config,
+) -> Result<Vec<String>, anyhow::Error> {
+    let first = messages.first().ok_or_else(|| anyhow!("No messages"))?;
+    let msg = Message::from_string(first.as_str())?.0;
+
+    let recipients: Vec<String> = msg
+        .get_recipients()
+        .iter()
+        .map(|e| e.encode_hex_upper())
+        .collect();
+
+    let mut available_keys: Vec<String> = vec![];
+    for key in config.keys.iter().map(|k| k.fingerprint.clone()) {
+        let it_fits = recipients.iter().any(|r| key.contains(r));
+        if it_fits {
+            available_keys.push(key);
+        }
+    }
+
+    if available_keys.is_empty() {
+        return Err(anyhow::anyhow!(
+            "{}",
+            "No keys available to decrypt this message".red()
+        ));
+    }
+
+    let primary_key = &config.primary_key;
+    let (key, _) = if available_keys.iter().any(|k| k.contains(primary_key)) {
+        println!("Using primary key: {}", &primary_key);
+        get_key(primary_key)?
+    } else {
+        println!("Using key: {}", &available_keys[0]);
+        get_key(&available_keys[0])?
+    };
+
+    let decrypted = messages
+        .iter()
+        .map(|m| decrypt(m.as_str(), &key, String::from("asdf")))
+        .collect::<Result<Vec<String>, anyhow::Error>>()?;
+
+    Ok(decrypted)
+}
+
 fn get_key<T>(fingerprint: T) -> Result<(SignedSecretKey, String)>
 where
     T: AsRef<Path> + Into<String>,
 {
     let location = get_vault_location()?.join(&fingerprint).join("private.key");
-
-    dbg!(&location);
 
     let priv_key = fs::read_to_string(location).context("Failed to read private key")?;
     let (seckey, _) = SignedSecretKey::from_string(priv_key.as_str())

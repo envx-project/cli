@@ -38,12 +38,18 @@ xS01Yh2Y03he2rIJCQ==
 
     let key = SignedPublicKey::from_string(&key.public_key()?)?.0;
 
-    let message = composed::message::Message::new_literal("none", msg);
+    let message = composed::message::Message::from_string(msg)?.0;
 
     let verified = message.verify(&key);
 
     println!("{}", message.to_armored_string(None)?);
     println!("{:?}", verified.is_ok());
+
+    let content = message.get_content()?.unwrap();
+
+    let string_content = std::str::from_utf8(&content)?;
+
+    println!("{:?}", string_content);
 
     Ok(())
 }
