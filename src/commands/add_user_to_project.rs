@@ -1,7 +1,7 @@
 use crate::{
     sdk::{get_api_url, SDK},
     utils::{
-        auth::get_token, config::get_config, partialkey::PartialVariable, rpgp::encrypt_multi,
+        auth::get_token, config::get_config, partial_variable::PartialVariable, rpgp::encrypt_multi,
     },
 };
 use reqwest::header;
@@ -60,6 +60,7 @@ pub async fn command(args: Args, _json: bool) -> Result<()> {
             id: p.id.clone(),
             value: m.clone(),
             project_id: p.project_id.clone(),
+            created_at: p.created_at.clone(),
         })
         .collect::<Vec<PartialVariable>>();
 
