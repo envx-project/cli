@@ -1,3 +1,5 @@
+use crate::utils::choice::Choice;
+
 use super::*;
 use std::collections::BTreeMap;
 use std::vec;
@@ -46,9 +48,11 @@ pub async fn command(args: Args, _json: bool) -> Result<()> {
 
     let project_id = match args.project_id {
         Some(p) => p,
-        None => "".to_string(),
+        None => match config.get_project() {
+            Ok(p) => p.project_id.clone(),
+            Err(_) => Choice::choose_project(&key.fingerprint).await?,
+        },
     };
-
     if project_id.is_empty() {
         return Err(anyhow::anyhow!("No project ID provided"));
     }
