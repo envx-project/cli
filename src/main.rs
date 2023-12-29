@@ -45,8 +45,6 @@ commands_enum!(
     run,
     set_local,
     set,
-    set_single,
-    set_multi,
     settings,
     shell,
     sign,
