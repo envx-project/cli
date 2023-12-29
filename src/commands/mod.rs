@@ -16,6 +16,7 @@ pub mod import;
 pub mod init;
 pub mod link;
 pub mod list_keys;
+pub mod project;
 pub mod read_local;
 pub mod run;
 pub mod set;
