@@ -1,11 +1,15 @@
+use core::panic;
+use std::collections::HashSet;
+
 use super::*;
 use crate::{
     sdk::{get_api_url, SDK},
     utils::{
         auth::get_token, choice::Choice, config::get_config, partial_variable::PartialVariable,
-        rpgp::encrypt_multi,
+        rpgp::encrypt_multi, vecu8::ToHex,
     },
 };
+use pgp::{types::KeyTrait, Deserializable, SignedPublicKey};
 use reqwest::header;
 use serde_json::json;
 
@@ -53,7 +57,22 @@ pub async fn command(args: Args, _json: bool) -> Result<()> {
 
     recipients.push(user_public_key_to_add);
 
-    let recipients = recipients.iter().map(|r| r.as_str()).collect::<Vec<&str>>();
+    let recipients = recipients
+        .iter()
+        .map(|r| r.as_str())
+        .collect::<HashSet<&str>>()
+        .into_iter()
+        .collect::<Vec<&str>>();
+
+    let rec_key = recipients
+        .iter()
+        .map(|r| SignedPublicKey::from_string(r).unwrap().0)
+        .collect::<Vec<SignedPublicKey>>()
+        .iter()
+        .map(|r| r.fingerprint().to_hex())
+        .collect::<Vec<String>>();
+
+    dbg!(rec_key.clone());
 
     let messages = kvpairs
         .iter()

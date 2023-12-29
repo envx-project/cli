@@ -161,6 +161,20 @@ impl Config {
 
         Ok(())
     }
+
+    pub fn set_uuid(&mut self, fingerprint: &str, uuid: &str) -> Result<()> {
+        let key = self
+            .keys
+            .iter_mut()
+            .find(|k| k.fingerprint == fingerprint)
+            .context("Failed to find key")?;
+
+        key.uuid = Some(uuid.to_string());
+
+        self.write()?;
+
+        Ok(())
+    }
 }
 
 /// Get the configuration path ~/.config/envcli/config.json
