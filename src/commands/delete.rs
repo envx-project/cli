@@ -1,12 +1,6 @@
 use anyhow::Context;
 
-use crate::{
-    sdk::SDK,
-    utils::{
-        config::get_config,
-        rpgp::{encrypt, get_vault_location},
-    },
-};
+use crate::{sdk::SDK, utils::config::get_config};
 
 use super::*;
 
