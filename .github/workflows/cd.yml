@@ -1,0 +1,53 @@
+name: Continuous Delivery
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  release-please:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - name: Release Please
+        uses: GoogleCloudPlatform/release-please-action@v3
+        id: release
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          release-type: rust
+          package-name: "@edubeyond/ui"
+          default-branch: prod
+
+  build-release:
+    name: Build Release
+    needs: ["release-please"]
+    runs-on: ubuntu-latest
+    if: ${{ needs.release-please.outputs.release_created != 'true' }}
+    steps:
+      - name: TEST
+        run: echo "TEST"
+    # runs-on: ${{ matrix.os }}
+    # continue-on-error: true
+    # strategy:
+    #   matrix:
+    #     include:
+    #       - target: x86_64-unknown-linux-gnu
+    #         os: ubuntu-latest
+
+    #       - target: aarch64-unknown-linux-musl
+    #         os: ubuntu-latest
+
+    #       - target: x86_64-apple-darwin
+    #         os: macOS-latest
+
+    #       - target: aarch64-apple-darwin
+    #         os: macOS-latest
+
+    #       - target: x86_64-pc-windows-msvc
+    #         os: windows-latest
+
+    #       - target: x86_64-pc-windows-gnu
+    #         os: windows-latest
