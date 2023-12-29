@@ -1,11 +1,10 @@
 use crate::{
     sdk::SDK,
-    utils::{btreemap::ToBTreeMap, config::get_config, table::Table},
+    utils::{btreemap::ToBTreeMap, choice::Choice, config::get_config, table::Table},
 };
 
 use super::*;
 use anyhow::Ok;
-
 /// Get all environment variables for the current configured directory
 #[derive(Parser)]
 pub struct Args {
@@ -23,7 +22,7 @@ pub async fn command(args: Args, _json: bool) -> Result<()> {
 
     let project_id = match args.project_id {
         Some(p) => p,
-        None => todo!("Get project ID from current directory"),
+        None => Choice::choose_project(&key.fingerprint).await?,
     };
 
     let kvpairs =

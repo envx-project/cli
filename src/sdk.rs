@@ -5,7 +5,7 @@ use crate::{
         auth::get_token,
         config::get_config,
         kvpair::KVPair,
-        partial_variable::{PartialVariable, ToKVPair, ToParsed},
+        partial_variable::{ParsedPartialVariable, PartialVariable, ToKVPair, ToParsed},
         rpgp::{decrypt_full_many, encrypt_multi},
     },
 };
@@ -111,6 +111,56 @@ impl SDK {
         let res = res.json::<Vec<SetManyVariableReturnType>>().await?;
 
         Ok(res.iter().map(|r| r.id.clone()).collect())
+    }
+
+    pub async fn get_all_variables(
+        partial_fingerprint: &str,
+    ) -> Result<(Vec<KVPair>, Vec<ParsedPartialVariable>)> {
+        // GET /user/:id/variables
+        let config = get_config()?;
+        let key = config.get_key(&partial_fingerprint)?;
+
+        let client = reqwest::Client::new();
+        let auth_token = get_token(&key.fingerprint, &key.uuid.clone().unwrap()).await?;
+
+        let encrypted = client
+            .get(&format!(
+                "{}/user/{}/variables",
+                get_api_url()?,
+                key.uuid.unwrap()
+            ))
+            .header(header::AUTHORIZATION, format!("Bearer {}", auth_token))
+            .send()
+            .await?
+            .json::<Vec<PartialVariable>>()
+            .await?;
+
+        let decrypted = decrypt_full_many(
+            encrypted
+                .clone()
+                .iter()
+                .map(|e| e.value.clone())
+                .collect::<Vec<String>>(),
+            &get_config().unwrap(),
+        )?;
+
+        let partials = decrypted
+            .iter()
+            .zip(encrypted.iter())
+            .map(|(d, e)| ParsedPartialVariable {
+                id: e.id.clone(),
+                value: KVPair::from_json(d.clone()).unwrap(),
+                project_id: e.project_id.clone(),
+                created_at: e.created_at.clone(),
+            })
+            .collect::<Vec<ParsedPartialVariable>>();
+
+        let parsed = decrypted
+            .iter()
+            .map(|d| KVPair::from_json(d.clone()).unwrap())
+            .collect::<Vec<KVPair>>();
+
+        Ok((parsed, partials))
     }
 
     /// You're probably looking for `get_variables_pruned` instead
@@ -236,5 +286,41 @@ impl SDK {
                 res.text().await?
             )))
         }
+    }
+
+    pub async fn delete_variable(variable_id: &str, key: &str) -> Result<()> {
+        // url: DELETE /variables/:id
+        let config = get_config()?;
+        let key = config.get_key(&key)?;
+
+        let client = reqwest::Client::new();
+        let auth_token = get_token(&key.fingerprint, &key.uuid.clone().unwrap()).await?;
+
+        client
+            .delete(&format!("{}/variables/{}", get_api_url()?, variable_id))
+            .header(header::AUTHORIZATION, format!("Bearer {}", auth_token))
+            .send()
+            .await?;
+
+        Ok(())
+    }
+
+    pub async fn list_projects(partial_fingerprint: &str) -> Result<Vec<String>> {
+        // GET /projects
+        let config = get_config()?;
+        let key = config.get_key(&partial_fingerprint)?;
+
+        let client = reqwest::Client::new();
+        let auth_token = get_token(&key.fingerprint, &key.uuid.clone().unwrap()).await?;
+
+        let res = client
+            .get(&format!("{}/projects", get_api_url()?))
+            .header(header::AUTHORIZATION, format!("Bearer {}", auth_token))
+            .send()
+            .await?
+            .json::<Vec<String>>()
+            .await?;
+
+        Ok(res)
     }
 }
