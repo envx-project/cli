@@ -28,3 +28,4 @@ pub mod unlink;
 pub mod unset;
 pub mod upload;
 pub mod variables;
+pub mod version;

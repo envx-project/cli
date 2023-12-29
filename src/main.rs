@@ -55,7 +55,8 @@ commands_enum!(
     unlink,
     unset,
     upload,
-    variables
+    variables,
+    version
 );
 
 #[tokio::main]
