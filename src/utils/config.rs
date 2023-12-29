@@ -153,6 +153,14 @@ impl Config {
 
         Ok(())
     }
+
+    pub fn unset_project(&mut self) -> Result<()> {
+        let path = std::env::current_dir()?;
+        self.projects.retain(|p| p.path != path);
+        self.write()?;
+
+        Ok(())
+    }
 }
 
 /// Get the configuration path ~/.config/envcli/config.json
