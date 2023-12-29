@@ -4,7 +4,8 @@ use super::*;
 use crate::sdk::SDK;
 use crate::utils::config::{self};
 use crate::utils::key::Key;
-use crate::utils::prompt::{prompt_email, prompt_password, prompt_text};
+// use crate::utils::prompt::prompt_password;
+use crate::utils::prompt::{prompt_email, prompt_text};
 use crate::utils::rpgp::{generate_hashed_primary_user_id, generate_key_pair, get_vault_location};
 use crate::utils::vecu8::ToHex;
 use anyhow::Context;
@@ -32,10 +33,9 @@ pub struct Args {
     #[clap(short, long)]
     email: Option<String>,
 
-    /// Passphrase to encrypt the key with
-    #[clap(short, long)]
-    passphrase: Option<String>,
-
+    // /// Passphrase to encrypt the key with
+    // #[clap(short, long)]
+    // passphrase: Option<String>,
     /// force overwrite of existing key
     #[clap(long = "force", short = 'f')]
     force_overwrite: bool,
@@ -79,9 +79,10 @@ pub async fn command(args: Args, _json: bool) -> Result<()> {
         }
     }
 
-    let passphrase = args
-        .passphrase
-        .unwrap_or_else(|| prompt_password("password").unwrap());
+    // let passphrase = args
+    //     .passphrase
+    //     .unwrap_or_else(|| prompt_password("password").unwrap());
+    let passphrase = "asdf";
 
     let key_pair = generate_key_pair(name.clone(), email.clone(), passphrase)
         .expect("Failed to generate key pair");
