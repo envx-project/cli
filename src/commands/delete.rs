@@ -1,8 +1,6 @@
-use anyhow::Context;
-
-use crate::{sdk::SDK, utils::config::get_config};
-
 use super::*;
+use crate::{sdk::SDK, utils::config::get_config};
+use anyhow::Context;
 
 /// Delete an environment variable
 #[derive(Parser)]
