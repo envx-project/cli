@@ -129,6 +129,7 @@ pub async fn command(args: Args, _json: bool) -> Result<()> {
         pubkey_hash: hash_string(&pub_key),
     };
 
+    // TODO: change to new_user
     if config.online {
         SDK::new_user_old(&new_user).await?;
     }

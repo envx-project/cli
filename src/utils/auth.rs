@@ -1,11 +1,11 @@
-use crate::utils::config::get_local_or_global_config;
+use crate::utils::config::get_config;
 use anyhow::{anyhow, Context, Ok};
 use chrono::Utc;
 use pgp::composed::message::Message;
 use pgp::{crypto, Deserializable, SignedSecretKey};
 
 pub async fn get_token(key: &str, token: &str) -> anyhow::Result<String> {
-    let config = get_local_or_global_config().context("Failed to get config")?;
+    let config = get_config().context("Failed to get config")?;
     let key = config
         .keys
         .iter()
