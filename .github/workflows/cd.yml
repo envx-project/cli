@@ -88,7 +88,9 @@ jobs:
 
       - name: Install openssl
         if: matrix.os == 'ubuntu-latest'
-        run: sudo apt-get install libssl-dev pkg-config -y
+        run: |
+          sudo apt-get update
+          sudo apt-get install libssl-dev pkg-config -y
 
       - name: Build release binary
         uses: actions-rs/cargo@v1
