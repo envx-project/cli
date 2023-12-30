@@ -52,21 +52,7 @@ commands_enum!(
 
 #[tokio::main]
 async fn main() -> Result<()> {
-    let config = crate::utils::config::get_config()?;
-    let global_silent = config.silent.unwrap_or_default();
-
     let cli = Args::parse();
-    let command = std::env::args().nth(1).unwrap_or_default();
-
-    if command != "export" && !cli.silent && !global_silent {
-        println!(
-            "{} {} {} {}",
-            "env-cli".cyan(),
-            env!("CARGO_PKG_VERSION").magenta(),
-            "by".blue(),
-            "alexng353".yellow()
-        );
-    }
 
     match Commands::exec(cli).await {
         Ok(_) => {}

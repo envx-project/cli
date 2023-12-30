@@ -23,8 +23,6 @@ pub struct Config {
     pub sdk_url: Option<String>,
     /// Settings that apply to all environments
     pub settings: Option<Settings>,
-    /// Silence startup message
-    pub silent: Option<bool>,
     /// Projects
     pub projects: Vec<Project>,
 }
@@ -44,7 +42,6 @@ impl Default for Config {
             online: false,
             sdk_url: None,
             settings: None,
-            silent: None,
             projects: vec![],
         }
     }
@@ -72,6 +69,7 @@ impl Config {
         Ok(())
     }
 
+    #[allow(dead_code)]
     pub fn primary_key(&self) -> Result<String> {
         let primary_key = self.primary_key.clone();
         let primary_key_location = get_vault_location()?
