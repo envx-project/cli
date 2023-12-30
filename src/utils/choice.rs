@@ -35,8 +35,6 @@ impl Choice {
             options.push(format!("{} - {}", p, "Remote"));
         });
 
-        dbg!("options");
-
         let selected = crate::utils::prompt::prompt_options("Select project", options)?;
 
         if selected.is_empty() {

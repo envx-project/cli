@@ -7,8 +7,10 @@ use hex::ToHex;
 use pgp::composed::message::Message;
 use pgp::{composed, composed::signed_key::*, crypto, types::SecretKeyTrait, Deserializable};
 use rand::prelude::*;
+use rayon::iter::{IntoParallelRefIterator, ParallelIterator};
 use smallvec::*;
 use std::{fs, io::Cursor, path::Path};
+use tokio::time::Instant;
 
 #[derive(Debug)]
 pub struct KeyPair {
@@ -235,7 +237,7 @@ pub fn decrypt_full_many(
     };
 
     let decrypted = messages
-        .iter()
+        .par_iter()
         .map(|m| decrypt(m.as_str(), &key, String::from("asdf")))
         .collect::<Result<Vec<String>, anyhow::Error>>()?;
 

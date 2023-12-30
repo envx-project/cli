@@ -55,11 +55,8 @@ impl SDK {
             "public_key": public_key
         });
 
-        let res = client
-            .post(get_api_url().join("user/new")?)
-            .json(&body)
-            .send()
-            .await;
+        let url = get_api_url().join("/user/new")?;
+        let res = client.post(url).json(&body).send().await;
 
         let res = match res {
             Ok(r) => r.text().await?,
@@ -82,8 +79,10 @@ impl SDK {
     ) -> Result<ProjectInfo> {
         let client = reqwest::Client::new();
 
+        let url = get_api_url().join("project/")?.join(project_id)?;
+
         let project_info = client
-            .get(get_api_url().join("project")?.join(project_id)?)
+            .get(url)
             .header(
                 header::AUTHORIZATION,
                 Self::auth_header(partial_fingerprint).await?,
@@ -128,8 +127,10 @@ impl SDK {
             pub id: String,
         }
 
+        let url = get_api_url().join("/variables/set-many")?;
+
         let res = client
-            .post(get_api_url().join("variables/set-many")?)
+            .post(url)
             .header(
                 header::AUTHORIZATION,
                 Self::auth_header(partial_fingerprint).await?,
@@ -152,13 +153,11 @@ impl SDK {
 
         let client = reqwest::Client::new();
 
+        let mut url = get_api_url();
+        url.set_path(&format!("/user/{}/variables", key.uuid.unwrap()));
+
         let encrypted = client
-            .get(
-                get_api_url()
-                    .join("user")?
-                    .join(&key.uuid.unwrap())?
-                    .join("variables")?,
-            )
+            .get(url)
             .header(
                 header::AUTHORIZATION,
                 Self::auth_header(partial_fingerprint).await?,
@@ -205,10 +204,9 @@ impl SDK {
     ) -> Result<(Vec<KVPair>, Vec<PartialVariable>)> {
         // url : /project/:id/variables
         let client = reqwest::Client::new();
-        let url = get_api_url()
-            .join("project")?
-            .join(project_id)?
-            .join("variables")?;
+
+        let url = get_api_url().join(&format!("/project/{}/variables", project_id))?;
+
         let encrypted = client
             .get(url)
             .header(
@@ -275,8 +273,10 @@ impl SDK {
             pub public_key: String,
         }
 
+        let url = get_api_url().join("user/")?.join(user_to_get)?;
+
         let user = client
-            .get(get_api_url().join("user")?.join(user_to_get)?)
+            .get(url)
             .header(
                 header::AUTHORIZATION,
                 Self::auth_header(partial_fingerprint).await?,
@@ -301,13 +301,10 @@ impl SDK {
             "user_id": user_to_add
         });
 
+        let url = get_api_url().join(&format!("/project/{}/add-user", project_id))?;
+
         let res = client
-            .post(
-                get_api_url()
-                    .join("project")?
-                    .join(project_id)?
-                    .join("add-user")?,
-            )
+            .post(url.join(&format!("/project/{}/add-user", project_id))?)
             .header(
                 header::AUTHORIZATION,
                 Self::auth_header(partial_fingerprint).await?,
@@ -332,8 +329,10 @@ impl SDK {
         // url: DELETE /variables/:id
         let client = reqwest::Client::new();
 
+        let url = get_api_url().join("variables/")?.join(variable_id)?;
+
         client
-            .delete(get_api_url().join("variables")?.join(variable_id)?)
+            .delete(url)
             .header(
                 header::AUTHORIZATION,
                 Self::auth_header(partial_fingerprint).await?,
