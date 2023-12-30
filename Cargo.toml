@@ -2,6 +2,15 @@
 name = "envx"
 version = "0.3.7"
 edition = "2021"
+license = "MIT"
+authors = ["Alexander Ng <alex@ayo.icu>"]
+description = "Interact with envx servers via CLI"
+readme = "README.md"
+homepage = "https://github.com/env-store/rusty-cli"
+repository = "https://github.com/env-store/rusty-cli"
+rust-version = "1.75.0"
+default-run = "envx"
+include = ["src/**/*", "LICENSE", "README.md"]
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
