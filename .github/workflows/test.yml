@@ -72,4 +72,4 @@ jobs:
         with:
           command: build
           args: --release --locked --target ${{ matrix.target }}
-          # use-cross: ${{ matrix.use-cross || matrix.os == 'ubuntu-latest' }}
+          use-cross: ${{ matrix.use-cross || matrix.os == 'ubuntu-latest' }}
