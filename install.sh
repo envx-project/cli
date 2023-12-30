@@ -368,7 +368,7 @@ if [ -z "${ENVX_ARCH-}" ]; then
 fi
 
 if [ -z "${ENVX_BASE_URL-}" ]; then
-  BASE_URL="https://github.com/env-store/rusty-rusty-cli/releases"
+  BASE_URL="https://github.com/env-store/rusty-cli/releases"
 fi
 
 # parse argv variables
@@ -500,7 +500,7 @@ if [ "${PLATFORM}" = "pc-windows-msvc" ]; then
   EXT=zip
 fi
 
-URL="${BASE_URL}/download/v${ENVX_VERSION}/envx-v${ENVX_VERSION}-${TARGET}.${EXT}"
+URL="${BASE_URL}/download/v${ENVX_VERSION}/envx-${ENVX_VERSION}-${TARGET}.${EXT}"
 debug "Tarball URL: ${UNDERLINE}${BLUE}${URL}${NO_COLOR}"
 confirm "Install envx ${GREEN}${ENVX_VERSION}${NO_COLOR} to ${BOLD}${GREEN}${BIN_DIR}${NO_COLOR}?"
 check_bin_dir "${BIN_DIR}"
