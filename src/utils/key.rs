@@ -1,7 +1,7 @@
 use super::rpgp::get_vault_location;
 use anyhow::{Context, Result};
 use serde::{Deserialize, Serialize};
-use std::fs;
+use std::{fmt::Display, fs};
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Key {
@@ -42,5 +42,11 @@ pub trait VecKeyTrait {
 impl VecKeyTrait for Vec<Key> {
     fn all_fingerprints(&self) -> Vec<&str> {
         self.iter().map(|k| k.fingerprint.as_str()).collect()
+    }
+}
+
+impl Display for Key {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{} - ({})", self.fingerprint, self.primary_user_id)
     }
 }

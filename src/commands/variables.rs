@@ -17,17 +17,9 @@ pub async fn command(args: Args, _json: bool) -> Result<()> {
     let config = get_config()?;
     let key = config.get_key_or_default(args.key)?;
 
-    let project_id = match args.project_id {
-        Some(p) => p,
-        None => match config.get_project() {
-            Ok(p) => p.project_id.clone(),
-            Err(_) => Choice::choose_project(&key.fingerprint).await?,
-        },
-    };
+    let project_id = Choice::try_project(args.project_id, &key.fingerprint).await?;
 
-    let kvpairs =
-        SDK::get_variables_pruned(&project_id, &key.fingerprint, &key.uuid.clone().unwrap())
-            .await?;
+    let kvpairs = SDK::get_variables_pruned(&project_id, &key.fingerprint).await?;
 
     let btreemap = kvpairs.to_btreemap()?;
 

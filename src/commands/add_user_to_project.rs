@@ -33,19 +33,13 @@ pub async fn command(args: Args, _json: bool) -> Result<()> {
     let key = config.get_key_or_default(args.key)?;
     let uuid = key.uuid.clone().unwrap();
 
-    let (_, user_public_key_to_add) = SDK::get_user(&key.fingerprint, &uuid, &args.user_id).await?;
+    let (_, user_public_key_to_add) = SDK::get_user(&key.fingerprint, &args.user_id).await?;
 
-    let project_id = match args.project_id {
-        Some(p) => p,
-        None => match config.get_project() {
-            Ok(p) => p.project_id.clone(),
-            Err(_) => Choice::choose_project(&key.fingerprint).await?,
-        },
-    };
+    let project_id = Choice::try_project(args.project_id, &key.fingerprint).await?;
 
-    let project_info = SDK::get_project_info(&project_id, &key.fingerprint, &uuid).await?;
+    let project_info = SDK::get_project_info(&project_id, &key.fingerprint).await?;
 
-    let (kvpairs, partials) = SDK::get_variables(&project_id, &key.fingerprint, &uuid).await?;
+    let (kvpairs, partials) = SDK::get_variables(&project_id, &key.fingerprint).await?;
 
     let mut recipients = project_info
         .users
@@ -86,7 +80,7 @@ pub async fn command(args: Args, _json: bool) -> Result<()> {
     let auth_token = get_token(&key.fingerprint, &uuid).await?;
 
     let res = client
-        .post(&format!("{}/variables/update-many", get_api_url()?))
+        .post(&format!("{}/variables/update-many", get_api_url()))
         .header(header::AUTHORIZATION, format!("Bearer {}", auth_token))
         .json(&body)
         .send()
@@ -97,7 +91,7 @@ pub async fn command(args: Args, _json: bool) -> Result<()> {
     println!("Updated {} variables", res.len());
     println!("IDs: {:?}", res);
 
-    SDK::add_user_to_project(&key.fingerprint, &uuid, &args.user_id, &project_id).await?;
+    SDK::add_user_to_project(&key.fingerprint, &args.user_id, &project_id).await?;
 
     Ok(())
 }

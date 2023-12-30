@@ -28,13 +28,8 @@ pub async fn command(args: Args, _json: bool) -> Result<()> {
     };
     let key = config.get_key(&key)?;
 
-    let project_id = match args.project_id {
-        Some(p) => p,
-        None => match config.get_project() {
-            Ok(p) => p.project_id.clone(),
-            Err(_) => Choice::choose_project(&key.fingerprint).await?,
-        },
-    };
+    let project_id = Choice::try_project(args.project_id, &key.fingerprint).await?;
+
     if project_id.is_empty() {
         return Err(anyhow::anyhow!("No project ID provided"));
     }
@@ -48,13 +43,7 @@ pub async fn command(args: Args, _json: bool) -> Result<()> {
         })
         .collect::<Vec<KVPair>>();
 
-    let ids = SDK::set_many(
-        kvpairs,
-        &key.fingerprint,
-        &project_id,
-        &key.uuid.clone().unwrap(),
-    )
-    .await?;
+    let ids = SDK::set_many(kvpairs, &key.fingerprint, &project_id).await?;
 
     println!("Uploaded {} variables", ids.len());
     println!("IDs: {:?}", ids);

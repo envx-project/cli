@@ -17,12 +17,26 @@ pub async fn command(args: Args, _json: bool) -> Result<()> {
     let mut config = crate::utils::config::get_config().context("Failed to get config")?;
 
     let selected: Vec<String> = match args.key {
-        Some(key) => vec![key],
-        None => prompt_multi_options(
-            "Select keys to delete",
-            config.keys.iter().map(|k| k.fingerprint.clone()).collect(),
-        )?,
+        Some(key) => {
+            let key = config.get_key(&key).context("Failed to get key")?;
+            vec![key.fingerprint.clone()]
+        }
+        None => prompt_multi_options("Select keys to delete", config.keys.clone())?
+            .iter()
+            .map(|k| k.fingerprint.clone())
+            .collect(),
     };
+
+    let selected = selected
+        .iter()
+        .map(|s| {
+            // split at " - " and take the first part
+            s.split(" - ")
+                .next()
+                .expect("Failed to split fingerprint")
+                .to_string()
+        })
+        .collect::<Vec<_>>();
 
     println!("Deleting keys: {:?}", selected);
 
