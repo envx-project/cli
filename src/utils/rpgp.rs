@@ -7,6 +7,7 @@ use hex::ToHex;
 use pgp::composed::message::Message;
 use pgp::{composed, composed::signed_key::*, crypto, types::SecretKeyTrait, Deserializable};
 use rand::prelude::*;
+use rayon::iter::{IntoParallelRefIterator, ParallelIterator};
 use smallvec::*;
 use std::{fs, io::Cursor, path::Path};
 
@@ -85,18 +86,10 @@ pub fn encrypt(msg: &str, pubkey_str: &str) -> Result<String, anyhow::Error> {
     Ok(new_msg.to_armored_string(None)?)
 }
 
-pub fn encrypt_multi(msg: &str, pubkeys: Vec<&str>) -> Result<String, anyhow::Error> {
+pub fn encrypt_multi(msg: &str, pubkeys: &[SignedPublicKey]) -> Result<String, anyhow::Error> {
     let mut rng = StdRng::from_entropy();
 
-    let keys = pubkeys
-        .iter()
-        .map(|k| {
-            let (pubkey, _) = SignedPublicKey::from_string(k)?;
-            Ok(pubkey)
-        })
-        .collect::<Result<Vec<SignedPublicKey>, anyhow::Error>>()?;
-
-    let borrowed_keys = keys.iter().collect::<SmallVec<[&SignedPublicKey; 1]>>();
+    let borrowed_keys = pubkeys.iter().collect::<SmallVec<[&SignedPublicKey; 1]>>();
 
     let msg = composed::message::Message::new_literal("none", msg);
 
@@ -235,7 +228,7 @@ pub fn decrypt_full_many(
     };
 
     let decrypted = messages
-        .iter()
+        .par_iter()
         .map(|m| decrypt(m.as_str(), &key, String::from("asdf")))
         .collect::<Result<Vec<String>, anyhow::Error>>()?;
 

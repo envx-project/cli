@@ -58,7 +58,7 @@ fn email_validator(email: &str) -> anyhow::Result<(), anyhow::Error> {
     }
 }
 
-pub async fn command(args: Args, _json: bool) -> Result<()> {
+pub async fn command(args: Args) -> Result<()> {
     let mut config = config::get_config().context("Failed to get config")?;
 
     let name = args

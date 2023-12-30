@@ -22,7 +22,7 @@ jobs:
   build-release:
     name: Build Release
     needs: ["release-please"]
-    if: needs.release-please.outputs.release_created == 'true'
+    if: needs.release-please.outputs.release_created == 'blyat'
 
     runs-on: ${{ matrix.os }}
     continue-on-error: true
