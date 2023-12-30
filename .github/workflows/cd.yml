@@ -11,6 +11,9 @@ jobs:
     permissions:
       contents: write
       pull-requests: write
+    outputs:
+      envx_version: ${{ env.ENVX_VERSION }}
+      build: ${{ env.BUILD }}
     steps:
       - name: Release Please
         uses: GoogleCloudPlatform/release-please-action@v3
@@ -23,12 +26,13 @@ jobs:
         id: set-semver
         if: steps.release.outputs.release_created == 'true'
         run: |
-          echo "version=${{ steps.release.outputs.major }}.${{ steps.release.outputs.minor }}.${{ steps.release.outputs.patch }}" >> $GITHUB_ENV
+          echo "ENVX_VERSION=${{ steps.release.outputs.major }}.${{ steps.release.outputs.minor }}.${{ steps.release.outputs.patch }}" >> $GITHUB_ENV
+          echo "BUILD=true" >> $GITHUB_ENV
 
   build-release:
     name: Build Release
     needs: [release-please]
-    if: needs.release-please.outputs.release_created == 'true'
+    if: needs.release-please.outputs.build == 'true'
 
     runs-on: ${{ matrix.os }}
     continue-on-error: true
