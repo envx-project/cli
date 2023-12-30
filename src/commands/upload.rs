@@ -4,6 +4,7 @@ use crate::{
     utils::{config::get_config, prompt::prompt_text},
 };
 
+/// If your key is not in the database, use this command to upload it
 #[derive(Parser)]
 pub struct Args {
     /// Key to sign with
@@ -15,7 +16,7 @@ pub struct Args {
     username: Option<String>,
 }
 
-pub async fn command(args: Args, _json: bool) -> Result<()> {
+pub async fn command(args: Args) -> Result<()> {
     let mut config = get_config()?;
 
     let key = config.get_key(&args.key)?;

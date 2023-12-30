@@ -14,7 +14,7 @@ pub struct Args {
     key: Option<String>,
 }
 
-pub async fn command(args: Args, _json: bool) -> Result<()> {
+pub async fn command(args: Args) -> Result<()> {
     let config = get_config()?;
     let key = config.get_key_or_default(args.key)?;
 
@@ -25,7 +25,7 @@ pub async fn command(args: Args, _json: bool) -> Result<()> {
         .context("Failed to get token")?;
 
     let res = client
-        .post(format!("{}/test-auth", get_api_url()?))
+        .post(format!("{}/test-auth", get_api_url()))
         .header(header::AUTHORIZATION, format!("Bearer {}", auth_token))
         .send()
         .await?;

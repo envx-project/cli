@@ -11,7 +11,7 @@ pub struct Args {
     setting: String,
 }
 
-pub async fn command(args: Args, _json: bool) -> Result<()> {
+pub async fn command(args: Args) -> Result<()> {
     let mut config = get_config()?;
 
     let (key, value) = args.setting.split_once('=').unwrap_or_else(|| {
