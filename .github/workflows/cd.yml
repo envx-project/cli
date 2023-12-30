@@ -86,6 +86,10 @@ jobs:
           profile: minimal
           override: true
 
+      - name: Install openssl
+        if: matrix.os == 'ubuntu-latest'
+        run: sudo apt-get install libssl-dev pkg-config -y
+
       - name: Build release binary
         uses: actions-rs/cargo@v1
         with:
@@ -121,7 +125,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          tag_name: ${{ needs.create-release.outputs.envx_version }}
+          tag_name: v${{ needs.create-release.outputs.envx_version }}
           files: envx-${{ needs.create-release.outputs.envx_version }}-${{ matrix.target }}*
 
       - name: Install cargo-deb
