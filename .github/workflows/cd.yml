@@ -19,10 +19,16 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
           release-type: rust
 
+      - name: Set SemVer String
+        id: set-semver
+        if: steps.release.outputs.release_created == 'true'
+        run: |
+          echo "version=${{ steps.release.outputs.major }}.${{ steps.release.outputs.minor }}.${{ steps.release.outputs.patch }}" >> $GITHUB_ENV
+
   build-release:
     name: Build Release
-    needs: ["release-please"]
-    if: needs.release-please.outputs.release_created == 'blyat'
+    needs: [release-please]
+    if: needs.release-please.outputs.release_created == 'true'
 
     runs-on: ${{ matrix.os }}
     continue-on-error: true
@@ -33,6 +39,12 @@ jobs:
             os: ubuntu-latest
 
           - target: aarch64-unknown-linux-musl
+            os: ubuntu-latest
+
+          - target: aarch64-unknown-linux-musl
+            os: ubuntu-latest
+
+          - target: arm-unknown-linux-musleabihf
             os: ubuntu-latest
 
           - target: x86_64-apple-darwin
@@ -65,27 +77,50 @@ jobs:
         with:
           command: build
           args: --release --locked --target ${{ matrix.target }}
-          use-cross: ${{ matrix.use-cross || matrix.os == 'ubuntu-latest' }}
+          # use-cross: ${{ matrix.use-cross || matrix.os == 'ubuntu-latest' }}
 
       - name: Prepare binaries (zip) [Windows]
         if: matrix.os == 'windows-latest'
         run: |
           cd target/${{ matrix.target }}/release
-          strip railway.exe
-          7z a ../../../railway-${{ needs.create-release.outputs.railway_version }}-${{ matrix.target }}.zip railway.exe
+          strip envx.exe
+          7z a ../../../envx-${{ needs.release-please.outputs.envx_version }}-${{ matrix.target }}.zip envx.exe
           cd -
       - name: Prepare binaries (tar) [Windows]
         if: matrix.os == 'windows-latest'
         run: |
           cd target/${{ matrix.target }}/release
-          strip railway.exe
-          7z a -ttar archive.tar railway.exe
-          7z a -tgzip ../../../railway-${{ needs.create-release.outputs.railway_version }}-${{ matrix.target }}.tar.gz archive.tar
+          strip envx.exe
+          7z a -ttar archive.tar envx.exe
+          7z a -tgzip ../../../envx-${{ needs.release-please.outputs.envx_version }}-${{ matrix.target }}.tar.gz archive.tar
           cd -
       - name: Prepare binaries [-linux]
         if: matrix.os != 'windows-latest'
         run: |
           cd target/${{ matrix.target }}/release
-          strip railway || true
-          tar czvf ../../../railway-${{ needs.create-release.outputs.railway_version }}-${{ matrix.target }}.tar.gz railway
+          strip envx || true
+          tar czvf ../../../envx-${{ needs.release-please.outputs.envx_version }}-${{ matrix.target }}.tar.gz envx
           cd -
+
+      - name: Upload release archive
+        uses: softprops/action-gh-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ needs.create-release.outputs.envx_version }}
+          files: envx-${{ needs.create-release.outputs.envx_version }}-${{ matrix.target }}*
+
+      - name: Install cargo-deb
+        if: matrix.target == 'x86_64-unknown-linux-musl'
+        run: cargo install cargo-deb
+
+      - name: Generate .deb package file
+        if: matrix.target == 'x86_64-unknown-linux-musl'
+        run: cargo deb --target x86_64-unknown-linux-musl --output envx-${{ needs.create-release.outputs.envx_version }}-amd64.deb
+
+      - name: Upload .deb package file
+        if: matrix.target == 'x86_64-unknown-linux-musl'
+        uses: svenstaro/upload-release-action@v2
+        with:
+          tag: ${{ needs.create-release.outputs.envx_version }}
+          file: envx-${{ needs.create-release.outputs.envx_version }}-amd64.deb
