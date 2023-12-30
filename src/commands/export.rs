@@ -13,7 +13,7 @@ pub struct Args {
     secret_key: bool,
 }
 
-pub async fn command(args: Args, _json: bool) -> Result<()> {
+pub async fn command(args: Args) -> Result<()> {
     let config = get_config().context("Failed to get config")?;
 
     let keys: Vec<&str> = config.keys.all_fingerprints();

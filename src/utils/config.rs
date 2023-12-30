@@ -23,8 +23,6 @@ pub struct Config {
     pub sdk_url: Option<String>,
     /// Settings that apply to all environments
     pub settings: Option<Settings>,
-    /// Silence startup message
-    pub silent: Option<bool>,
     /// Projects
     pub projects: Vec<Project>,
 }
@@ -44,7 +42,6 @@ impl Default for Config {
             online: false,
             sdk_url: None,
             settings: None,
-            silent: None,
             projects: vec![],
         }
     }
@@ -72,6 +69,7 @@ impl Config {
         Ok(())
     }
 
+    #[allow(dead_code)]
     pub fn primary_key(&self) -> Result<String> {
         let primary_key = self.primary_key.clone();
         let primary_key_location = get_vault_location()?
@@ -105,7 +103,7 @@ impl Config {
             .keys
             .iter()
             .find(|k| k.fingerprint.contains(partial_fingerprint))
-            .context("Failed to find key")?;
+            .context("Failed to find key (get_key)")?;
 
         Ok(key.clone())
     }
@@ -127,7 +125,7 @@ impl Config {
                     .to_lowercase()
                     .contains(&partial_fingerprint.to_lowercase())
             })
-            .context("Failed to find key")?;
+            .context("Failed to find key (get_key_or_default)")?;
 
         Ok(key.clone())
     }
@@ -181,16 +179,9 @@ impl Config {
     }
 
     pub fn set_uuid(&mut self, fingerprint: &str, uuid: &str) -> Result<()> {
-        let key = self
-            .keys
-            .iter_mut()
-            .find(|k| k.fingerprint == fingerprint)
-            .context("Failed to find key")?;
-
+        let mut key = Self::get_key(self, fingerprint)?;
         key.uuid = Some(uuid.to_string());
-
         self.write()?;
-
         Ok(())
     }
 }
