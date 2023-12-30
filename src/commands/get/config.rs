@@ -10,12 +10,15 @@ use anyhow::Result;
 pub struct Args {
     #[clap(short, long)]
     keys_only: bool,
+
+    #[clap(long)]
+    json: bool,
 }
 
-pub async fn command(args: Args, json: bool) -> Result<()> {
+pub async fn command(args: Args) -> Result<()> {
     let config = get_config()?;
 
-    if json {
+    if args.json {
         let json = serde_json::to_string_pretty(&config).context("Failed to serialize")?;
         println!("{}", json);
         return Ok(());

@@ -5,7 +5,7 @@ use crate::utils::config::get_config;
 #[derive(Parser)]
 pub struct Args {}
 
-pub async fn command(_args: Args, _json: bool) -> Result<()> {
+pub async fn command(_args: Args) -> Result<()> {
     let mut config = get_config()?;
     config.unset_project()?;
     println!("Unset project");

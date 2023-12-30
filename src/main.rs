@@ -18,10 +18,6 @@ pub struct Args {
     #[clap(subcommand)]
     command: Commands,
 
-    /// Output in JSON format
-    #[clap(global = true, long)]
-    json: bool,
-
     #[clap(long)]
     silent: bool,
 }
@@ -34,20 +30,12 @@ commands_enum!(
     config,
     debug,
     decrypt,
-    delete_key,
     encrypt,
     export,
     gen,
-    get_config,
-    get_project,
     import,
-    init,
     link,
-    list_keys,
-    project,
-    read_local,
     run,
-    set_local,
     set,
     shell,
     sign,
@@ -55,26 +43,16 @@ commands_enum!(
     unset,
     upload,
     variables,
-    version
+    version,
+    // commands with subcommands
+    delete,
+    new,
+    get
 );
 
 #[tokio::main]
 async fn main() -> Result<()> {
-    let config = crate::utils::config::get_config()?;
-    let global_silent = config.silent.unwrap_or_default();
-
     let cli = Args::parse();
-    let command = std::env::args().nth(1).unwrap_or_default();
-
-    if command != "export" && !cli.silent && !global_silent {
-        println!(
-            "{} {} {} {}",
-            "env-cli".cyan(),
-            env!("CARGO_PKG_VERSION").magenta(),
-            "by".blue(),
-            "alexng353".yellow()
-        );
-    }
 
     match Commands::exec(cli).await {
         Ok(_) => {}

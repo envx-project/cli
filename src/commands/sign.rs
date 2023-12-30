@@ -15,7 +15,7 @@ pub struct Args {
     message: String,
 }
 
-pub async fn command(args: Args, _json: bool) -> Result<()> {
+pub async fn command(args: Args) -> Result<()> {
     let config = get_config().context("Failed to get config")?;
 
     let key = config
