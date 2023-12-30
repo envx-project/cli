@@ -56,7 +56,7 @@ impl SDK {
         });
 
         let res = client
-            .post(&format!("{}/user/new", get_api_url()))
+            .post(get_api_url().join("user/new")?)
             .json(&body)
             .send()
             .await;
@@ -83,7 +83,7 @@ impl SDK {
         let client = reqwest::Client::new();
 
         let project_info = client
-            .get(&format!("{}/project/{}", get_api_url(), project_id))
+            .get(get_api_url().join("project")?.join(project_id)?)
             .header(
                 header::AUTHORIZATION,
                 Self::auth_header(partial_fingerprint).await?,
@@ -129,7 +129,7 @@ impl SDK {
         }
 
         let res = client
-            .post(&format!("{}/variables/set-many", get_api_url()))
+            .post(get_api_url().join("variables/set-many")?)
             .header(
                 header::AUTHORIZATION,
                 Self::auth_header(partial_fingerprint).await?,
@@ -153,11 +153,12 @@ impl SDK {
         let client = reqwest::Client::new();
 
         let encrypted = client
-            .get(&format!(
-                "{}/user/{}/variables",
-                get_api_url(),
-                key.uuid.unwrap()
-            ))
+            .get(
+                get_api_url()
+                    .join("user")?
+                    .join(&key.uuid.unwrap())?
+                    .join("variables")?,
+            )
             .header(
                 header::AUTHORIZATION,
                 Self::auth_header(partial_fingerprint).await?,
@@ -204,9 +205,10 @@ impl SDK {
     ) -> Result<(Vec<KVPair>, Vec<PartialVariable>)> {
         // url : /project/:id/variables
         let client = reqwest::Client::new();
-
-        let url = format!("{}/project/{}/variables", get_api_url(), project_id);
-
+        let url = get_api_url()
+            .join("project")?
+            .join(project_id)?
+            .join("variables")?;
         let encrypted = client
             .get(url)
             .header(
@@ -274,7 +276,7 @@ impl SDK {
         }
 
         let user = client
-            .get(&format!("{}/user/{}", get_api_url(), user_to_get))
+            .get(get_api_url().join("user")?.join(user_to_get)?)
             .header(
                 header::AUTHORIZATION,
                 Self::auth_header(partial_fingerprint).await?,
@@ -300,11 +302,12 @@ impl SDK {
         });
 
         let res = client
-            .post(&format!(
-                "{}/project/{}/add-user",
-                get_api_url(),
-                project_id
-            ))
+            .post(
+                get_api_url()
+                    .join("project")?
+                    .join(project_id)?
+                    .join("add-user")?,
+            )
             .header(
                 header::AUTHORIZATION,
                 Self::auth_header(partial_fingerprint).await?,
@@ -330,7 +333,7 @@ impl SDK {
         let client = reqwest::Client::new();
 
         client
-            .delete(&format!("{}/variables/{}", get_api_url(), variable_id))
+            .delete(get_api_url().join("variables")?.join(variable_id)?)
             .header(
                 header::AUTHORIZATION,
                 Self::auth_header(partial_fingerprint).await?,
@@ -346,15 +349,19 @@ impl SDK {
         let client = reqwest::Client::new();
 
         let res = client
-            .get(&format!("{}/projects", get_api_url()))
+            .get(get_api_url().join("projects")?)
             .header(
                 header::AUTHORIZATION,
                 Self::auth_header(partial_fingerprint).await?,
             )
             .send()
-            .await?
+            .await
+            .context("Failed to get projects")?;
+
+        let res = res
             .json::<Vec<String>>()
-            .await?;
+            .await
+            .context("Failed to parse API response into Vec<String>")?;
 
         Ok(res)
     }
@@ -364,7 +371,7 @@ impl SDK {
         let client = reqwest::Client::new();
 
         let res = client
-            .post(&format!("{}/projects/new", get_api_url()))
+            .post(get_api_url().join("projects/new")?)
             .header(
                 header::AUTHORIZATION,
                 Self::auth_header(partial_fingerprint).await?,

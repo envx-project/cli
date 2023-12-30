@@ -17,8 +17,8 @@ impl Choice {
 
     pub async fn choose_project(partial_fingerprint: &str) -> Result<String> {
         let (key, config) = Self::get_key(partial_fingerprint)?;
-
         let all_projects = SDK::list_projects(&key.fingerprint).await?;
+
         let local_projects = config.projects.clone();
 
         let all_projects = all_projects
@@ -34,6 +34,8 @@ impl Choice {
         all_projects.iter().for_each(|p| {
             options.push(format!("{} - {}", p, "Remote"));
         });
+
+        dbg!("options");
 
         let selected = crate::utils::prompt::prompt_options("Select project", options)?;
 
@@ -59,6 +61,7 @@ impl Choice {
             None => {
                 let config = get_config().context("Failed to get config")?;
                 let project = config.get_project();
+
                 match project {
                     Ok(p) => Ok(p.project_id.clone()),
                     Err(_) => Self::choose_project(partial_fingerprint).await,

@@ -13,7 +13,7 @@ pub struct Args {
     project_id: Option<String>,
 }
 
-pub async fn command(args: Args, _json: bool) -> Result<()> {
+pub async fn command(args: Args, json: bool) -> Result<()> {
     let config = get_config()?;
     let key = config.get_key_or_default(args.key)?;
 
@@ -23,7 +23,11 @@ pub async fn command(args: Args, _json: bool) -> Result<()> {
 
     let btreemap = kvpairs.to_btreemap()?;
 
-    Table::new("Variables".into(), btreemap).print()?;
+    if !json {
+        Table::new("Variables".into(), btreemap).print()?;
+    } else {
+        println!("{}", serde_json::to_string_pretty(&btreemap)?);
+    }
 
     Ok(())
 }
