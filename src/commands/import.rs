@@ -25,7 +25,7 @@ pub async fn command(args: Args, _json: bool) -> Result<()> {
     let mut vault_path = get_vault_location()?;
     match args.command {
         Commands::Pubkey { path } => {
-            let buf = Cursor::new(std::fs::read_to_string(&path).context("Failed to read file")?);
+            let buf = Cursor::new(fs::read_to_string(path).context("Failed to read file")?);
             let (pubkey, _) = pgp::composed::SignedPublicKey::from_armor_single(buf)
                 .context("Failed to parse armored key")?;
 
