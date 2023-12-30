@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.5](https://github.com/env-store/rusty-cli/compare/v0.3.4...v0.3.5) (2023-12-30)
+
+
+### Bug Fixes
+
+* give it permissions to write ([4818728](https://github.com/env-store/rusty-cli/commit/4818728c536c730e998597d6a00bcdf2947a32d1))
+
 ## [0.3.4](https://github.com/env-store/rusty-cli/compare/v0.3.3...v0.3.4) (2023-12-30)
 
 
