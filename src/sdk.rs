@@ -9,7 +9,6 @@ use crate::{
         rpgp::{decrypt_full_many, encrypt_multi},
     },
 };
-use anyhow::Ok;
 use reqwest::header;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
@@ -42,9 +41,19 @@ impl SDK {
             .post(&format!("{}/user/new", get_api_url()?))
             .json(&body)
             .send()
-            .await?
-            .text()
-            .await?;
+            .await;
+
+        let res = match res {
+            Ok(r) => r.text().await?,
+            Err(e) => {
+                dbg!(&e);
+
+                return Err(anyhow!(format!(
+                    "Failed to create new user: {}",
+                    e.to_string()
+                )));
+            }
+        };
 
         Ok(res)
     }
@@ -56,15 +65,17 @@ impl SDK {
     ) -> Result<ProjectInfo> {
         let client = reqwest::Client::new();
 
-        let auth_token = get_token(&partial_fingerprint, &user_id).await?;
+        let auth_token = get_token(partial_fingerprint, user_id).await?;
 
         let project_info = client
             .get(&format!("{}/project/{}", get_api_url()?, project_id))
             .header(header::AUTHORIZATION, format!("Bearer {}", auth_token))
             .send()
-            .await?
+            .await
+            .context("Failed to get project info")?
             .json::<ProjectInfo>()
-            .await?;
+            .await
+            .context("Failed to parse project info")?;
 
         Ok(project_info)
     }
@@ -76,7 +87,7 @@ impl SDK {
         user_id: &str,
     ) -> Result<Vec<String>> {
         let client = reqwest::Client::new();
-        let auth_token = get_token(&partial_fingerprint, &user_id).await?;
+        let auth_token = get_token(partial_fingerprint, user_id).await?;
 
         let project_info = Self::get_project_info(project_id, partial_fingerprint, user_id).await?;
 
@@ -118,7 +129,7 @@ impl SDK {
     ) -> Result<(Vec<KVPair>, Vec<ParsedPartialVariable>)> {
         // GET /user/:id/variables
         let config = get_config()?;
-        let key = config.get_key(&partial_fingerprint)?;
+        let key = config.get_key(partial_fingerprint)?;
 
         let client = reqwest::Client::new();
         let auth_token = get_token(&key.fingerprint, &key.uuid.clone().unwrap()).await?;
@@ -131,9 +142,11 @@ impl SDK {
             ))
             .header(header::AUTHORIZATION, format!("Bearer {}", auth_token))
             .send()
-            .await?
+            .await
+            .context("Failed to get variables")?
             .json::<Vec<PartialVariable>>()
-            .await?;
+            .await
+            .context("Failed to parse API response into PartialVariables")?;
 
         let decrypted = decrypt_full_many(
             encrypted
@@ -171,19 +184,19 @@ impl SDK {
     ) -> Result<(Vec<KVPair>, Vec<PartialVariable>)> {
         // url : /project/:id/variables
         let client = reqwest::Client::new();
-        let auth_token = get_token(&partial_fingerprint, &user_id).await?;
+        let auth_token = get_token(partial_fingerprint, user_id).await?;
+
+        let url = format!("{}/project/{}/variables", get_api_url()?, project_id);
 
         let encrypted = client
-            .get(&format!(
-                "{}/project/{}/variables",
-                get_api_url()?,
-                project_id
-            ))
+            .get(url)
             .header(header::AUTHORIZATION, format!("Bearer {}", auth_token))
             .send()
-            .await?
+            .await
+            .context("Failed to get variables")?
             .json::<Vec<PartialVariable>>()
-            .await?;
+            .await
+            .context("Failed to parse API response into PartialVariables")?;
 
         let decrypted = decrypt_full_many(
             encrypted
@@ -219,9 +232,10 @@ impl SDK {
         partial_fingerprint: &str,
         user_id: &str,
     ) -> Result<Vec<KVPair>> {
-        let (kvpairs, partial) =
-            Self::get_variables(project_id, partial_fingerprint, user_id).await?;
-        let pruned = partial.zip_to_parsed(kvpairs.clone()).to_kvpair();
+        let (kvpairs, partial) = Self::get_variables(project_id, partial_fingerprint, user_id)
+            .await
+            .context("Failed to get variables")?;
+        let pruned = partial.zip_to_parsed(kvpairs).to_kvpair();
         Ok(pruned)
     }
 
@@ -232,7 +246,7 @@ impl SDK {
     ) -> Result<(String, String)> {
         // url: /user/:id
         let client = reqwest::Client::new();
-        let auth_token = get_token(&partial_fingerprint, &user_id).await?;
+        let auth_token = get_token(partial_fingerprint, user_id).await?;
 
         #[derive(Serialize, Deserialize, Debug)]
         pub struct StrippedUser {
@@ -259,7 +273,7 @@ impl SDK {
     ) -> Result<()> {
         // url: /project/:id/add-user
         let client = reqwest::Client::new();
-        let auth_token = get_token(&partial_fingerprint, &user_id).await?;
+        let auth_token = get_token(partial_fingerprint, user_id).await?;
 
         let body = json!({
             "user_id": user_to_add
@@ -288,10 +302,10 @@ impl SDK {
         }
     }
 
-    pub async fn delete_variable(variable_id: &str, key: &str) -> Result<()> {
+    pub async fn delete_variable(variable_id: &str, partial_fingerprint: &str) -> Result<()> {
         // url: DELETE /variables/:id
         let config = get_config()?;
-        let key = config.get_key(&key)?;
+        let key = config.get_key(partial_fingerprint)?;
 
         let client = reqwest::Client::new();
         let auth_token = get_token(&key.fingerprint, &key.uuid.clone().unwrap()).await?;
@@ -308,7 +322,7 @@ impl SDK {
     pub async fn list_projects(partial_fingerprint: &str) -> Result<Vec<String>> {
         // GET /projects
         let config = get_config()?;
-        let key = config.get_key(&partial_fingerprint)?;
+        let key = config.get_key(partial_fingerprint)?;
 
         let client = reqwest::Client::new();
         let auth_token = get_token(&key.fingerprint, &key.uuid.clone().unwrap()).await?;
@@ -327,7 +341,7 @@ impl SDK {
     pub async fn new_project(partial_fingerprint: &str) -> Result<String> {
         // POST /projects/new
         let config = get_config()?;
-        let key = config.get_key(&partial_fingerprint)?;
+        let key = config.get_key(partial_fingerprint)?;
 
         let client = reqwest::Client::new();
         let auth_token = get_token(&key.fingerprint, &key.uuid.clone().unwrap()).await?;

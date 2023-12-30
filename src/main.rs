@@ -3,7 +3,6 @@ use clap::{Parser, Subcommand};
 use commands::*;
 
 mod commands;
-mod errors;
 mod sdk;
 mod types;
 mod utils;

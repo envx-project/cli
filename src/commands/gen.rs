@@ -130,7 +130,7 @@ pub async fn command(args: Args, _json: bool) -> Result<()> {
         config.primary_key = fingerprint.clone();
     }
 
-    config::write_config(&config).context("Failed to write config")?;
+    config.write().context("Failed to write config")?;
 
     if config.online {
         let id = SDK::new_user(&username, &pub_key).await?;
