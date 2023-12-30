@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.3.3](https://github.com/env-store/rusty-cli/compare/v0.3.2...v0.3.3) (2023-12-30)
+
+
+### Bug Fixes
+
+* ci matrix ([81754ca](https://github.com/env-store/rusty-cli/commit/81754ca6c62a49d9740b30c4e4b8d3c091dd656d))
+* install openssl where needed ([da7d80c](https://github.com/env-store/rusty-cli/commit/da7d80ce5fb54680242269e7a9fa01508cbc4f6f))
+
 ## [0.3.2](https://github.com/env-store/rusty-cli/compare/v0.3.1...v0.3.2) (2023-12-30)
 
 
