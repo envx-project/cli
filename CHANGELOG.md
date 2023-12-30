@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.1](https://github.com/env-store/rusty-cli/compare/v0.3.0...v0.3.1) (2023-12-30)
+
+
+### Bug Fixes
+
+* ci? ([2eb743f](https://github.com/env-store/rusty-cli/commit/2eb743f750e406338790d08c98e0087fe15d6783))
+
 ## [0.3.0](https://github.com/env-store/rusty-cli/compare/0.2.1...v0.3.0) (2023-12-30)
 
 
