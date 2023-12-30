@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.6](https://github.com/env-store/rusty-cli/compare/v0.3.5...v0.3.6) (2023-12-30)
+
+
+### Bug Fixes
+
+* linux musl ([#11](https://github.com/env-store/rusty-cli/issues/11)) ([7444b4c](https://github.com/env-store/rusty-cli/commit/7444b4c837a3c8204c4ff45c7b2c50b7db69b7d6))
+
 ## [0.3.5](https://github.com/env-store/rusty-cli/compare/v0.3.4...v0.3.5) (2023-12-30)
 
 
