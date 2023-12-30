@@ -8,6 +8,8 @@ use crate::{
         rpgp::encrypt_multi,
     },
 };
+use pgp::{Deserializable, SignedPublicKey};
+use rayon::iter::{IntoParallelRefIterator, ParallelIterator};
 use reqwest::header;
 use serde_json::json;
 
@@ -27,7 +29,7 @@ pub struct Args {
     user_id: String,
 }
 
-pub async fn command(args: Args, _json: bool) -> Result<()> {
+pub async fn command(args: Args) -> Result<()> {
     let config = get_config()?;
 
     let key = config.get_key_or_default(args.key)?;
@@ -50,15 +52,20 @@ pub async fn command(args: Args, _json: bool) -> Result<()> {
     recipients.push(user_public_key_to_add);
 
     let recipients = recipients
-        .iter()
+        .par_iter()
         .map(|r| r.as_str())
         .collect::<HashSet<&str>>()
         .into_iter()
         .collect::<Vec<&str>>();
 
-    let messages = kvpairs
+    let pubkeys = recipients
         .iter()
-        .map(|k| encrypt_multi(&k.to_json().unwrap(), recipients.clone()).unwrap())
+        .map(|k| Ok(SignedPublicKey::from_string(k)?.0))
+        .collect::<Result<Vec<SignedPublicKey>>>()?;
+
+    let messages = kvpairs
+        .par_iter()
+        .map(|k| encrypt_multi(&k.to_json().unwrap(), &pubkeys).unwrap())
         .collect::<Vec<String>>();
 
     let partials = partials

@@ -105,7 +105,7 @@ impl Config {
             .keys
             .iter()
             .find(|k| k.fingerprint.contains(partial_fingerprint))
-            .context("Failed to find key")?;
+            .context("Failed to find key (get_key)")?;
 
         Ok(key.clone())
     }
@@ -127,7 +127,7 @@ impl Config {
                     .to_lowercase()
                     .contains(&partial_fingerprint.to_lowercase())
             })
-            .context("Failed to find key")?;
+            .context("Failed to find key (get_key_or_default)")?;
 
         Ok(key.clone())
     }
@@ -181,16 +181,9 @@ impl Config {
     }
 
     pub fn set_uuid(&mut self, fingerprint: &str, uuid: &str) -> Result<()> {
-        let key = self
-            .keys
-            .iter_mut()
-            .find(|k| k.fingerprint == fingerprint)
-            .context("Failed to find key")?;
-
+        let mut key = Self::get_key(self, fingerprint)?;
         key.uuid = Some(uuid.to_string());
-
         self.write()?;
-
         Ok(())
     }
 }

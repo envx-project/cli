@@ -29,7 +29,7 @@ pub struct ProjectInfo {
     users: Vec<User>,
 }
 
-pub async fn command(args: Args, _json: bool) -> Result<()> {
+pub async fn command(args: Args) -> Result<()> {
     let config = get_config()?;
     let key = config.get_key_or_default(args.key)?;
 

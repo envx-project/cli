@@ -7,7 +7,7 @@ use std::vec;
 #[derive(Debug, Parser)]
 pub struct Args {}
 
-pub async fn command(_args: Args, _json: bool) -> Result<()> {
+pub async fn command(_args: Args) -> Result<()> {
     let config = get_config()?;
 
     let mut file = std::fs::File::open(".envcli.vault")

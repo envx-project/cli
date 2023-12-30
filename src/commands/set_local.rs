@@ -12,7 +12,7 @@ pub struct Args {
     kvpairs: Vec<String>,
 }
 
-pub async fn command(args: Args, _json: bool) -> Result<()> {
+pub async fn command(args: Args) -> Result<()> {
     let config = get_config()?;
     let pubkey = config
         .primary_key()

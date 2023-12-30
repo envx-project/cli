@@ -15,7 +15,7 @@ pub struct Args {
     username: Option<String>,
 }
 
-pub async fn command(args: Args, _json: bool) -> Result<()> {
+pub async fn command(args: Args) -> Result<()> {
     let mut config = get_config()?;
 
     let key = config.get_key(&args.key)?;

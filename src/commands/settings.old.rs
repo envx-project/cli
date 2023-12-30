@@ -21,7 +21,7 @@ pub struct Args {
     set_primary_key: bool,
 }
 
-pub async fn command(args: Args, _json: bool) -> Result<()> {
+pub async fn command(args: Args) -> Result<()> {
     let config = get_config()?;
 
     let primary_key = match &args.primary_key_value {

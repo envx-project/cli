@@ -10,6 +10,8 @@ use crate::{
     },
 };
 use anyhow::bail;
+use pgp::{Deserializable, SignedPublicKey};
+use rayon::iter::{IntoParallelRefIterator, ParallelIterator};
 use reqwest::header;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
@@ -112,9 +114,14 @@ impl SDK {
             .map(|u| u.public_key.as_str())
             .collect::<Vec<&str>>();
 
-        let messages = kvpairs
+        let pubkeys = recipients
             .iter()
-            .map(|k| encrypt_multi(&k.to_json().unwrap(), recipients.clone()).unwrap())
+            .map(|k| Ok(SignedPublicKey::from_string(k)?.0))
+            .collect::<Result<Vec<SignedPublicKey>>>()?;
+
+        let messages = kvpairs
+            .par_iter()
+            .map(|k| encrypt_multi(&k.to_json().unwrap(), &pubkeys).unwrap())
             .collect::<Vec<String>>();
 
         let body = json!({
@@ -249,6 +256,9 @@ impl SDK {
         Ok((parsed, partials))
     }
 
+    /// Return variables as a list of kv pairs
+    ///
+    /// Sorted, and pruned of duplicates (by created_at date)
     pub async fn get_variables_pruned(
         project_id: &str,
         partial_fingerprint: &str,
@@ -256,7 +266,8 @@ impl SDK {
         let (kvpairs, partial) = Self::get_variables(project_id, partial_fingerprint)
             .await
             .context("Failed to get variables")?;
-        let pruned = partial.zip_to_parsed(kvpairs).to_kvpair();
+        let mut pruned = partial.zip_to_parsed(kvpairs).to_kvpair();
+        pruned.sort_by(|a, b| a.key.cmp(&b.key));
         Ok(pruned)
     }
 
@@ -320,6 +331,33 @@ impl SDK {
         } else {
             Err(anyhow!(format!(
                 "Failed to add user to project: {}",
+                res.text().await?
+            )))
+        }
+    }
+
+    pub async fn delete_project(partial_fingerprint: &str, project_id: &str) -> Result<()> {
+        // url: /project/:id
+        let client = reqwest::Client::new();
+
+        let url = get_api_url().join(&format!("/project/{}", project_id))?;
+
+        let res = client
+            .delete(url)
+            .header(
+                header::AUTHORIZATION,
+                Self::auth_header(partial_fingerprint).await?,
+            )
+            .send()
+            .await?;
+
+        let status = res.status();
+
+        if status.is_success() {
+            Ok(())
+        } else {
+            Err(anyhow!(format!(
+                "Failed to delete project: {}",
                 res.text().await?
             )))
         }

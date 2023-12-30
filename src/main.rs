@@ -18,10 +18,6 @@ pub struct Args {
     #[clap(subcommand)]
     command: Commands,
 
-    /// Output in JSON format
-    #[clap(global = true, long)]
-    json: bool,
-
     #[clap(long)]
     silent: bool,
 }
@@ -55,7 +51,10 @@ commands_enum!(
     unset,
     upload,
     variables,
-    version
+    version,
+    // commands with subcommands
+    delete,
+    new
 );
 
 #[tokio::main]

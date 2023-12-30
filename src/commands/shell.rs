@@ -38,7 +38,7 @@ pub struct Args {
     silent: bool,
 }
 
-pub async fn command(args: Args, _json: bool) -> Result<()> {
+pub async fn command(args: Args) -> Result<()> {
     let config = crate::utils::config::get_config()?;
     let key = match args.key {
         Some(k) => k.to_owned(),

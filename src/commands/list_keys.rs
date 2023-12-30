@@ -8,7 +8,7 @@ pub struct Args {
     full: bool,
 }
 
-pub async fn command(_args: Args, _json: bool) -> Result<()> {
+pub async fn command(_args: Args) -> Result<()> {
     let config = get_config().context("Failed to get config")?;
 
     println!("Keys:");

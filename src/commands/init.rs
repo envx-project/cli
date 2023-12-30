@@ -8,7 +8,7 @@ use anyhow::Result;
 #[derive(Debug, Parser)]
 pub struct Args {}
 
-pub async fn command(_args: Args, _json: bool) -> Result<()> {
+pub async fn command(_args: Args) -> Result<()> {
     get_config()?.write()?;
 
     println!("Initialized new envcli store");

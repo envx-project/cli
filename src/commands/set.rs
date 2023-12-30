@@ -20,7 +20,7 @@ pub struct Args {
     project_id: Option<String>,
 }
 
-pub async fn command(args: Args, _json: bool) -> Result<()> {
+pub async fn command(args: Args) -> Result<()> {
     let config = get_config()?;
     let key = match args.key {
         Some(k) => k.to_owned(),

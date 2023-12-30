@@ -13,7 +13,7 @@ pub struct Args {
     key: Option<String>,
 }
 
-pub async fn command(args: Args, _json: bool) -> Result<()> {
+pub async fn command(args: Args) -> Result<()> {
     let mut config = crate::utils::config::get_config().context("Failed to get config")?;
 
     let selected: Vec<String> = match args.key {
