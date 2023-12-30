@@ -10,7 +10,7 @@ mod utils;
 #[macro_use]
 mod macros;
 
-/// Interact with env-store/envs via CLI
+/// Interact with env-store/rusty-api via CLI
 #[derive(Parser)]
 #[clap(author, version, about, long_about = None)]
 #[clap(propagate_version = true)]
@@ -27,7 +27,6 @@ pub struct Args {
 commands_enum!(
     add_user_to_project,
     auth,
-    config,
     debug,
     decrypt,
     encrypt,

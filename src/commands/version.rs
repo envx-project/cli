@@ -1,5 +1,6 @@
 use super::*;
 
+/// Fancy, pretty-printed version information.
 #[derive(Parser)]
 pub struct Args {}
 
