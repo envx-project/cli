@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.7](https://github.com/env-store/rusty-cli/compare/v0.3.6...v0.3.7) (2023-12-30)
+
+
+### Bug Fixes
+
+* binary name ([7aa48f8](https://github.com/env-store/rusty-cli/commit/7aa48f8b1d5726ba77ab89c573ca64de2636dd19))
+
 ## [0.3.6](https://github.com/env-store/rusty-cli/compare/v0.3.5...v0.3.6) (2023-12-30)
 
 
