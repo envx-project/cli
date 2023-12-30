@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.2](https://github.com/env-store/rusty-cli/compare/v0.3.1...v0.3.2) (2023-12-30)
+
+
+### Bug Fixes
+
+* use cross ([793e103](https://github.com/env-store/rusty-cli/commit/793e1037136f1f4f179ad652dc2c30bebc0daca4))
+
 ## [0.3.1](https://github.com/env-store/rusty-cli/compare/v0.3.0...v0.3.1) (2023-12-30)
 
 
