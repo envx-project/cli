@@ -42,17 +42,20 @@ jobs:
           - target: x86_64-unknown-linux-gnu
             os: ubuntu-latest
 
-          - target: x86_64-unknown-linux-musl
-            os: ubuntu-latest
+          #   - target: x86_64-unknown-linux-musl
+          #     os: ubuntu-latest
+          #     use-cross: true
 
           # - target: i686-unknown-linux-musl
           #   os: ubuntu-latest
 
-          - target: aarch64-unknown-linux-musl
-            os: ubuntu-latest
+          #   - target: aarch64-unknown-linux-musl
+          #     os: ubuntu-latest
+          #     use-cross: true
 
-          - target: arm-unknown-linux-musleabihf
-            os: ubuntu-latest
+          #   - target: arm-unknown-linux-musleabihf
+          #     os: ubuntu-latest
+          #     use-cross: true
 
           - target: x86_64-apple-darwin
             os: macOS-latest
@@ -69,9 +72,9 @@ jobs:
           - target: x86_64-pc-windows-gnu
             os: windows-latest
 
-          # - target: i686-pc-windows-gnu
-          #   os: windows-latest
-          #   use-cross: true
+        # - target: i686-pc-windows-gnu
+        #   os: windows-latest
+        #   use-cross: true
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
@@ -97,7 +100,7 @@ jobs:
         with:
           command: build
           args: --release --locked --target ${{ matrix.target }}
-          use-cross: ${{ matrix.use-cross || matrix.os == 'ubuntu-latest' }}
+          # use-cross: ${{ matrix.use-cross || matrix.os == 'ubuntu-latest' }}
 
       - name: Prepare binaries (zip) [Windows]
         if: matrix.os == 'windows-latest'
@@ -127,8 +130,8 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          tag_name: v${{ needs.create-release.outputs.envx_version }}
-          files: envx-${{ needs.create-release.outputs.envx_version }}-${{ matrix.target }}*
+          tag_name: v${{ needs.release-please.outputs.envx_version }}
+          files: envx-${{ needs.release-please.outputs.envx_version }}-${{ matrix.target }}*
 
       - name: Install cargo-deb
         if: matrix.target == 'x86_64-unknown-linux-musl'
@@ -136,11 +139,11 @@ jobs:
 
       - name: Generate .deb package file
         if: matrix.target == 'x86_64-unknown-linux-musl'
-        run: cargo deb --target x86_64-unknown-linux-musl --output envx-${{ needs.create-release.outputs.envx_version }}-amd64.deb
+        run: cargo deb --target x86_64-unknown-linux-musl --output envx-${{ needs.release-please.outputs.envx_version }}-amd64.deb
 
       - name: Upload .deb package file
         if: matrix.target == 'x86_64-unknown-linux-musl'
         uses: svenstaro/upload-release-action@v2
         with:
-          tag: ${{ needs.create-release.outputs.envx_version }}
-          file: envx-${{ needs.create-release.outputs.envx_version }}-amd64.deb
+          tag: ${{ needs.release-please.outputs.envx_version }}
+          file: envx-${{ needs.release-please.outputs.envx_version }}-amd64.deb
