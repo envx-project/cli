@@ -13,21 +13,36 @@ A very simple cli written for [env-store/envs](https://github.com/env-store/envs
 ### Usage
 
 ```bash
-Interact with env-store/envs via CLI
+Interact with env-store/rusty-api via CLI
 
-Usage: env-cli [OPTIONS] <COMMAND>
+Usage: envx [OPTIONS] <COMMAND>
 
 Commands:
-  login      login to the service
-  variables  Print all variables as either key=value pairs, json, or a table
-  set        SET an environment variable with a key=value pair also supports interactive mode
-  unset      UNSET an environment variable by key also supports interactive mode
-  shell      Open a subshell with envcli variables available
-  run        Run a local command using variables from the active environment
-  help       Print this message or the help of the given subcommand(s)
+  add-user-to-project  Add a user to a project
+  auth                 Test authentication with the server
+  debug                Unset the current project
+  decrypt              Decrypt a string using GPG
+  encrypt              Encrypt a string using GPG
+  export               Export a public or secret key
+  gen                  Generate a key using GPG Saves the key to ~/.envcli/keys/<fingerprint>
+  import               Import ascii armored keys from a file
+  link                 Get all environment variables for a project
+  run                  Run a local command using variables from the active environment
+  set                  Set a variable
+  shell                Open a subshell with envcli variables available
+  sign                 Sign a message with a key
+  unlink               Unset the current project
+  unset                Unset (delete) an environment variable
+  upload               If your key is not in the database, use this command to upload it
+  variables            Get all environment variables for the current configured directory
+  version              Fancy, pretty-printed version information
+  delete               Delete a resource. (project, key)
+  new                  Create a resource. (project)
+  get                  Get a resource. (project, key, config)
+  help                 Print this message or the help of the given subcommand(s)
 
 Options:
-      --json     Output in JSON format
+      --silent   
   -h, --help     Print help
   -V, --version  Print version
 ```

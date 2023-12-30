@@ -9,6 +9,7 @@ use clap::Subcommand;
 
 pub mod project;
 
+/// Create a resource. (project)
 #[derive(Parser)]
 pub struct Args {
     #[clap(subcommand)]

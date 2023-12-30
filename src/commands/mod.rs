@@ -10,7 +10,6 @@ pub mod new;
 // No subcommands
 pub mod add_user_to_project;
 pub mod auth;
-pub mod config;
 pub mod debug;
 pub mod decrypt;
 pub mod encrypt;
