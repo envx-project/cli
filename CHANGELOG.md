@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.4](https://github.com/env-store/rusty-cli/compare/v0.3.3...v0.3.4) (2023-12-30)
+
+
+### Bug Fixes
+
+* lost ([808f1a0](https://github.com/env-store/rusty-cli/commit/808f1a07eebc512c09d4590fc33bf7fbec1ba8f0))
+
 ## [0.3.3](https://github.com/env-store/rusty-cli/compare/v0.3.2...v0.3.3) (2023-12-30)
 
 
