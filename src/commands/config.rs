@@ -14,7 +14,7 @@ pub struct Args {
 pub async fn command(args: Args, _json: bool) -> Result<()> {
     let mut config = get_config()?;
 
-    let (key, value) = args.setting.split_once("=").unwrap_or_else(|| {
+    let (key, value) = args.setting.split_once('=').unwrap_or_else(|| {
         eprintln!("Error: Invalid setting");
         std::process::exit(1);
     });

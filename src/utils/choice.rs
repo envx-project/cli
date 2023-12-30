@@ -23,11 +23,7 @@ impl Choice {
 
         let all_projects = all_projects
             .iter()
-            .filter(|p| {
-                !local_projects
-                    .iter()
-                    .any(|lp| &lp.project_id == p.to_owned())
-            })
+            .filter(|p| !local_projects.iter().any(|lp| &lp.project_id == *p))
             .collect::<Vec<_>>();
 
         let mut options = local_projects

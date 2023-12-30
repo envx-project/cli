@@ -26,7 +26,7 @@ pub async fn command(args: Args, _json: bool) -> Result<()> {
                 "Select variables to delete",
                 all_variables
                     .iter()
-                    .map(|v| format!("{} - ({}) - {}", v.id, v.value.to_string(), v.project_id))
+                    .map(|v| format!("{} - ({}) - {}", v.id, v.value, v.project_id))
                     .collect::<Vec<String>>(),
             )?;
 

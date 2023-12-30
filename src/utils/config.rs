@@ -51,8 +51,23 @@ impl Default for Config {
 }
 
 impl Config {
+    // pub fn write(&self) -> Result<()> {
+    //     write_config(self)?;
+    //
+    //     Ok(())
+    // }
+
+    /// Vulnerable to fs race conditions
+    /// should rewrite using file locks
     pub fn write(&self) -> Result<()> {
-        write_config(self)?;
+        let path = get_config_path().context("Failed to get config path")?;
+        let file = File::create(path).context("Failed to create config file")?;
+        let mut writer = BufWriter::new(file);
+        let contents = serde_json::to_string_pretty(self)
+            .context("Failed to serialize config to JSON string")?;
+        writer
+            .write_all(contents.as_bytes())
+            .context("Failed to write config to file")?;
 
         Ok(())
     }
@@ -130,7 +145,6 @@ impl Config {
         Ok(())
     }
 
-    #[allow(dead_code)]
     pub fn get_project(&self) -> Result<&Project> {
         let mut path = std::env::current_dir()?;
         loop {
@@ -187,10 +201,10 @@ pub fn get_config_path() -> Result<PathBuf> {
     path.push(".config/envcli/config.json");
     // if it doesn't exist, create it
     if !path.exists() {
+        let default = serde_json::to_string_pretty(&Config::default())?;
         fs::create_dir_all(path.parent().unwrap())?;
-        let file = File::create(&path)?;
-        let mut writer = BufWriter::new(file);
-        writer.write_all("".as_bytes())?;
+        let mut file = File::create(&path)?;
+        file.write_all(default.as_ref())?;
     }
     Ok(path)
 }
@@ -199,18 +213,5 @@ pub fn get_config_path() -> Result<PathBuf> {
 pub fn get_config() -> Result<Config> {
     let path = get_config_path().context("Failed to get config path")?;
     let contents = fs::read_to_string(path).context("Failed to read config file")?;
-    Ok(serde_json::from_str::<Config>(&contents).context("Failed to parse config file")?)
-}
-
-/// Vulnerable to fs race conditions
-/// should rewrite using file locks
-pub fn write_config(config: &Config) -> Result<()> {
-    let path = get_config_path()?;
-    let file = File::create(path)?;
-
-    let mut writer = BufWriter::new(file);
-    let contents = serde_json::to_string_pretty(config)?;
-    writer.write_all(contents.as_bytes())?;
-
-    Ok(())
+    serde_json::from_str::<Config>(&contents).context("Failed to parse config file")
 }

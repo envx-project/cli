@@ -38,7 +38,7 @@ pub async fn command(args: Args, _json: bool) -> Result<()> {
         config.keys.retain(|k| k.fingerprint != key);
     }
 
-    crate::utils::config::write_config(&config).context("Failed to write config")?;
+    config.write().context("Failed to write config")?;
 
     Ok(())
 }
