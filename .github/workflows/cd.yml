@@ -33,7 +33,8 @@ jobs:
     name: Build Release
     needs: [release-please]
     if: needs.release-please.outputs.build == 'true'
-
+    permissions:
+      contents: write
     runs-on: ${{ matrix.os }}
     continue-on-error: true
     strategy:
