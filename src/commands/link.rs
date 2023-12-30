@@ -1,7 +1,6 @@
 use super::*;
 use crate::utils::choice::Choice;
 use crate::utils::config::get_config;
-use serde::{Deserialize, Serialize};
 
 /// Get all environment variables for a project
 #[derive(Parser)]
@@ -13,20 +12,6 @@ pub struct Args {
     /// Project ID
     #[clap(short, long)]
     project_id: Option<String>,
-}
-
-#[derive(Serialize, Deserialize, Debug)]
-pub struct User {
-    pub id: String,
-    pub username: String,
-    pub created_at: String, // DateTime
-    pub public_key: String,
-}
-
-#[derive(Serialize, Deserialize, Debug)]
-pub struct ProjectInfo {
-    project_id: String,
-    users: Vec<User>,
 }
 
 pub async fn command(args: Args) -> Result<()> {

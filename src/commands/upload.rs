@@ -4,6 +4,7 @@ use crate::{
     utils::{config::get_config, prompt::prompt_text},
 };
 
+/// If your key is not in the database, use this command to upload it
 #[derive(Parser)]
 pub struct Args {
     /// Key to sign with

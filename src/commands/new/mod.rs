@@ -1,5 +1,13 @@
+#[allow(unused_imports)]
+pub(super) use anyhow::{anyhow, Context, Result};
+pub(super) use clap::Parser;
+#[allow(unused_imports)]
+pub(super) use colored::Colorize;
+
 use crate::commands_enum;
-use clap::{Parser, Subcommand};
+use clap::Subcommand;
+
+pub mod project;
 
 #[derive(Parser)]
 pub struct Args {
@@ -9,8 +17,6 @@ pub struct Args {
     #[clap(global = true, long)]
     json: bool,
 }
-
-use crate::commands::_new::*;
 
 commands_enum!(project);
 

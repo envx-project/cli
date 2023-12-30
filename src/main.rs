@@ -30,20 +30,12 @@ commands_enum!(
     config,
     debug,
     decrypt,
-    delete_key,
     encrypt,
     export,
     gen,
-    get_config,
-    get_project,
     import,
-    init,
     link,
-    list_keys,
-    project,
-    read_local,
     run,
-    set_local,
     set,
     shell,
     sign,
@@ -54,7 +46,8 @@ commands_enum!(
     version,
     // commands with subcommands
     delete,
-    new
+    new,
+    get
 );
 
 #[tokio::main]

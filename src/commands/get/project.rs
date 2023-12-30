@@ -1,7 +1,6 @@
 use super::*;
 use crate::utils::config::get_config;
 use crate::{sdk::SDK, utils::choice::Choice};
-use serde::{Deserialize, Serialize};
 
 /// Get all environment variables for a project
 #[derive(Parser)]
@@ -13,31 +12,18 @@ pub struct Args {
     /// Project ID
     #[clap(short, long)]
     project_id: Option<String>,
+
+    /// Output in JSON format
+    #[clap(long)]
+    json: bool,
 }
 
-#[derive(Serialize, Deserialize, Debug)]
-pub struct User {
-    pub id: String,
-    pub username: String,
-    pub created_at: String, // DateTime
-    pub public_key: String,
-}
-
-#[derive(Serialize, Deserialize, Debug)]
-pub struct ProjectInfo {
-    project_id: String,
-    users: Vec<User>,
-}
-
+// TODO: Pretty print project info (in a table?)
 pub async fn command(args: Args) -> Result<()> {
     let config = get_config()?;
     let key = config.get_key_or_default(args.key)?;
-
     let project_id = Choice::try_project(args.project_id, &key.fingerprint).await?;
-
     let project_info = SDK::get_project_info(&project_id, &key.fingerprint).await?;
-
     println!("{:?}", project_info);
-
     Ok(())
 }
