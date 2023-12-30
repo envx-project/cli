@@ -10,6 +10,7 @@ use clap::Subcommand;
 pub mod key;
 pub mod project;
 
+/// Delete a resource. (project, key)
 #[derive(Parser)]
 pub struct Args {
     #[clap(subcommand)]
