@@ -1,6 +1,6 @@
 [package]
 name = "envx"
-version = "0.3.7"
+version = "0.3.8"
 edition = "2021"
 license = "MIT"
 authors = ["Alexander Ng <alex@ayo.icu>"]

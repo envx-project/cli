@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.8](https://github.com/env-store/rusty-cli/compare/v0.3.7...v0.3.8) (2023-12-30)
+
+
+### Bug Fixes
+
+* rectified cargo toml ([f0d23ef](https://github.com/env-store/rusty-cli/commit/f0d23efc8e31e26ae4cf5df5819f5431790372bc))
+
 ## [0.3.7](https://github.com/env-store/rusty-cli/compare/v0.3.6...v0.3.7) (2023-12-30)
 
 
