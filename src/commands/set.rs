@@ -1,3 +1,5 @@
+use anyhow::bail;
+
 use super::*;
 use crate::{
     sdk::SDK,
@@ -7,13 +9,13 @@ use crate::{
 /// Set a variable
 #[derive(Parser)]
 pub struct Args {
-    /// Key to use for signing
-    #[clap(short, long)]
-    key: Option<String>,
-
     /// KVPairs
     #[clap(trailing_var_arg = true)]
     kvpairs: Vec<String>,
+
+    /// Key to use for encryption
+    #[clap(short, long)]
+    key: Option<String>,
 
     /// Project ID
     #[clap(short, long)]
@@ -21,6 +23,14 @@ pub struct Args {
 }
 
 pub async fn command(args: Args) -> Result<()> {
+    if args.kvpairs.is_empty() {
+        bail!(
+            "{}\n{}",
+            "No KV pairs provided".red(),
+            "Usage: rpgp set key=value [key=value]...",
+        );
+    }
+
     let config = get_config()?;
     let key = match args.key {
         Some(k) => k.to_owned(),
@@ -34,14 +44,22 @@ pub async fn command(args: Args) -> Result<()> {
         return Err(anyhow::anyhow!("No project ID provided"));
     }
 
-    let kvpairs = args
-        .kvpairs
-        .iter()
-        .map(|k| {
-            let (key, value) = k.split_once('=').unwrap();
-            KVPair::new(key.to_uppercase(), value.to_string())
-        })
-        .collect::<Vec<KVPair>>();
+    let (kvpairs, errors): (Vec<KVPair>, Vec<String>) =
+        args.kvpairs
+            .iter()
+            .fold((Vec::new(), Vec::new()), |(mut ok, mut err), k| {
+                match k.split_once('=') {
+                    Some((key, value)) => ok.push(KVPair::new(key.to_uppercase(), value.into())),
+                    None => err.push(format!("Invalid KVPair: {}", k)),
+                }
+                (ok, err)
+            });
+
+    errors.iter().for_each(|e| println!("Skipping {}", e));
+
+    if kvpairs.is_empty() {
+        return Err(anyhow::anyhow!("No valid KV pairs provided"));
+    }
 
     let ids = SDK::set_many(kvpairs, &key.fingerprint, &project_id).await?;
 
