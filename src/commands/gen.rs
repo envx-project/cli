@@ -5,22 +5,21 @@ use crate::sdk::SDK;
 use crate::utils::config::{self};
 use crate::utils::key::Key;
 // use crate::utils::prompt::prompt_password;
-use crate::utils::prompt::{prompt_email, prompt_text};
-use crate::utils::rpgp::{generate_hashed_primary_user_id, generate_key_pair, get_vault_location};
+use crate::utils::prompt::{prompt_email, prompt_password, prompt_text};
+use crate::utils::rpgp::{
+    generate_hashed_primary_user_id, generate_key_pair, get_vault_location, GenerationOptions,
+};
 use crate::utils::vecu8::ToHex;
 use anyhow::Context;
+use clap::ValueEnum;
 use pgp::types::KeyTrait;
+use pgp::KeyType;
 use std::fs;
-use std::str;
 
 /// Generate a key using GPG
 /// Saves the key to ~/.envcli/keys/<fingerprint>
 #[derive(Parser)]
 pub struct Args {
-    /// Interactive mode
-    #[clap(short, long)]
-    interactive: bool,
-
     /// Username
     #[clap(short, long)]
     username: Option<String>,
@@ -33,9 +32,14 @@ pub struct Args {
     #[clap(short, long)]
     email: Option<String>,
 
-    // /// Passphrase to encrypt the key with
-    // #[clap(short, long)]
-    // passphrase: Option<String>,
+    /// Passphrase to encrypt the key with
+    #[clap(short, long)]
+    passphrase: Option<String>,
+
+    /// Programatically disable passphrase
+    #[clap(long = "nopwd")]
+    no_passphrase: bool,
+
     /// force overwrite of existing key
     #[clap(long = "force", short = 'f')]
     force_overwrite: bool,
@@ -46,6 +50,18 @@ pub struct Args {
 
     #[clap(long)]
     export: bool,
+
+    /// Override whether or not to upload the new key
+    #[clap(long)]
+    online: Option<bool>,
+
+    /// Use a real user id or a garbled one
+    #[clap(long, default_value = "false")]
+    real_user_id: bool,
+
+    /// How secure do you want it?
+    #[clap(long, default_value = "Rsa2048")]
+    algorithm: Algorithm,
 }
 
 fn email_validator(email: &str) -> anyhow::Result<(), anyhow::Error> {
@@ -58,34 +74,128 @@ fn email_validator(email: &str) -> anyhow::Result<(), anyhow::Error> {
     }
 }
 
+#[derive(Copy, Clone)]
+enum Algorithm {
+    Rsa2048,
+    Rsa3072,
+    Rsa4096,
+    Rsa8192,
+}
+
+const VALID_ALGORITHMS: &[&str] = &["Rsa2048", "Rsa3072", "Rsa4096", "Rsa8192"];
+
+impl ValueEnum for Algorithm {
+    fn from_str(input: &str, ignore_case: bool) -> std::prelude::v1::Result<Self, String> {
+        if ignore_case {
+            return match input.to_lowercase().as_str() {
+                "rsa2048" => Ok(Algorithm::Rsa2048),
+                "rsa3072" => Ok(Algorithm::Rsa3072),
+                "rsa4096" => Ok(Algorithm::Rsa4096),
+                "rsa8192" => Ok(Algorithm::Rsa8192),
+                _ => Err(format!(
+                    "Invalid algorithm: {}\nValid Algorithms: {}",
+                    input,
+                    VALID_ALGORITHMS.join(", ")
+                )),
+            };
+        }
+
+        match input {
+            "Rsa2048" => Ok(Algorithm::Rsa2048),
+            "Rsa3072" => Ok(Algorithm::Rsa3072),
+            "Rsa4096" => Ok(Algorithm::Rsa4096),
+            "Rsa8192" => Ok(Algorithm::Rsa8192),
+            _ => Err(format!(
+                "Invalid algorithm: {}\nValid Algorithms: {}",
+                input,
+                VALID_ALGORITHMS.join(", ")
+            )),
+        }
+    }
+
+    fn value_variants<'a>() -> &'a [Self] {
+        &[
+            Algorithm::Rsa2048,
+            Algorithm::Rsa3072,
+            Algorithm::Rsa4096,
+            Algorithm::Rsa8192,
+        ]
+    }
+
+    fn to_possible_value(&self) -> Option<clap::builder::PossibleValue> {
+        match self {
+            Algorithm::Rsa2048 => Some(clap::builder::PossibleValue::new("Rsa2048")),
+            Algorithm::Rsa3072 => Some(clap::builder::PossibleValue::new("Rsa3072")),
+            Algorithm::Rsa4096 => Some(clap::builder::PossibleValue::new("Rsa4096")),
+            Algorithm::Rsa8192 => Some(clap::builder::PossibleValue::new("Rsa8192")),
+        }
+    }
+}
+
 pub async fn command(args: Args) -> Result<()> {
     let mut config = config::get_config().context("Failed to get config")?;
+
+    let online = if let Some(online) = args.online {
+        online
+    } else {
+        config.online
+    };
 
     let name = args
         .name
         .unwrap_or_else(|| prompt_text("What is your name?").unwrap());
 
-    let username = args
-        .username
-        .unwrap_or_else(|| prompt_text("What is your username?").unwrap());
+    let username = match online {
+        true => match args.username {
+            Some(username) => Some(username),
+            None => {
+                let username = prompt_text("Choose a username:").unwrap();
+                let username = username.trim();
+                if username.is_empty() {
+                    None
+                } else {
+                    Some(username.to_string())
+                }
+            }
+        },
+        false => None,
+    };
 
-    let email = args.email.unwrap_or_else(|| prompt_email("email").unwrap());
+    let username = username.unwrap_or_default();
 
-    match email_validator(&email) {
-        Ok(_) => {}
-        Err(e) => {
-            eprintln!("{}", e);
-            std::process::exit(1);
+    let email = args
+        .email
+        .unwrap_or_else(|| prompt_email("What is your email?").unwrap());
+
+    email_validator(&email).context("Invalid email")?;
+
+    let passphrase = args.passphrase.unwrap_or_else(|| {
+        {
+            println!("Put nothing for no password");
+            prompt_password("Set a password:")
         }
+        .unwrap()
+    });
+
+    let algorithm = match args.algorithm {
+        Algorithm::Rsa2048 => KeyType::Rsa(2048),
+        Algorithm::Rsa3072 => KeyType::Rsa(3072),
+        Algorithm::Rsa4096 => KeyType::Rsa(4096),
+        Algorithm::Rsa8192 => KeyType::Rsa(8192),
+    };
+
+    let mut options = GenerationOptions::default();
+
+    options
+        .identity(&name, &email)
+        .password(&passphrase)
+        .algorithm(algorithm);
+    if args.real_user_id {
+        options.use_real_user_id();
     }
+    let built_options = options.build();
 
-    // let passphrase = args
-    //     .passphrase
-    //     .unwrap_or_else(|| prompt_password("password").unwrap());
-    let passphrase = "asdf";
-
-    let key_pair = generate_key_pair(name.clone(), email.clone(), passphrase.to_owned())
-        .expect("Failed to generate key pair");
+    let key_pair = generate_key_pair(built_options).expect("Failed to generate key pair");
 
     let priv_key = key_pair
         .secret_key
@@ -113,13 +223,13 @@ pub async fn command(args: Args) -> Result<()> {
     fs::write(key_dir.join("private.key"), &priv_key).expect("Failed to write private key to file");
     fs::write(key_dir.join("public.key"), &pub_key).expect("Failed to write public key to file");
 
-    let hashed_note = generate_hashed_primary_user_id(name.clone(), email.clone());
+    let hashed_note = generate_hashed_primary_user_id(&name, &email);
     let key_to_insert: Key = Key {
         fingerprint: fingerprint.clone(),
         note: "".to_string(),
         primary_user_id: format!("{} <{}>", &name, &email),
         hashed_note: hashed_note.clone(),
-        pubkey_only: None,
+        pubkey_only: Some(false),
         uuid: None,
     };
 
@@ -132,7 +242,7 @@ pub async fn command(args: Args) -> Result<()> {
 
     config.write().context("Failed to write config")?;
 
-    if config.online {
+    if online {
         let id = SDK::new_user(&username, &pub_key).await?;
         println!("User ID: {}", id);
         config

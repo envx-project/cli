@@ -6,6 +6,8 @@ pub(super) use colored::Colorize;
 pub mod delete;
 pub mod get;
 pub mod new;
+pub mod secrets;
+pub mod set;
 
 // No subcommands
 pub mod add_user_to_project;
@@ -18,7 +20,6 @@ pub mod gen;
 pub mod import;
 pub mod link;
 pub mod run;
-pub mod set;
 pub mod shell;
 pub mod sign;
 pub mod unlink;

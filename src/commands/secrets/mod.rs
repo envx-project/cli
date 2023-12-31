@@ -7,10 +7,9 @@ pub(super) use colored::Colorize;
 use crate::commands_enum;
 use clap::Subcommand;
 
-pub mod key;
-pub mod project;
+pub mod set;
 
-/// Create a resource. (project, key)
+/// Manage secrets (set, get, delete, unset)
 #[derive(Parser)]
 pub struct Args {
     #[clap(subcommand)]
@@ -20,7 +19,7 @@ pub struct Args {
     json: bool,
 }
 
-commands_enum!(project, key);
+commands_enum!();
 
 pub async fn command(args: Args) -> Result<()> {
     Commands::exec(args).await?;

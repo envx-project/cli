@@ -21,7 +21,6 @@ pub struct Args {
     #[clap(long)]
     silent: bool,
 }
-
 // Generates the commands based on the modules in the commands directory
 // Specify the modules you want to include in the commands_enum! macro
 commands_enum!(
@@ -35,7 +34,6 @@ commands_enum!(
     import,
     link,
     run,
-    set,
     shell,
     sign,
     unlink,
@@ -45,14 +43,15 @@ commands_enum!(
     version,
     // commands with subcommands
     delete,
+    get,
     new,
-    get
+    secrets,
+    set
 );
 
 #[tokio::main]
 async fn main() -> Result<()> {
     let cli = Args::parse();
-
     match Commands::exec(cli).await {
         Ok(_) => {}
         Err(e) => {

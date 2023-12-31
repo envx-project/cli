@@ -63,8 +63,6 @@ impl SDK {
         let res = match res {
             Ok(r) => r.text().await?,
             Err(e) => {
-                dbg!(&e);
-
                 return Err(anyhow!(format!(
                     "Failed to create new user: {}",
                     e.to_string()

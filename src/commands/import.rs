@@ -33,7 +33,7 @@ pub async fn command(args: Args) -> Result<()> {
 
             println!("Importing key: {}", fingerprint);
 
-            let first_user_id = pubkey.details.users.get(0).unwrap().id.id().to_string();
+            let first_user_id = pubkey.details.users.first().unwrap().id.id().to_string();
 
             let (primary_user_id, hashed_note) =
                 if only_hex(&first_user_id) && first_user_id.len() == 128 {

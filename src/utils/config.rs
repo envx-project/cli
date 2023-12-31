@@ -12,6 +12,7 @@ use std::path::PathBuf;
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Config {
+    /// Salt to use while hashing
     pub salt: String,
     /// The fingerprint of the primary signing key
     pub primary_key: String,
@@ -41,19 +42,13 @@ impl Default for Config {
             keys: vec![],
             online: false,
             sdk_url: None,
-            settings: None,
+            settings: Some(Settings::default()),
             projects: vec![],
         }
     }
 }
 
 impl Config {
-    // pub fn write(&self) -> Result<()> {
-    //     write_config(self)?;
-    //
-    //     Ok(())
-    // }
-
     /// Vulnerable to fs race conditions
     /// should rewrite using file locks
     pub fn write(&self) -> Result<()> {

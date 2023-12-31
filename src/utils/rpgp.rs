@@ -5,6 +5,8 @@ use colored::Colorize;
 use crypto_hash::{hex_digest, Algorithm};
 use hex::ToHex;
 use pgp::composed::message::Message;
+use pgp::crypto::hash::HashAlgorithm;
+use pgp::KeyType;
 use pgp::{composed, composed::signed_key::*, crypto, types::SecretKeyTrait, Deserializable};
 use rand::prelude::*;
 use rayon::iter::{IntoParallelRefIterator, ParallelIterator};
@@ -27,22 +29,77 @@ pub(crate) fn get_vault_location() -> anyhow::Result<std::path::PathBuf, anyhow:
     Ok(path)
 }
 
-pub fn generate_key_pair(
-    name: String,
-    email: String,
-    password: String,
-) -> Result<KeyPair, anyhow::Error> {
+#[derive(Clone, Debug)]
+pub struct GenerationOptions {
+    pub name: String,
+    pub email: String,
+    pub password: Option<String>,
+    pub algorithm: Option<KeyType>,
+    pub real_user_id: Option<bool>,
+}
+
+impl GenerationOptions {
+    pub fn default() -> Self {
+        Self {
+            name: "".into(),
+            email: "".into(),
+            password: None,
+            algorithm: None,
+            real_user_id: None,
+        }
+    }
+
+    pub fn identity(&mut self, name: &str, email: &str) -> &mut Self {
+        self.name = name.into();
+        self.email = email.into();
+        self
+    }
+
+    pub fn password(&mut self, password: &str) -> &mut Self {
+        self.password = Some(password.into());
+        self
+    }
+
+    pub fn algorithm(&mut self, algorithm: KeyType) -> &mut Self {
+        self.algorithm = Some(algorithm);
+        self
+    }
+
+    pub fn use_real_user_id(&mut self) -> &mut Self {
+        self.real_user_id = Some(true);
+        self
+    }
+
+    pub fn build(&mut self) -> Self {
+        self.clone()
+    }
+}
+
+pub fn generate_key_pair(options: GenerationOptions) -> Result<KeyPair, anyhow::Error> {
+    let GenerationOptions {
+        name,
+        email,
+        password,
+        algorithm,
+        real_user_id,
+    } = options;
+
     let mut key_params = composed::key::SecretKeyParamsBuilder::default();
 
-    // name email mix, + salt and hash as the primary_user_id
     key_params
-        // change to 4096 later
-        .key_type(composed::KeyType::Rsa(2048))
+        .key_type(match algorithm {
+            Some(algo) => algo,
+            None => KeyType::Rsa(2048),
+        })
+        .primary_user_id(match real_user_id {
+            Some(true) => format!("{} <{}>", &name, &email),
+            _ => generate_hashed_primary_user_id(&name, &email),
+        })
         .can_create_certificates(false)
-        .can_sign(true)
+        // .can_sign(true)
         .can_encrypt(true)
-        .passphrase(Some(password.clone()))
-        .primary_user_id(generate_hashed_primary_user_id(name.clone(), email.clone()))
+        .passphrase(password.clone())
+        .preferred_hash_algorithms(smallvec![HashAlgorithm::SHA3_512, HashAlgorithm::SHA2_256])
         .preferred_symmetric_algorithms(smallvec![crypto::sym::SymmetricKeyAlgorithm::AES256]);
 
     let secret_key_params = key_params
@@ -53,7 +110,8 @@ pub fn generate_key_pair(
         .generate()
         .expect("Failed to generate a plain key.");
 
-    let passwd_fn = || password.clone();
+    // rpgp crate requires password to be a FnOnce() -> String
+    let passwd_fn = || password.clone().unwrap_or_default();
 
     let signed_secret_key = secret_key
         .sign(passwd_fn)
@@ -128,7 +186,7 @@ pub fn hash_string(input: &str) -> String {
     hash.to_string()
 }
 
-pub fn generate_hashed_primary_user_id(name: String, email: String) -> String {
+pub fn generate_hashed_primary_user_id(name: &str, email: &str) -> String {
     hash_string(&format!("{}{}{}", name, email, &get_config().unwrap().salt)).to_uppercase()
 }
 
