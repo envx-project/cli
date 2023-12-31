@@ -385,8 +385,10 @@ impl SDK {
         // GET /projects
         let client = reqwest::Client::new();
 
+        let url = get_api_url().join("projects")?;
+
         let res = client
-            .get(get_api_url().join("projects")?)
+            .get(url)
             .header(
                 header::AUTHORIZATION,
                 Self::auth_header(partial_fingerprint).await?,
