@@ -135,17 +135,17 @@ jobs:
           tag_name: v${{ needs.release-please.outputs.envx_version }}
           files: envx-${{ needs.release-please.outputs.envx_version }}-${{ matrix.target }}*
 
-      - name: Install cargo-deb
-        if: matrix.target == 'x86_64-unknown-linux-musl'
-        run: cargo install cargo-deb
-
-      - name: Generate .deb package file
-        if: matrix.target == 'x86_64-unknown-linux-musl'
-        run: cargo deb --target x86_64-unknown-linux-musl --output envx-${{ needs.release-please.outputs.envx_version }}-amd64.deb
-
-      - name: Upload .deb package file
-        if: matrix.target == 'x86_64-unknown-linux-musl'
-        uses: svenstaro/upload-release-action@v2
-        with:
-          tag: ${{ needs.release-please.outputs.envx_version }}
-          file: envx-${{ needs.release-please.outputs.envx_version }}-amd64.deb
+      # - name: Install cargo-deb
+      #   if: matrix.target == 'x86_64-unknown-linux-musl'
+      #   run: cargo install cargo-deb
+      #
+      # - name: Generate .deb package file
+      #   if: matrix.target == 'x86_64-unknown-linux-musl'
+      #   run: cargo deb --target x86_64-unknown-linux-musl --output envx-${{ needs.release-please.outputs.envx_version }}-amd64.deb
+      #
+      # - name: Upload .deb package file
+      #   if: matrix.target == 'x86_64-unknown-linux-musl'
+      #   uses: svenstaro/upload-release-action@v2
+      #   with:
+      #     tag: ${{ needs.release-please.outputs.envx_version }}
+      #     file: envx-${{ needs.release-please.outputs.envx_version }}-amd64.deb
