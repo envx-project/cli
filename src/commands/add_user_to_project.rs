@@ -86,8 +86,10 @@ pub async fn command(args: Args) -> Result<()> {
     let client = reqwest::Client::new();
     let auth_token = get_token(&key.fingerprint, &uuid).await?;
 
+    let url = get_api_url().join("/variables/update-many").unwrap();
+
     let res = client
-        .post(&format!("{}/variables/update-many", get_api_url()))
+        .post(url)
         .header(header::AUTHORIZATION, format!("Bearer {}", auth_token))
         .json(&body)
         .send()
