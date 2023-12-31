@@ -27,7 +27,7 @@ pub async fn command(args: Args) -> Result<()> {
         bail!(
             "{}\n{}",
             "No KV pairs provided".red(),
-            "Usage: rpgp set key=value [key=value]...",
+            "Usage: envx set key=value [key=value]...",
         );
     }
 
