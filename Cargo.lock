@@ -752,7 +752,7 @@ dependencies = [
 
 [[package]]
 name = "envx"
-version = "0.3.8"
+version = "0.3.9"
 dependencies = [
  "anyhow",
  "base64 0.21.0",
