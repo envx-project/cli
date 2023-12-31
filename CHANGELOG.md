@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.4.0](https://github.com/env-store/rusty-cli/compare/v0.3.9...v0.4.0) (2023-12-31)
+
+
+### Features
+
+* fix variables ([e7cc76f](https://github.com/env-store/rusty-cli/commit/e7cc76fd05a8cc74d3a9d55e1a39693c0e10078d))
+
 ## [0.3.9](https://github.com/env-store/rusty-cli/compare/0.3.8...v0.3.9) (2023-12-31)
 
 
