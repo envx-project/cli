@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.9](https://github.com/env-store/rusty-cli/compare/0.3.8...v0.3.9) (2023-12-31)
+
+
+### Bug Fixes
+
+* install.sh ([aebbf7a](https://github.com/env-store/rusty-cli/commit/aebbf7a6ada550cbb77c6923299eb660cbeb57fc))
+
 ## [0.3.8](https://github.com/env-store/rusty-cli/compare/v0.3.7...v0.3.8) (2023-12-30)
 
 
