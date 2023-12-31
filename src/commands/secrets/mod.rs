@@ -19,7 +19,7 @@ pub struct Args {
     json: bool,
 }
 
-commands_enum!();
+commands_enum!(set);
 
 pub async fn command(args: Args) -> Result<()> {
     Commands::exec(args).await?;
