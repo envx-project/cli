@@ -7,7 +7,17 @@ pub struct Args {}
 
 pub async fn command(_args: Args) -> Result<()> {
     let mut config = get_config()?;
-    config.unset_project()?;
-    println!("Unset project");
+    let unset = config.unset_project()?;
+
+    // There should only ever be one project unset
+    // but the unset command unsets all projects that match the current directory
+
+    println!("{}", "Unset project(s):".green());
+    for project in unset {
+        println!("  {}", project);
+    }
+
+    // println!("{} {}", "Unset project:".green(), unset[0]);
+
     Ok(())
 }

@@ -59,8 +59,6 @@ pub async fn command(args: Args) -> Result<()> {
 
             vault_path.push(format!("{}/public.key", &key.fingerprint));
             fs::write(vault_path, pubkey.to_armored_string(None)?)?;
-
-            dbg!(key.clone());
         }
     }
 
