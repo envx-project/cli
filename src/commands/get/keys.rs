@@ -17,7 +17,13 @@ pub async fn command(_args: Args) -> Result<()> {
             true => &key.fingerprint,
             false => &key.fingerprint[..8],
         };
-        println!("\t{} {}", fingerprint, key.primary_user_id);
+
+        let uuid = match &key.uuid {
+            Some(uuid) => uuid,
+            None => "Not on remote",
+        };
+
+        println!("\t{} {} | {}", fingerprint, key.primary_user_id, uuid);
     }
 
     Ok(())
