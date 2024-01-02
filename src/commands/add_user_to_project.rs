@@ -33,6 +33,7 @@ pub async fn command(args: Args) -> Result<()> {
         Some(u) => u,
         None => prompt_text("User ID: ")?,
     };
+    let user_id = user_id.trim().to_string();
 
     let config = get_config()?;
     let key = config.get_key_or_default(args.key)?;

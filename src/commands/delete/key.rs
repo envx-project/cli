@@ -1,7 +1,4 @@
 // TODO: also delete keys on the server side
-
-use std::thread::JoinHandle;
-
 use crate::{
     sdk::SDK,
     utils::{key::Key, prompt::prompt_multi_options},
@@ -9,7 +6,6 @@ use crate::{
 
 use super::*;
 use anyhow::Context;
-use rayon::iter::{IntoParallelRefIterator, ParallelIterator};
 
 /// Delete a key (Caution, keys will still stay on the server for now)
 #[derive(Debug, Parser)]
@@ -24,14 +20,14 @@ pub struct Args {
 
 pub async fn command(args: Args) -> Result<()> {
     let mut config = crate::utils::config::get_config().context("Failed to get config")?;
-    let key_list = config.keys.clone();
-    let kl_arc = std::sync::Arc::new(key_list);
+    let kl_arc = std::sync::Arc::new(&config.keys);
 
     let selected: Vec<String> = match args.key {
         Some(key) => {
             let key = config.get_key(&key).context("Failed to get key")?;
             vec![key.fingerprint.clone()]
         }
+
         None => prompt_multi_options("Select keys to delete", config.keys.clone())?
             .iter()
             .map(|k| k.fingerprint.clone())
@@ -52,80 +48,46 @@ pub async fn command(args: Args) -> Result<()> {
 
     println!("Deleting keys: {:?}", selected);
 
-    let tasks: Vec<_> = selected
-        .into_iter()
-        .map(|mut item| -> tokio::task::JoinHandle<anyhow::Result<()>> {
-            tokio::spawn(async {
-                // let key = find(&item, &key_list).expect("Failed to find key");
-                // let key = kl_arc
-                //     .iter()
-                //     .find(|k| k.fingerprint == item)
-                //     .expect("Failed to find key")
-                //     .clone();
+    let keys = selected
+        .iter()
+        .map(|it| {
+            let key = find(it, &kl_arc).expect("Failed to find key (1)");
+            key
+        })
+        .collect::<Vec<_>>();
 
-                // if key.uuid.is_some() {
-                //     println!("Deleting key {} on server", key);
-                //     SDK::delete_key(&key.fingerprint).await.unwrap();
-                // } else {
-                //     println!("Key {} not on server", key);
-                // }
-                //
-                let vault_location = crate::utils::rpgp::get_vault_location()?;
-                // let key_dir = vault_location.join(&key.fingerprint);
-                // if key_dir.exists() {
-                //     std::fs::remove_dir_all(key_dir)
-                //         .context("Failed to delete key directory")
-                //         .unwrap();
-                // } else {
-                //     println!("Key {} not on disk", key);
-                // }
-                //
-                // item;
+    let tasks: Vec<_> = keys
+        .into_iter()
+        .map(|item| -> tokio::task::JoinHandle<anyhow::Result<()>> {
+            tokio::spawn(async move {
+                let key_dir = crate::utils::rpgp::get_vault_location()?.join(&item.fingerprint);
+
+                if item.uuid.is_some() {
+                    println!("Deleting key {} on server", &item);
+                    SDK::delete_key(&item.fingerprint).await?;
+                } else {
+                    println!("Key {} not on server", item);
+                }
+
+                if key_dir.exists() {
+                    std::fs::remove_dir_all(key_dir)
+                        .context("Failed to delete key directory")
+                        .unwrap();
+                } else {
+                    println!("Key {} not on disk", item);
+                }
 
                 Ok(())
             })
         })
         .collect();
 
-    // selected.iter().for_each(|key| {});
-
-    // &selected.par_iter().for_each(|key| async {
-    //     let key = find(&key, &key_list).expect("Failed to find key");
-    //
-    //     if key.uuid.is_some() {
-    //         // println!("Deleting key {} on server", key);
-    //         SDK::delete_key(&key.fingerprint).await.unwrap();
-    //     } else {
-    //         // println!("Key {} not on server", key);
-    //     }
-    //
-    //     let key_dir = vault_location.join(&key.fingerprint);
-    //     if key_dir.exists() {
-    //         std::fs::remove_dir_all(key_dir)
-    //             .context("Failed to delete key directory")
-    //             .unwrap();
-    //     } else {
-    //         // println!("Key {} not on disk", key);
-    //     }
-    // });
-
-    // for key in &selected {
-    //     let key = find(&key, &key_list).expect("Failed to find key");
-    //
-    //     if key.uuid.is_some() {
-    //         // println!("Deleting key {} on server", key);
-    //         SDK::delete_key(&key.fingerprint).await?;
-    //     } else {
-    //         // println!("Key {} not on server", key);
-    //     }
-    //
-    //     let key_dir = vault_location.join(&key.fingerprint);
-    //     if key_dir.exists() {
-    //         std::fs::remove_dir_all(key_dir).context("Failed to delete key directory")?;
-    //     } else {
-    //         // println!("Key {} not on disk", key);
-    //     }
-    // }
+    let results = futures::future::join_all(tasks).await;
+    for result in results {
+        result
+            .context("Failed to join thread")?
+            .context("Failed to delete key")?;
+    }
 
     config.keys.retain(|k| !&selected.contains(&k.fingerprint));
 
