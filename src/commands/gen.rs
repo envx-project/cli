@@ -124,9 +124,17 @@ pub async fn command(args: Args) -> Result<()> {
     };
 
     if config.online {
-        let id = SDK::new_user(&username, &pub_key).await?;
-        println!("User ID: {}", id);
-        key_to_insert.uuid = Some(id);
+        match SDK::new_user(&username, &pub_key).await {
+            Ok(id) => {
+                println!("User ID: {}", id);
+                key_to_insert.uuid = Some(id);
+            }
+            Err(_) => {
+                eprintln!(
+                    "Failed to create user on API, but thats ok...\nContinuing with generation...",
+                );
+            }
+        };
     }
 
     config.keys.push(key_to_insert);

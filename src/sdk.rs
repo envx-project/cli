@@ -431,18 +431,16 @@ impl SDK {
 
         let url = get_api_url().join("user/")?.join(&key.uuid.unwrap())?;
 
-        let res = client
+        client
             .delete(url)
             .header(
                 header::AUTHORIZATION,
                 Self::auth_header(partial_fingerprint).await?,
             )
             .send()
+            .await?
+            .text()
             .await?;
-
-        let text = res.text().await?;
-
-        dbg!(text);
 
         Ok(())
     }
