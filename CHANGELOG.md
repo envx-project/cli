@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.4.1](https://github.com/env-store/rusty-cli/compare/v0.4.0...v0.4.1) (2024-01-02)
+
+
+### Bug Fixes
+
+* proper error handling for set ([89609a7](https://github.com/env-store/rusty-cli/commit/89609a7fe3fe7fb3e4120c1121434af8b544bcf6))
+* rpgp -&gt; envx typo ([9121192](https://github.com/env-store/rusty-cli/commit/9121192b1bdf72745ca4d4984bfb718efbefb30d))
+
 ## [0.4.0](https://github.com/env-store/rusty-cli/compare/v0.3.9...v0.4.0) (2023-12-31)
 
 
