@@ -130,9 +130,9 @@ pub async fn command(args: Args) -> Result<()> {
                 key_to_insert.uuid = Some(id);
             }
             Err(_) => {
-                eprintln!(
-                    "Failed to create user on API, but thats ok...\nContinuing with generation...",
-                );
+                eprintln!("Failed to create user on API");
+                eprintln!("Continuing with generation...");
+                eprintln!("You can create a user later with `envcli upload`");
             }
         };
     }

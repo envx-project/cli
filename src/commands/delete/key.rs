@@ -1,4 +1,3 @@
-// TODO: also delete keys on the server side
 use super::*;
 use crate::{
     sdk::SDK,
@@ -62,8 +61,14 @@ pub async fn command(args: Args) -> Result<()> {
                 let key_dir = crate::utils::rpgp::get_vault_location()?.join(&item.fingerprint);
 
                 if item.uuid.is_some() {
-                    println!("Deleting key {} on server", &item);
-                    SDK::delete_key(&item.fingerprint).await?;
+                    println!("Deleting key {} on server...", &item);
+                    match SDK::delete_key(&item.fingerprint).await {
+                        Ok(_) => {}
+                        Err(e) => {
+                            println!("Failed to delete key on server: {}", e);
+                            return Err(anyhow::Error::msg("Failed to delete key on server"));
+                        }
+                    }
                 } else {
                     println!("Key {} not on server", item);
                 }

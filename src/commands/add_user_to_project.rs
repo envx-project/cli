@@ -47,7 +47,7 @@ pub async fn command(args: Args) -> Result<()> {
 
     let project_info = SDK::get_project_info(&project_id, &key.fingerprint).await?;
 
-    let (kvpairs, mut partials) = SDK::get_variables(&project_id, &key.fingerprint).await?; 
+    let (kvpairs, mut partials) = SDK::get_variables(&project_id, &key.fingerprint).await?;
 
     let mut recipients = project_info
         .users
@@ -62,11 +62,6 @@ pub async fn command(args: Args) -> Result<()> {
         .collect::<HashSet<String>>()
         .into_iter()
         .collect::<Vec<String>>();
-
-    let pubkeys = recipients
-        .iter()
-        .map(|k| Ok(SignedPublicKey::from_string(k)?.0))
-        .collect::<Result<Vec<SignedPublicKey>>>()?;
 
     let pubkeys = recipients
         .iter()
