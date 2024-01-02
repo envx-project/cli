@@ -12,6 +12,7 @@ pub mod projects;
 use crate::commands_enum;
 use clap::Subcommand;
 
+/// Get a resource. (project, key, config)
 #[derive(Parser)]
 pub struct Args {
     #[clap(subcommand)]

@@ -1,10 +1,9 @@
 // TODO: also delete keys on the server side
+use super::*;
 use crate::{
     sdk::SDK,
     utils::{key::Key, prompt::prompt_multi_options},
 };
-
-use super::*;
 use anyhow::Context;
 
 /// Delete a key (Caution, keys will still stay on the server for now)

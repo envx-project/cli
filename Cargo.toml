@@ -1,9 +1,23 @@
 [package]
 name = "envx"
-version = "0.2.1"
+version = "0.4.0"
 edition = "2021"
+license = "MIT"
+authors = ["Alexander Ng <alex@ayo.icu>"]
+description = "Interact with envx servers via CLI"
+readme = "README.md"
+homepage = "https://github.com/env-store/rusty-cli"
+repository = "https://github.com/env-store/rusty-cli"
+rust-version = "1.75.0"
+default-run = "envx"
+include = ["src/**/*", "LICENSE", "README.md"]
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[[bin]]
+name = "envx"
+path = "src/main.rs"
+
 
 [dependencies]
 anyhow = "1.0.71"
@@ -45,4 +59,5 @@ winapi = { version = "0.3.9", features = [
 ] }
 chrono = { version = "0.4", features = ["serde"] }
 rayon = "1.8.0"
+openssl = { version = "0.10", features = ["vendored"] }
 futures = "0.3"

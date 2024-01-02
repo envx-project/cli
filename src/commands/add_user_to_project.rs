@@ -47,7 +47,7 @@ pub async fn command(args: Args) -> Result<()> {
 
     let project_info = SDK::get_project_info(&project_id, &key.fingerprint).await?;
 
-    let (kvpairs, mut partials) = SDK::get_variables(&project_id, &key.fingerprint).await?;
+    let (kvpairs, mut partials) = SDK::get_variables(&project_id, &key.fingerprint).await?; 
 
     let mut recipients = project_info
         .users
@@ -62,6 +62,11 @@ pub async fn command(args: Args) -> Result<()> {
         .collect::<HashSet<String>>()
         .into_iter()
         .collect::<Vec<String>>();
+
+    let pubkeys = recipients
+        .iter()
+        .map(|k| Ok(SignedPublicKey::from_string(k)?.0))
+        .collect::<Result<Vec<SignedPublicKey>>>()?;
 
     let pubkeys = recipients
         .iter()
@@ -89,8 +94,10 @@ pub async fn command(args: Args) -> Result<()> {
     let client = reqwest::Client::new();
     let auth_token = get_token(&key.fingerprint, &uuid).await?;
 
+    let url = get_api_url().join("/variables/update-many").unwrap();
+
     let res = client
-        .post(&format!("{}/variables/update-many", get_api_url()))
+        .post(url)
         .header(header::AUTHORIZATION, format!("Bearer {}", auth_token))
         .json(&body)
         .send()
