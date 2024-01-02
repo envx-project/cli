@@ -21,7 +21,7 @@ pub async fn command(args: Args) -> Result<()> {
 
     let default = Settings::default().to_btreemap()?;
     let possible_keys = default.keys().collect::<Vec<_>>();
-    if !possible_keys.contains(&&key.clone().to_string()) {
+    if !possible_keys.contains(&&key.to_string()) {
         let owned_possible_keys = possible_keys
             .iter()
             .map(|key| key.to_string())

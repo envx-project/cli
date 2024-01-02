@@ -7,7 +7,7 @@ pub(super) use colored::Colorize;
 pub mod config;
 pub mod keys;
 pub mod project;
-// pub mod projects;
+pub mod projects;
 
 use crate::commands_enum;
 use clap::Subcommand;
@@ -21,7 +21,7 @@ pub struct Args {
     json: bool,
 }
 
-commands_enum!(project, config, keys);
+commands_enum!(project, config, keys, projects);
 
 pub async fn command(args: Args) -> Result<()> {
     Commands::exec(args).await?;

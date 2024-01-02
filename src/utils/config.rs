@@ -3,7 +3,9 @@
 use super::key::Key;
 use super::rpgp::get_vault_location;
 use super::settings::Settings;
+use anyhow::anyhow;
 use anyhow::{Context, Result};
+use colored::Colorize;
 use home::home_dir;
 use serde::{Deserialize, Serialize};
 use std::fs::{self, File};
@@ -12,6 +14,7 @@ use std::path::PathBuf;
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Config {
+    /// TODO: rethink Salting hashes
     pub salt: String,
     /// The fingerprint of the primary signing key
     pub primary_key: String,
@@ -35,12 +38,14 @@ pub struct Project {
 
 impl Default for Config {
     fn default() -> Self {
+        let salt = rand::random::<[u8; 32]>();
+        let salt = hex::encode(salt);
         Self {
-            salt: "".into(),
+            salt,
             primary_key: "".into(),
             keys: vec![],
-            online: false,
-            sdk_url: None,
+            online: true,
+            sdk_url: Some("https://api.env-cli.com".into()),
             settings: None,
             projects: vec![],
         }
@@ -48,12 +53,6 @@ impl Default for Config {
 }
 
 impl Config {
-    // pub fn write(&self) -> Result<()> {
-    //     write_config(self)?;
-    //
-    //     Ok(())
-    // }
-
     /// Vulnerable to fs race conditions
     /// should rewrite using file locks
     pub fn write(&self) -> Result<()> {
@@ -62,6 +61,7 @@ impl Config {
         let mut writer = BufWriter::new(file);
         let contents = serde_json::to_string_pretty(self)
             .context("Failed to serialize config to JSON string")?;
+
         writer
             .write_all(contents.as_bytes())
             .context("Failed to write config to file")?;
@@ -170,17 +170,44 @@ impl Config {
         Ok(())
     }
 
-    pub fn unset_project(&mut self) -> Result<()> {
+    pub fn unset_project(&mut self) -> Result<Vec<String>> {
         let path = std::env::current_dir()?;
+        let matching = self
+            .projects
+            .iter()
+            .filter(|p| p.path == path)
+            .map(|p| p.project_id.clone())
+            .collect::<Vec<String>>();
+
+        if matching.is_empty() {
+            return Err(anyhow!("No project set in this directory".red()));
+        }
+
         self.projects.retain(|p| p.path != path);
         self.write()?;
+        Ok(matching)
+    }
 
+    pub fn delete_project(&mut self, project_id: &str) -> Result<()> {
+        if self.projects.is_empty() {
+            return Err(anyhow!("No projects to delete".red()));
+        }
+        if !self
+            .projects
+            .iter()
+            .any(|p| p.project_id == project_id.to_string())
+        {
+            return Err(anyhow!("Project not found".red()));
+        }
+        self.projects.retain(|p| p.project_id != project_id);
+        self.write()?;
         Ok(())
     }
 
     pub fn set_uuid(&mut self, fingerprint: &str, uuid: &str) -> Result<()> {
-        let mut key = Self::get_key(self, fingerprint)?;
+        let mut key = Self::get_key(self, fingerprint)?.clone();
         key.uuid = Some(uuid.to_string());
+        self.keys.push(key);
         self.write()?;
         Ok(())
     }

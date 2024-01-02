@@ -1,17 +1,16 @@
-use std::collections::HashSet;
-
 use super::*;
 use crate::{
     sdk::{get_api_url, SDK},
     utils::{
         auth::get_token, choice::Choice, config::get_config, partial_variable::PartialVariable,
-        rpgp::encrypt_multi,
+        prompt::prompt_text, rpgp::encrypt_multi,
     },
 };
 use pgp::{Deserializable, SignedPublicKey};
 use rayon::iter::{IntoParallelRefIterator, ParallelIterator};
 use reqwest::header;
 use serde_json::json;
+use std::collections::HashSet;
 
 /// Add a user to a project
 #[derive(Parser)]
@@ -26,22 +25,28 @@ pub struct Args {
 
     /// User ID to add to project
     #[clap(short, long)]
-    user_id: String,
+    user_id: Option<String>,
 }
 
 pub async fn command(args: Args) -> Result<()> {
-    let config = get_config()?;
+    let user_id = match args.user_id {
+        Some(u) => u,
+        None => prompt_text("User ID: ")?,
+    };
 
+    let config = get_config()?;
     let key = config.get_key_or_default(args.key)?;
     let uuid = key.uuid.clone().unwrap();
 
-    let (_, user_public_key_to_add) = SDK::get_user(&key.fingerprint, &args.user_id).await?;
+    let (_, public_key) = SDK::get_user(&key.fingerprint, &user_id)
+        .await
+        .context("Failed to get user, is the user ID correct?")?;
 
     let project_id = Choice::try_project(args.project_id, &key.fingerprint).await?;
 
     let project_info = SDK::get_project_info(&project_id, &key.fingerprint).await?;
 
-    let (kvpairs, partials) = SDK::get_variables(&project_id, &key.fingerprint).await?;
+    let (kvpairs, mut partials) = SDK::get_variables(&project_id, &key.fingerprint).await?;
 
     let mut recipients = project_info
         .users
@@ -49,14 +54,13 @@ pub async fn command(args: Args) -> Result<()> {
         .map(|e| e.public_key.clone())
         .collect::<Vec<String>>();
 
-    recipients.push(user_public_key_to_add);
+    recipients.push(public_key);
 
     let recipients = recipients
-        .par_iter()
-        .map(|r| r.as_str())
-        .collect::<HashSet<&str>>()
         .into_iter()
-        .collect::<Vec<&str>>();
+        .collect::<HashSet<String>>()
+        .into_iter()
+        .collect::<Vec<String>>();
 
     let pubkeys = recipients
         .iter()
@@ -69,15 +73,13 @@ pub async fn command(args: Args) -> Result<()> {
         .collect::<Vec<String>>();
 
     let partials = partials
-        .iter()
+        .iter_mut()
         .zip(messages.iter())
-        .map(|(p, m)| PartialVariable {
-            id: p.id.clone(),
-            value: m.clone(),
-            project_id: p.project_id.clone(),
-            created_at: p.created_at.clone(),
+        .map(|(p, m)| {
+            p.value = m.into();
+            p
         })
-        .collect::<Vec<PartialVariable>>();
+        .collect::<Vec<&mut PartialVariable>>();
 
     let body = json!({
         "variables": partials,
@@ -98,7 +100,7 @@ pub async fn command(args: Args) -> Result<()> {
     println!("Updated {} variables", res.len());
     println!("IDs: {:?}", res);
 
-    SDK::add_user_to_project(&key.fingerprint, &args.user_id, &project_id).await?;
+    SDK::add_user_to_project(&key.fingerprint, &user_id, &project_id).await?;
 
     Ok(())
 }

@@ -1,9 +1,12 @@
 // TODO: also delete keys on the server side
 
-use crate::utils::prompt::prompt_multi_options;
+use crate::{
+    sdk::SDK,
+    utils::{key::Key, prompt::prompt_multi_options},
+};
 
 use super::*;
-use anyhow::{bail, Context};
+use anyhow::Context;
 
 /// Delete a key (Caution, keys will still stay on the server for now)
 #[derive(Debug, Parser)]
@@ -13,8 +16,12 @@ pub struct Args {
     key: Option<String>,
 }
 
+// TODOS
+// TODO: fix configuration race condition while deleting multiple keys
+
 pub async fn command(args: Args) -> Result<()> {
     let mut config = crate::utils::config::get_config().context("Failed to get config")?;
+    let key_list = config.keys.clone();
 
     let selected: Vec<String> = match args.key {
         Some(key) => {
@@ -34,6 +41,7 @@ pub async fn command(args: Args) -> Result<()> {
             s.split(" - ")
                 .next()
                 .expect("Failed to split fingerprint")
+                .trim()
                 .to_string()
         })
         .collect::<Vec<_>>();
@@ -42,17 +50,31 @@ pub async fn command(args: Args) -> Result<()> {
 
     let vault_location = crate::utils::rpgp::get_vault_location()?;
 
-    for key in selected {
-        let key_dir = vault_location.join(&key);
-        if !key_dir.exists() {
-            bail!("Key {} does not exist", key);
-        }
-        std::fs::remove_dir_all(key_dir).context("Failed to delete key directory")?;
+    for key in &selected {
+        let key = find(&key, &key_list).expect("Failed to find key");
 
-        config.keys.retain(|k| k.fingerprint != key);
+        if key.uuid.is_some() {
+            // println!("Deleting key {} on server", key);
+            SDK::delete_key(&key.fingerprint).await?;
+        } else {
+            // println!("Key {} not on server", key);
+        }
+
+        let key_dir = vault_location.join(&key.fingerprint);
+        if key_dir.exists() {
+            std::fs::remove_dir_all(key_dir).context("Failed to delete key directory")?;
+        } else {
+            // println!("Key {} not on disk", key);
+        }
     }
+
+    config.keys.retain(|k| !&selected.contains(&k.fingerprint));
 
     config.write().context("Failed to write config")?;
 
     Ok(())
+}
+
+fn find(key: &str, keys: &[Key]) -> Option<Key> {
+    keys.iter().find(|k| k.fingerprint == key).cloned()
 }

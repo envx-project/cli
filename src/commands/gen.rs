@@ -114,7 +114,7 @@ pub async fn command(args: Args) -> Result<()> {
     fs::write(key_dir.join("public.key"), &pub_key).expect("Failed to write public key to file");
 
     let hashed_note = generate_hashed_primary_user_id(name.clone(), email.clone());
-    let key_to_insert: Key = Key {
+    let mut key_to_insert: Key = Key {
         fingerprint: fingerprint.clone(),
         note: "".to_string(),
         primary_user_id: format!("{} <{}>", &name, &email),
@@ -123,22 +123,20 @@ pub async fn command(args: Args) -> Result<()> {
         uuid: None,
     };
 
+    if config.online {
+        let id = SDK::new_user(&username, &pub_key).await?;
+        println!("User ID: {}", id);
+        key_to_insert.uuid = Some(id);
+    }
+
     config.keys.push(key_to_insert);
 
     if config.primary_key.is_empty() {
         println!("Setting primary key to {}...", &fingerprint);
-        config.primary_key = fingerprint.clone();
+        config.primary_key = fingerprint;
     }
 
     config.write().context("Failed to write config")?;
-
-    if config.online {
-        let id = SDK::new_user(&username, &pub_key).await?;
-        println!("User ID: {}", id);
-        config
-            .set_uuid(&fingerprint, &id)
-            .context("Failed to set UUID")?;
-    }
 
     Ok(())
 }
