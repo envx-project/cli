@@ -26,6 +26,10 @@ pub struct SetEnvParams {
 
 pub fn get_api_url() -> Url {
     fn try_get_url() -> Result<Url> {
+        let dev_mode = std::env::var("DEV_MODE").is_ok();
+        if dev_mode {
+            return Ok(Url::parse("http://localhost:3000").unwrap());
+        }
         let url = get_config()?.sdk_url.ok_or(anyhow!("No SDK URL set"))?;
         let url = Url::parse(&url)?;
         Ok(url)
@@ -63,8 +67,6 @@ impl SDK {
         let res = match res {
             Ok(r) => r.text().await?,
             Err(e) => {
-                dbg!(&e);
-
                 return Err(anyhow!(format!(
                     "Failed to create new user: {}",
                     e.to_string()
@@ -421,5 +423,27 @@ impl SDK {
             .await?;
 
         Ok(res)
+    }
+    pub async fn delete_key(partial_fingerprint: &str) -> Result<()> {
+        // DELETE /user/:id
+        let client = reqwest::Client::new();
+
+        let config = get_config()?;
+        let key = config.get_key(partial_fingerprint)?;
+
+        let url = get_api_url().join("user/")?.join(&key.uuid.unwrap())?;
+
+        client
+            .delete(url)
+            .header(
+                header::AUTHORIZATION,
+                Self::auth_header(partial_fingerprint).await?,
+            )
+            .send()
+            .await?
+            .text()
+            .await?;
+
+        Ok(())
     }
 }
