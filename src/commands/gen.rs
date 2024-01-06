@@ -4,8 +4,9 @@ use super::*;
 use crate::sdk::SDK;
 use crate::utils::config::{self};
 use crate::utils::key::Key;
+use crate::utils::keyring::set_password;
 // use crate::utils::prompt::prompt_password;
-use crate::utils::prompt::{prompt_email, prompt_text};
+use crate::utils::prompt::{prompt_email, prompt_password, prompt_text};
 use crate::utils::rpgp::{generate_hashed_primary_user_id, generate_key_pair, get_vault_location};
 use crate::utils::vecu8::ToHex;
 use anyhow::Context;
@@ -33,9 +34,10 @@ pub struct Args {
     #[clap(short, long)]
     email: Option<String>,
 
-    // /// Passphrase to encrypt the key with
-    // #[clap(short, long)]
-    // passphrase: Option<String>,
+    /// Passphrase to encrypt the key with
+    #[clap(short, long)]
+    passphrase: Option<String>,
+
     /// force overwrite of existing key
     #[clap(long = "force", short = 'f')]
     force_overwrite: bool,
@@ -79,10 +81,10 @@ pub async fn command(args: Args) -> Result<()> {
         }
     }
 
-    // let passphrase = args
-    //     .passphrase
-    //     .unwrap_or_else(|| prompt_password("password").unwrap());
-    let passphrase = "asdf";
+    let passphrase = args
+        .passphrase
+        .unwrap_or_else(|| prompt_password("password").unwrap());
+    // let passphrase = "asdf";
 
     let key_pair = generate_key_pair(name.clone(), email.clone(), passphrase.to_owned())
         .expect("Failed to generate key pair");
@@ -97,7 +99,36 @@ pub async fn command(args: Args) -> Result<()> {
         .to_armored_string(None)
         .expect("Failed to convert public key to armored ASCII string");
 
-    let fingerprint: String = key_pair.secret_key.fingerprint().to_hex();
+    let fingerprint = key_pair.secret_key.fingerprint().to_hex();
+
+    let result = set_password(&fingerprint, &passphrase);
+
+    if let Err(e) = result {
+        match e {
+            keyring::Error::TooLong(_, length) => {
+                eprintln!("Password is too long to store in keyring");
+                eprintln!("Length: {}", length);
+                eprintln!("Continuing with generation...");
+            }
+            keyring::Error::Invalid(_, _) => {
+                eprintln!("Password is invalid");
+                eprintln!("Continuing with generation...");
+            }
+            keyring::Error::Ambiguous(c) => {
+                eprintln!("Somehow there are multiple keys with the same fingerprint");
+                eprintln!("Keys: {:?}", c);
+                eprintln!(
+                    "Please submit a bug report at https://github.com/env-cli/rusty-cli/issues/new"
+                );
+                eprintln!("Continuing with generation...");
+            }
+            _ => {
+                eprintln!("Failed to set password in keyring");
+                eprintln!("{}", e);
+                eprintln!("Continuing with generation...");
+            }
+        }
+    }
 
     println!("Fingerprint: {}", fingerprint);
 
@@ -108,6 +139,7 @@ pub async fn command(args: Args) -> Result<()> {
     }
 
     let key_dir = get_vault_location()?.join(fingerprint.clone());
+
     fs::create_dir_all(&key_dir).context("Failed to create key directory")?;
 
     fs::write(key_dir.join("private.key"), &priv_key).expect("Failed to write private key to file");
