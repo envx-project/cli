@@ -84,7 +84,6 @@ pub async fn command(args: Args) -> Result<()> {
     let passphrase = args
         .passphrase
         .unwrap_or_else(|| prompt_password("password").unwrap());
-    // let passphrase = "asdf";
 
     let key_pair = generate_key_pair(name.clone(), email.clone(), passphrase.to_owned())
         .expect("Failed to generate key pair");

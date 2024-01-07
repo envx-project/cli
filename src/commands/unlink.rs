@@ -8,6 +8,7 @@ pub struct Args {}
 pub async fn command(_args: Args) -> Result<()> {
     let mut config = get_config()?;
     let unset = config.unset_project()?;
+    config.write()?;
 
     // There should only ever be one project unset
     // but the unset command unsets all projects that match the current directory

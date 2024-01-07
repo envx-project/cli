@@ -4,12 +4,14 @@ use chrono::Utc;
 use pgp::composed::message::Message;
 use pgp::{crypto, Deserializable, SignedSecretKey};
 
-pub async fn get_token(key: &str, token: &str) -> anyhow::Result<String> {
+use super::keyring::try_get_password;
+
+pub async fn get_token(fingerprint: &str, token: &str) -> anyhow::Result<String> {
     let config = get_config().context("Failed to get config")?;
     let key = config
         .keys
         .iter()
-        .find(|k| k.fingerprint.contains(key))
+        .find(|k| k.fingerprint.contains(fingerprint))
         .ok_or_else(|| anyhow!("Key not found"))?;
 
     let key = key.secret_key().context("Failed to get secret key")?;
@@ -18,7 +20,8 @@ pub async fn get_token(key: &str, token: &str) -> anyhow::Result<String> {
     let msg = Message::new_literal("none", &Utc::now().to_string());
 
     // TODO: get password from user
-    let pw = || "asdf".to_string();
+    let passphrase = try_get_password(fingerprint, &config)?;
+    let pw = || passphrase;
 
     let signature = msg
         .sign(&key, pw, crypto::hash::HashAlgorithm::SHA3_512)

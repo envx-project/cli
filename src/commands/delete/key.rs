@@ -1,7 +1,10 @@
 use super::*;
 use crate::{
     sdk::SDK,
-    utils::{key::Key, prompt::prompt_multi_options},
+    utils::{
+        key::Key,
+        prompt::{prompt_confirm, prompt_multi_options},
+    },
 };
 use anyhow::Context;
 
@@ -11,6 +14,10 @@ pub struct Args {
     /// Fingerprint of the key to delete
     #[clap(short, long)]
     key: Option<String>,
+
+    /// Force deletion of primary key
+    #[clap(short, long)]
+    force: bool,
 }
 
 // TODOS
@@ -19,6 +26,7 @@ pub struct Args {
 pub async fn command(args: Args) -> Result<()> {
     let mut config = crate::utils::config::get_config().context("Failed to get config")?;
     let kl_arc = std::sync::Arc::new(&config.keys);
+    let primary_key = &config.primary_key;
 
     let selected: Vec<String> = match args.key {
         Some(key) => {
@@ -43,6 +51,24 @@ pub async fn command(args: Args) -> Result<()> {
                 .to_string()
         })
         .collect::<Vec<_>>();
+
+    if selected.contains(&primary_key) {
+        println!("You have selected your primary key for deletion.");
+        println!("You will not be able to use envx until you set a new primary key.");
+
+        if args.force {
+            println!("Continuing because of --force");
+        } else {
+            let confirmation = prompt_confirm("Are you sure you want to continue?")?;
+
+            if !confirmation {
+                println!("Aborting...");
+                return Ok(());
+            }
+
+            println!("Set a new primary key with `envx change primary-key`");
+        }
+    }
 
     println!("Deleting keys: {:?}", selected);
 

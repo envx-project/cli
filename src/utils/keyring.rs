@@ -6,6 +6,8 @@ use std::{
     time::{Duration, SystemTime},
 };
 
+use super::{config::Config, prompt::prompt_password};
+
 const SERVICE: &'static str = "envx";
 
 fn get_session_path(fingerprint: &str) -> PathBuf {
@@ -38,14 +40,35 @@ pub fn get_password(fingerprint: &str) -> anyhow::Result<String> {
     if expiry < SystemTime::now() {
         clear_password(&fingerprint)?;
         return Err(anyhow::anyhow!("Session expired"));
-    } else {
-        let keyring = Keyring::new(SERVICE, fingerprint)?;
-        let password = keyring.get_password()?;
-        return Ok(password);
     }
+
+    let keyring = Keyring::new(SERVICE, fingerprint)?;
+    let password = keyring.get_password()?;
+    return Ok(password);
 }
 
 fn clear_password(fingerprint: &str) -> KeyringResult<()> {
     let keyring = Keyring::new(SERVICE, fingerprint)?;
     keyring.delete_password()
+}
+
+pub fn try_get_password(fingerprint: &str, config: &Config) -> anyhow::Result<String> {
+    let password = get_password(fingerprint);
+
+    match password {
+        Ok(p) => Ok(p),
+        Err(e) => {
+            eprintln!("Failed to get password: {}", e);
+            let key = config.get_key(&fingerprint)?;
+            let password = prompt_password(&format!("Enter password for key {}", key))?;
+
+            match set_password(&fingerprint, &fingerprint) {
+                Err(e) => {
+                    eprintln!("Failed to set password: {}", e);
+                }
+                _ => {}
+            }
+            Ok(password)
+        }
+    }
 }

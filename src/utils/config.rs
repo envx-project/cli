@@ -82,6 +82,17 @@ impl Config {
         Ok(primary_public_key)
     }
 
+    /// Set the primary key
+    ///
+    /// - Returns an error if the key doesn't exist
+    ///
+    /// Does not write to disk. Call `config.write()` to write to disk
+    pub fn set_primary_key(&mut self, fingerprint: &str) -> Result<()> {
+        let key = self.get_key(fingerprint)?;
+        self.primary_key = key.fingerprint.clone();
+        Ok(())
+    }
+
     // TODO: write an implementation to add key to config
     /// Add a key to the config and write it to disk
     #[allow(dead_code)]
@@ -98,6 +109,7 @@ impl Config {
         }
     }
 
+    /// Get a key from the config
     pub fn get_key(&self, partial_fingerprint: &str) -> Result<Key> {
         let key = self
             .keys
@@ -138,7 +150,6 @@ impl Config {
         };
 
         self.projects.push(project);
-        self.write()?;
 
         Ok(())
     }
@@ -165,8 +176,6 @@ impl Config {
         };
 
         self.projects.push(new_project);
-        self.write()?;
-
         Ok(())
     }
 
@@ -184,7 +193,6 @@ impl Config {
         }
 
         self.projects.retain(|p| p.path != path);
-        self.write()?;
         Ok(matching)
     }
 
@@ -200,7 +208,6 @@ impl Config {
             return Err(anyhow!("Project not found".red()));
         }
         self.projects.retain(|p| p.project_id != project_id);
-        self.write()?;
         Ok(())
     }
 
@@ -209,7 +216,6 @@ impl Config {
         self.keys.retain(|k| k.fingerprint != fingerprint);
         key.uuid = Some(uuid.to_string());
         self.keys.push(key);
-        self.write()?;
         Ok(())
     }
 }

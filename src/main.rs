@@ -44,6 +44,7 @@ commands_enum!(
     variables,
     version,
     // commands with subcommands
+    change,
     delete,
     new,
     get
