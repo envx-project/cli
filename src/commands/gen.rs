@@ -14,6 +14,9 @@ use pgp::types::KeyTrait;
 use std::fs;
 use std::str;
 
+extern crate keyring;
+use keyring::Error as KeyringError;
+
 /// Generate a key using GPG
 /// Saves the key to ~/.envcli/keys/<fingerprint>
 #[derive(Parser)]
@@ -104,16 +107,16 @@ pub async fn command(args: Args) -> Result<()> {
 
     if let Err(e) = result {
         match e {
-            keyring::Error::TooLong(_, length) => {
+            KeyringError::TooLong(_, length) => {
                 eprintln!("Password is too long to store in keyring");
                 eprintln!("Length: {}", length);
                 eprintln!("Continuing with generation...");
             }
-            keyring::Error::Invalid(_, _) => {
+            KeyringError::Invalid(_, _) => {
                 eprintln!("Password is invalid");
                 eprintln!("Continuing with generation...");
             }
-            keyring::Error::Ambiguous(c) => {
+            KeyringError::Ambiguous(c) => {
                 eprintln!("Somehow there are multiple keys with the same fingerprint");
                 eprintln!("Keys: {:?}", c);
                 eprintln!(

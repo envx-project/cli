@@ -47,7 +47,7 @@ pub fn get_password(fingerprint: &str) -> anyhow::Result<String> {
     return Ok(password);
 }
 
-fn clear_password(fingerprint: &str) -> KeyringResult<()> {
+pub fn clear_password(fingerprint: &str) -> KeyringResult<()> {
     let keyring = Keyring::new(SERVICE, fingerprint)?;
     keyring.delete_password()
 }
@@ -60,9 +60,10 @@ pub fn try_get_password(fingerprint: &str, config: &Config) -> anyhow::Result<St
         Err(e) => {
             eprintln!("Failed to get password: {}", e);
             let key = config.get_key(&fingerprint)?;
-            let password = prompt_password(&format!("Enter password for key {}", key))?;
+            println!("Enter password for key {}", key);
+            let password = prompt_password("Password: ")?;
 
-            match set_password(&fingerprint, &fingerprint) {
+            match set_password(&fingerprint, &password) {
                 Err(e) => {
                     eprintln!("Failed to set password: {}", e);
                 }

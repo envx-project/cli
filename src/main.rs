@@ -45,9 +45,11 @@ commands_enum!(
     version,
     // commands with subcommands
     change,
+    clear,
     delete,
-    new,
-    get
+    get,
+    keyring,
+    new
 );
 
 #[tokio::main]

@@ -1,5 +1,5 @@
 use crate::utils::config::get_config;
-use anyhow::{anyhow, Context, Ok};
+use anyhow::{anyhow, Context};
 use chrono::Utc;
 use pgp::composed::message::Message;
 use pgp::{crypto, Deserializable, SignedSecretKey};
@@ -19,15 +19,44 @@ pub async fn get_token(fingerprint: &str, token: &str) -> anyhow::Result<String>
 
     let msg = Message::new_literal("none", &Utc::now().to_string());
 
-    // TODO: get password from user
     let passphrase = try_get_password(fingerprint, &config)?;
     let pw = || passphrase;
 
-    let signature = msg
-        .sign(&key, pw, crypto::hash::HashAlgorithm::SHA3_512)
-        .context("Failed to sign API authentication challenge")?
-        .to_armored_string(None)
-        .context("Failed to convert signature to armored string")?;
+    let signature = msg.sign(&key, pw, crypto::hash::HashAlgorithm::SHA3_512);
+
+    let signature = match signature {
+        Ok(s) => s,
+        Err(e) => {
+            eprintln!("Failed to sign API authentication challenge: {}", e);
+
+            match e {
+                pgp::errors::Error::Incomplete(_) => {
+                    eprintln!("This is most likely due to a missing or incorrect passphrase.");
+                    println!(
+                        "You can view the saved passphrase with 'envx keyring view <fingerprint>'"
+                    );
+                    println!("Or you can check against the saved passphrase with 'envx keyring check -k <fingerprint> -p <passphrase>'");
+                    println!("Both of these commands are interactive")
+                }
+                _ => {}
+            }
+            return Err(anyhow!("Failed to sign API authentication challenge"));
+        }
+    };
+
+    let signature = match signature.to_armored_string(None) {
+        Ok(s) => s,
+        Err(e) => {
+            println!("Failed to convert signature to armored string: {}", e);
+            return Err(anyhow!("Failed to convert signature to armored string"));
+        }
+    };
+
+    // let signature = msg
+    //     .sign(&key, pw, crypto::hash::HashAlgorithm::SHA3_512)
+    //     .context("Failed to sign API authentication challenge")?
+    //     .to_armored_string(None)
+    //     .context("Failed to convert signature to armored string")?;
 
     let auth_token = serde_json::json!({
         "token": token,

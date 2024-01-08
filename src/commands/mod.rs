@@ -4,8 +4,10 @@ pub(super) use colored::Colorize;
 
 // With subcommands
 pub mod change;
+pub mod clear;
 pub mod delete;
 pub mod get;
+pub mod keyring;
 pub mod new;
 
 // No subcommands

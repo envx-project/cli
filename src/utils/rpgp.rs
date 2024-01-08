@@ -1,13 +1,11 @@
 use super::config::{get_config, Config};
-use super::keyring::{get_password, set_password, try_get_password};
-use super::prompt::prompt_password;
+use super::keyring::try_get_password;
 use anyhow::anyhow;
 use anyhow::{Context, Ok, Result};
 use colored::Colorize;
 use crypto_hash::{hex_digest, Algorithm};
 use hex::ToHex;
 use pgp::composed::message::Message;
-use pgp::types::KeyTrait;
 use pgp::{composed, composed::signed_key::*, crypto, types::SecretKeyTrait, Deserializable};
 use rand::prelude::*;
 use rayon::iter::{IntoParallelRefIterator, ParallelIterator};
