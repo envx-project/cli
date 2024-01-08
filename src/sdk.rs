@@ -46,7 +46,7 @@ impl SDK {
     async fn auth_header(partial_fingerprint: &str) -> Result<String> {
         let config = get_config()?;
         let key = config.get_key(partial_fingerprint)?;
-        let Some(uuid) = key.uuid.clone() else {
+        let Some(uuid) = key.uuid else {
             bail!("No UUID for key {}\nTry envx upload", partial_fingerprint)
         };
         let auth_token = get_token(&key.fingerprint, &uuid).await?;
@@ -148,9 +148,15 @@ impl SDK {
             .send()
             .await?;
 
-        let res = res.json::<Vec<SetManyVariableReturnType>>().await?;
+        let res = res
+            .json::<Vec<SetManyVariableReturnType>>()
+            .await?
+            .iter()
+            .map(|r| &r.id)
+            .cloned()
+            .collect::<Vec<String>>();
 
-        Ok(res.iter().map(|r| r.id.clone()).collect())
+        Ok(res)
     }
 
     pub async fn get_all_variables(
@@ -180,28 +186,27 @@ impl SDK {
 
         let decrypted = decrypt_full_many(
             encrypted
-                .clone()
                 .iter()
                 .map(|e| e.value.clone())
                 .collect::<Vec<String>>(),
             &get_config().unwrap(),
         )?;
 
-        let partials = decrypted
-            .iter()
-            .zip(encrypted.iter())
-            .map(|(d, e)| ParsedPartialVariable {
-                id: e.id.clone(),
-                value: KVPair::from_json(d.clone()).unwrap(),
-                project_id: e.project_id.clone(),
-                created_at: e.created_at.clone(),
-            })
-            .collect::<Vec<ParsedPartialVariable>>();
-
         let parsed = decrypted
             .iter()
-            .map(|d| KVPair::from_json(d.clone()).unwrap())
+            .map(|d| KVPair::from_json(&d).unwrap())
             .collect::<Vec<KVPair>>();
+
+        let partials = decrypted
+            .into_iter()
+            .zip(encrypted.into_iter())
+            .map(move |(d, e)| ParsedPartialVariable {
+                id: e.id,
+                value: KVPair::from_json(&d).unwrap(),
+                project_id: e.project_id,
+                created_at: e.created_at,
+            })
+            .collect::<Vec<ParsedPartialVariable>>();
 
         Ok((parsed, partials))
     }
@@ -231,7 +236,6 @@ impl SDK {
 
         let decrypted = decrypt_full_many(
             encrypted
-                .clone()
                 .iter()
                 .map(|e| e.value.clone())
                 .collect::<Vec<String>>(),
@@ -241,18 +245,18 @@ impl SDK {
         // splice decrypted and encrypted into a Vector of PartialKey
         let partials = decrypted
             .iter()
-            .zip(encrypted.iter())
+            .zip(encrypted.into_iter())
             .map(|(d, e)| PartialVariable {
-                id: e.id.clone(),
+                id: e.id,
                 value: d.clone(),
-                project_id: e.project_id.clone(),
-                created_at: e.created_at.clone(),
+                project_id: e.project_id,
+                created_at: e.created_at,
             })
             .collect::<Vec<PartialVariable>>();
 
         let parsed = decrypted
             .iter()
-            .map(|d| KVPair::from_json(d.clone()).unwrap())
+            .map(|d| KVPair::from_json(d).unwrap())
             .collect::<Vec<KVPair>>();
 
         Ok((parsed, partials))

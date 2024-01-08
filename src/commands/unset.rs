@@ -34,11 +34,9 @@ pub async fn command(args: Args) -> Result<()> {
                 return Err(anyhow::anyhow!("No variables selected"));
             }
 
-            selected
-                .split(" - ")
-                .map(|s| s.to_string())
-                .collect::<Vec<String>>()[0]
-                .clone()
+            let split = selected.split(" - ").collect::<Vec<_>>();
+
+            split.first().unwrap().to_string()
         }
     };
 

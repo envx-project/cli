@@ -37,7 +37,7 @@ pub async fn command(args: Args) -> Result<()> {
 
     let config = get_config()?;
     let key = config.get_key_or_default(args.key)?;
-    let uuid = key.uuid.clone().unwrap();
+    let uuid = key.uuid.unwrap();
 
     let (_, public_key) = SDK::get_user(&key.fingerprint, &user_id)
         .await

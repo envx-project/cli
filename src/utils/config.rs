@@ -71,7 +71,7 @@ impl Config {
 
     #[allow(dead_code)]
     pub fn primary_key(&self) -> Result<String> {
-        let primary_key = self.primary_key.clone();
+        let primary_key = &self.primary_key;
         let primary_key_location = get_vault_location()?
             .join(primary_key.clone())
             .join("public.key");

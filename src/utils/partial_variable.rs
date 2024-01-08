@@ -13,7 +13,7 @@ impl PartialVariable {
     pub fn to_parsed(&self) -> ParsedPartialVariable {
         ParsedPartialVariable {
             id: self.id.clone(),
-            value: KVPair::from_json(self.value.clone()).unwrap(),
+            value: KVPair::from_json(&self.value).unwrap(),
             project_id: self.project_id.clone(),
             created_at: self.created_at.clone(),
         }
@@ -41,8 +41,8 @@ impl ToParsed for Vec<PartialVariable> {
 
     fn zip_to_parsed(&self, kvpairs: Vec<KVPair>) -> Vec<ParsedPartialVariable> {
         self.iter()
-            .zip(kvpairs.iter())
-            .map(|(p, k)| p.zip_to_parsed(k.clone()))
+            .zip(kvpairs.into_iter())
+            .map(|(p, k)| p.zip_to_parsed(k))
             .collect()
     }
 }

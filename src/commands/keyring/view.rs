@@ -22,7 +22,7 @@ pub async fn command(args: Args) -> Result<()> {
 
     let fingerprint = match args.key {
         Some(key) => config.get_key(&key)?.fingerprint,
-        None => prompt_select("Select key to clear password", config.keys.clone())?.fingerprint,
+        None => prompt_select("Select key to clear password", config.keys)?.fingerprint,
     };
 
     let password = get_password(&fingerprint)?;
