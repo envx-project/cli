@@ -1,3 +1,6 @@
+use super::{config::Config, prompt::prompt_password};
+use crate::{constants::MINIMUM_PASSWORD_LENGTH, utils::prompt::prompt_confirm};
+use anyhow::bail;
 use keyring::{Entry as Keyring, Result as KeyringResult};
 use std::{
     fs,
@@ -5,8 +8,6 @@ use std::{
     path::PathBuf,
     time::{Duration, SystemTime},
 };
-
-use super::{config::Config, prompt::prompt_password};
 
 const SERVICE: &'static str = "envx";
 
@@ -54,6 +55,7 @@ pub fn clear_password(fingerprint: &str) -> KeyringResult<()> {
 
 pub fn try_get_password(fingerprint: &str, config: &Config) -> anyhow::Result<String> {
     let password = get_password(fingerprint);
+    let settings = config.get_settings()?;
 
     match password {
         Ok(p) => Ok(p),
@@ -62,6 +64,15 @@ pub fn try_get_password(fingerprint: &str, config: &Config) -> anyhow::Result<St
             let key = config.get_key(&fingerprint)?;
             println!("Enter password for key {}", key);
             let password = prompt_password("Password: ")?;
+            if settings.warn_on_short_passwords && password.len() < MINIMUM_PASSWORD_LENGTH {
+                eprintln!(
+                    "This password is shorter than 8 characters. Are you sure you want to proceed?"
+                );
+                let confirm = prompt_confirm("Continue?")?;
+                if !confirm {
+                    bail!("Aborted")
+                }
+            }
 
             match set_password(&fingerprint, &password) {
                 Err(e) => {

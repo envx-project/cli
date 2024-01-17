@@ -1,9 +1,6 @@
-// use crate::utils::vecu8::ToHex;
-
-use crate::{sdk::get_api_url, utils::keyring::get_password};
+use crate::utils::keyring::get_password;
 
 use super::*;
-// use pgp::{composed::message::Message, types::KeyTrait, Deserializable};
 
 /// Unset the current project
 #[derive(Parser)]

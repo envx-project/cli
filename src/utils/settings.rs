@@ -2,13 +2,13 @@ use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Settings {
-    pub test: String,
+    pub warn_on_short_passwords: bool,
 }
 
 impl Settings {
     pub fn default() -> Self {
         Settings {
-            test: "test".to_string(),
+            warn_on_short_passwords: false,
         }
     }
 }

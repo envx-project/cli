@@ -1,6 +1,5 @@
-use crate::utils::{config::get_config, prompt::prompt_select};
-
 use super::*;
+use crate::utils::{config::get_config, prompt::prompt_select};
 
 #[derive(Parser)]
 pub struct Args {

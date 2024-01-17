@@ -8,6 +8,7 @@ use crate::commands_enum;
 use clap::Subcommand;
 
 pub mod check;
+pub mod clear;
 pub mod view;
 
 /// Delete a resource. (project, key)
@@ -17,7 +18,7 @@ pub struct Args {
     command: Commands,
 }
 
-commands_enum!(view, check);
+commands_enum!(view, check, clear);
 
 pub async fn command(args: Args) -> Result<()> {
     Commands::exec(args).await?;

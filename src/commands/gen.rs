@@ -6,6 +6,7 @@ use crate::utils::config::{self};
 use crate::utils::key::Key;
 use crate::utils::keyring::set_password;
 // use crate::utils::prompt::prompt_password;
+use crate::constants::MINIMUM_PASSWORD_LENGTH;
 use crate::utils::prompt::{prompt_email, prompt_password, prompt_text};
 use crate::utils::rpgp::{generate_hashed_primary_user_id, generate_key_pair, get_vault_location};
 use crate::utils::vecu8::ToHex;
@@ -56,15 +57,22 @@ pub struct Args {
 fn email_validator(email: &str) -> anyhow::Result<(), anyhow::Error> {
     let regex = regex::Regex::new(r"^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$")
         .context("Failed to create regex for email validation")?;
-    if regex.is_match(email) {
-        Ok(())
-    } else {
-        Err(anyhow::Error::msg("Please enter a valid email address"))
+
+    match regex.is_match(email) {
+        true => Ok(()),
+        false => Err(anyhow::Error::msg("Please enter a valid email address")),
     }
+
+    // if regex.is_match(email) {
+    //     Ok(())
+    // } else {
+    //     Err(anyhow::Error::msg("Please enter a valid email address"))
+    // }
 }
 
 pub async fn command(args: Args) -> Result<()> {
     let mut config = config::get_config().context("Failed to get config")?;
+    let settings = config.get_settings()?;
 
     let name = args
         .name
@@ -87,6 +95,12 @@ pub async fn command(args: Args) -> Result<()> {
     let passphrase = args
         .passphrase
         .unwrap_or_else(|| prompt_password("password").unwrap());
+
+    if settings.warn_on_short_passwords && passphrase.len() < MINIMUM_PASSWORD_LENGTH {
+        eprintln!("WARNING: Your password is short");
+        eprintln!("This is not recommended");
+        eprintln!("You can disable this warning with `envx config --no-warn-on-short-passwords`");
+    }
 
     let key_pair = generate_key_pair(name.clone(), email.clone(), passphrase.to_owned())
         .expect("Failed to generate key pair");

@@ -3,6 +3,7 @@ use clap::{Parser, Subcommand};
 use commands::*;
 
 mod commands;
+mod constants;
 mod sdk;
 mod types;
 mod utils;
@@ -44,8 +45,7 @@ commands_enum!(
     variables,
     version,
     // commands with subcommands
-    change,
-    clear,
+    config,
     delete,
     get,
     keyring,
