@@ -117,7 +117,7 @@ pub fn decrypt(
         .context("Decrypting the message")?;
 
     if let Some(msg) = decryptor.next() {
-        let bytes = msg?.get_content()?.unwrap();
+        let bytes = msg?.get_content()?.context("Failed to get content")?;
         let clear_text = String::from_utf8(bytes)?;
         return Ok(clear_text);
     }
@@ -178,7 +178,7 @@ pub fn decrypt_full(message: String, config: &Config) -> Result<String, anyhow::
         get_key(&available_keys[0])?
     };
 
-    let passphrase = try_get_password(&fingerprint, &config)?;
+    let passphrase = try_get_password(&fingerprint, config)?;
 
     let decrypted = decrypt(message.as_str(), &key, passphrase)?;
 
@@ -231,7 +231,7 @@ pub fn decrypt_full_many(
         get_key(&available_keys[0])?
     };
 
-    let passphrase = try_get_password(&fingerprint, &config)?;
+    let passphrase = try_get_password(&fingerprint, config)?;
 
     let decrypted = messages
         .par_iter()

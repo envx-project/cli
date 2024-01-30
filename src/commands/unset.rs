@@ -1,4 +1,5 @@
 use super::*;
+use crate::utils::prompt;
 use crate::{sdk::SDK, utils::config::get_config};
 use anyhow::Context;
 
@@ -22,21 +23,7 @@ pub async fn command(args: Args) -> Result<()> {
         Some(v) => v,
         None => {
             let (_, all_variables) = SDK::get_all_variables(&key.fingerprint).await?;
-            let selected = crate::utils::prompt::prompt_options(
-                "Select variables to delete",
-                all_variables
-                    .iter()
-                    .map(|v| format!("{} - ({}) - {}", v.id, v.value, v.project_id))
-                    .collect::<Vec<String>>(),
-            )?;
-
-            if selected.is_empty() {
-                return Err(anyhow::anyhow!("No variables selected"));
-            }
-
-            let split = selected.split(" - ").collect::<Vec<_>>();
-
-            split.first().unwrap().to_string()
+            prompt::prompt_options("Select variables to delete", all_variables)?.id
         }
     };
 

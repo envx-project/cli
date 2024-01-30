@@ -28,15 +28,19 @@ pub fn get_api_url() -> Url {
     fn try_get_url() -> Result<Url> {
         let dev_mode = std::env::var("DEV_MODE").is_ok();
         if dev_mode {
-            return Ok(Url::parse("http://localhost:3000").unwrap());
+            return Ok(Url::parse("http://localhost:3000")?);
         }
-        let url = get_config()?.sdk_url.ok_or(anyhow!("No SDK URL set"))?;
+        let url = get_config()?
+            .sdk_url
+            .unwrap_or("https://api.env-cli.com".into());
         let url = Url::parse(&url)?;
         Ok(url)
     }
     match try_get_url() {
         Ok(u) => u,
-        Err(_) => Url::parse("http://localhost:3000").unwrap(),
+        Err(_) => Url::parse("http://localhost:3000")
+            .context("Failed to parse URL, this should literally never happen")
+            .unwrap(),
     }
 }
 
@@ -66,12 +70,7 @@ impl SDK {
 
         let res = match res {
             Ok(r) => r.text().await?,
-            Err(e) => {
-                return Err(anyhow!(format!(
-                    "Failed to create new user: {}",
-                    e.to_string()
-                )));
-            }
+            Err(e) => bail!("Failed to create new user: {}", e.to_string()),
         };
 
         Ok(res)
@@ -123,8 +122,8 @@ impl SDK {
 
         let messages = kvpairs
             .par_iter()
-            .map(|k| encrypt_multi(&k.to_json().unwrap(), &pubkeys).unwrap())
-            .collect::<Vec<String>>();
+            .map(|k| encrypt_multi(&k.to_json()?, &pubkeys))
+            .collect::<Result<Vec<String>>>()?;
 
         let body = json!({
             "project_id": project_id,
@@ -169,7 +168,10 @@ impl SDK {
         let client = reqwest::Client::new();
 
         let mut url = get_api_url();
-        url.set_path(&format!("/user/{}/variables", key.uuid.unwrap()));
+        url.set_path(&format!(
+            "/user/{}/variables",
+            key.uuid.context("No UUID for key, try `envx upload`")?
+        ));
 
         let encrypted = client
             .get(url)
@@ -189,24 +191,26 @@ impl SDK {
                 .iter()
                 .map(|e| e.value.clone())
                 .collect::<Vec<String>>(),
-            &get_config().unwrap(),
+            &get_config()?,
         )?;
 
         let parsed = decrypted
             .iter()
-            .map(|d| KVPair::from_json(&d).unwrap())
-            .collect::<Vec<KVPair>>();
+            .map(|d| KVPair::from_json(d))
+            .collect::<Result<Vec<KVPair>>>()?;
 
         let partials = decrypted
             .into_iter()
             .zip(encrypted.into_iter())
-            .map(move |(d, e)| ParsedPartialVariable {
-                id: e.id,
-                value: KVPair::from_json(&d).unwrap(),
-                project_id: e.project_id,
-                created_at: e.created_at,
+            .map(move |(d, e)| {
+                Ok(ParsedPartialVariable {
+                    id: e.id,
+                    value: KVPair::from_json(&d)?,
+                    project_id: e.project_id,
+                    created_at: e.created_at,
+                })
             })
-            .collect::<Vec<ParsedPartialVariable>>();
+            .collect::<Result<Vec<ParsedPartialVariable>>>()?;
 
         Ok((parsed, partials))
     }
@@ -239,7 +243,7 @@ impl SDK {
                 .iter()
                 .map(|e| e.value.clone())
                 .collect::<Vec<String>>(),
-            &get_config().unwrap(),
+            &get_config()?,
         )?;
 
         // splice decrypted and encrypted into a Vector of PartialKey
@@ -256,8 +260,8 @@ impl SDK {
 
         let parsed = decrypted
             .iter()
-            .map(|d| KVPair::from_json(d).unwrap())
-            .collect::<Vec<KVPair>>();
+            .map(|d| KVPair::from_json(d))
+            .collect::<Result<Vec<KVPair>>>()?;
 
         Ok((parsed, partials))
     }
@@ -335,10 +339,7 @@ impl SDK {
         if status.is_success() {
             Ok(())
         } else {
-            Err(anyhow!(format!(
-                "Failed to add user to project: {}",
-                res.text().await?
-            )))
+            bail!("Failed to add user to project: {}", res.text().await?)
         }
     }
 
@@ -362,10 +363,7 @@ impl SDK {
         if status.is_success() {
             Ok(())
         } else {
-            Err(anyhow!(format!(
-                "Failed to delete project: {}",
-                res.text().await?
-            )))
+            bail!("Failed to delete project: {}", res.text().await?)
         }
     }
 
@@ -435,7 +433,9 @@ impl SDK {
         let config = get_config()?;
         let key = config.get_key(partial_fingerprint)?;
 
-        let url = get_api_url().join("user/")?.join(&key.uuid.unwrap())?;
+        let uuid = key.uuid.context("No UUID for key, try `envx upload`")?;
+
+        let url = get_api_url().join("user/")?.join(&uuid)?;
 
         client
             .delete(url)

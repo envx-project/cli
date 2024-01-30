@@ -41,7 +41,7 @@ impl ToParsed for Vec<PartialVariable> {
 
     fn zip_to_parsed(&self, kvpairs: Vec<KVPair>) -> Vec<ParsedPartialVariable> {
         self.iter()
-            .zip(kvpairs.into_iter())
+            .zip(kvpairs)
             .map(|(p, k)| p.zip_to_parsed(k))
             .collect()
     }
@@ -59,7 +59,7 @@ pub trait DeDupe {
     fn dedupe(&self) -> Self;
 }
 
-use std::collections::HashMap;
+use std::{collections::HashMap, fmt::Display};
 
 impl DeDupe for Vec<ParsedPartialVariable> {
     fn dedupe(&self) -> Self {
@@ -88,5 +88,15 @@ pub trait ToKVPair {
 impl ToKVPair for Vec<ParsedPartialVariable> {
     fn to_kvpair(&self) -> Vec<KVPair> {
         self.iter().map(|p| p.value.clone()).collect()
+    }
+}
+
+impl Display for ParsedPartialVariable {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str(&format!(
+            "{} - ({}) - {}",
+            self.id, self.value, self.project_id
+        ))?;
+        Ok(())
     }
 }

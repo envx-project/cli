@@ -9,7 +9,7 @@ use std::{
     time::{Duration, SystemTime},
 };
 
-const SERVICE: &'static str = "envx";
+const SERVICE: &str = "envx";
 
 fn get_session_path(fingerprint: &str) -> PathBuf {
     std::env::temp_dir().join(format!("envx-{}", fingerprint))
@@ -20,7 +20,7 @@ pub fn set_password(fingerprint: &str, password: &str) -> KeyringResult<()> {
 
     let expiration = SystemTime::now() + Duration::from_secs(60 * 60 * 24 * 30);
     let exp_bytes = bincode::serialize(&expiration).unwrap();
-    fs::File::create(get_session_path(&fingerprint))
+    fs::File::create(get_session_path(fingerprint))
         .unwrap()
         .write_all(&exp_bytes)
         .unwrap();
@@ -29,23 +29,25 @@ pub fn set_password(fingerprint: &str, password: &str) -> KeyringResult<()> {
 }
 
 pub fn get_password(fingerprint: &str) -> anyhow::Result<String> {
-    let expiry = fs::read(get_session_path(&fingerprint));
-    if expiry.is_err() {
-        clear_password(&fingerprint)?;
-        return Err(anyhow::anyhow!("No session found"));
-    }
+    let expiry = fs::read(get_session_path(fingerprint));
+    let expiry = match expiry {
+        Ok(e) => e,
+        Err(_) => {
+            clear_password(fingerprint)?;
+            bail!("No session found");
+        }
+    };
 
-    let expiry = expiry.unwrap();
-    let expiry: SystemTime = bincode::deserialize(&expiry).unwrap();
+    let expiry: SystemTime = bincode::deserialize(&expiry)?;
 
     if expiry < SystemTime::now() {
-        clear_password(&fingerprint)?;
-        return Err(anyhow::anyhow!("Session expired"));
+        clear_password(fingerprint)?;
+        bail!("Session expired");
     }
 
     let keyring = Keyring::new(SERVICE, fingerprint)?;
     let password = keyring.get_password()?;
-    return Ok(password);
+    Ok(password)
 }
 
 pub fn clear_password(fingerprint: &str) -> KeyringResult<()> {
@@ -61,7 +63,7 @@ pub fn try_get_password(fingerprint: &str, config: &Config) -> anyhow::Result<St
         Ok(p) => Ok(p),
         Err(e) => {
             eprintln!("Failed to get password: {}", e);
-            let key = config.get_key(&fingerprint)?;
+            let key = config.get_key(fingerprint)?;
             println!("Enter password for key {}", key);
             let password = prompt_password("Password: ")?;
             if settings.warn_on_short_passwords && password.len() < MINIMUM_PASSWORD_LENGTH {
@@ -74,12 +76,10 @@ pub fn try_get_password(fingerprint: &str, config: &Config) -> anyhow::Result<St
                 }
             }
 
-            match set_password(&fingerprint, &password) {
-                Err(e) => {
-                    eprintln!("Failed to set password: {}", e);
-                }
-                _ => {}
+            if let Err(e) = set_password(fingerprint, &password) {
+                eprintln!("Failed to set password: {}", e);
             }
+
             Ok(password)
         }
     }

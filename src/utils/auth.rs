@@ -28,18 +28,15 @@ pub async fn get_token(fingerprint: &str, token: &str) -> anyhow::Result<String>
         Ok(s) => s,
         Err(e) => {
             eprintln!("Failed to sign API authentication challenge: {}", e);
-
-            match e {
-                pgp::errors::Error::Incomplete(_) => {
-                    eprintln!("This is most likely due to a missing or incorrect passphrase.");
-                    println!(
-                        "You can view the saved passphrase with 'envx keyring view <fingerprint>'"
-                    );
-                    println!("Or you can check against the saved passphrase with 'envx keyring check -k <fingerprint> -p <passphrase>'");
-                    println!("Both of these commands are interactive")
-                }
-                _ => {}
+            if let pgp::errors::Error::Incomplete(_) = e {
+                eprintln!("This is most likely due to a missing or incorrect passphrase.");
+                println!(
+                    "You can view the saved passphrase with 'envx keyring view <fingerprint>'"
+                );
+                println!("Or you can check against the saved passphrase with 'envx keyring check -k <fingerprint> -p <passphrase>'");
+                println!("Both of these commands are interactive")
             }
+
             return Err(anyhow!("Failed to sign API authentication challenge"));
         }
     };
@@ -51,12 +48,6 @@ pub async fn get_token(fingerprint: &str, token: &str) -> anyhow::Result<String>
             return Err(anyhow!("Failed to convert signature to armored string"));
         }
     };
-
-    // let signature = msg
-    //     .sign(&key, pw, crypto::hash::HashAlgorithm::SHA3_512)
-    //     .context("Failed to sign API authentication challenge")?
-    //     .to_armored_string(None)
-    //     .context("Failed to convert signature to armored string")?;
 
     let auth_token = serde_json::json!({
         "token": token,

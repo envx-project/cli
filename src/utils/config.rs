@@ -203,7 +203,7 @@ impl Config {
         if !self
             .projects
             .iter()
-            .any(|p| p.project_id == project_id.to_string())
+            .any(|p| p.project_id == *project_id)
         {
             return Err(anyhow!("Project not found".red()));
         }
@@ -227,7 +227,8 @@ pub fn get_config_path() -> Result<PathBuf> {
     // if it doesn't exist, create it
     if !path.exists() {
         let default = serde_json::to_string_pretty(&Config::default())?;
-        fs::create_dir_all(path.parent().unwrap())?;
+        let parent_path = path.parent().context("Failed to get parent directory")?;
+        fs::create_dir_all(parent_path)?;
         let mut file = File::create(&path)?;
         file.write_all(default.as_ref())?;
     }

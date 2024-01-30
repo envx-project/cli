@@ -6,7 +6,7 @@ use crate::{
         prompt::{prompt_confirm, prompt_multi_options},
     },
 };
-use anyhow::Context;
+use anyhow::{bail, Context};
 
 /// Delete a key (Caution, keys will still stay on the server for now)
 #[derive(Debug, Parser)]
@@ -52,7 +52,7 @@ pub async fn command(args: Args) -> Result<()> {
         })
         .collect::<Vec<_>>();
 
-    if selected.contains(&primary_key) {
+    if selected.contains(primary_key) {
         println!("You have selected your primary key for deletion.");
         println!("You will not be able to use envx until you set a new primary key.");
 
@@ -74,10 +74,7 @@ pub async fn command(args: Args) -> Result<()> {
 
     let keys = selected
         .iter()
-        .map(|it| {
-            let key = find(it, &kl_arc).expect("Failed to find key (1)");
-            key
-        })
+        .map(|it| find(it, &kl_arc).expect("Failed to find key (1)"))
         .collect::<Vec<_>>();
 
     let tasks: Vec<_> = keys
@@ -92,7 +89,7 @@ pub async fn command(args: Args) -> Result<()> {
                         Ok(_) => {}
                         Err(e) => {
                             println!("Failed to delete key on server: {}", e);
-                            return Err(anyhow::Error::msg("Failed to delete key on server"));
+                            bail!("Failed to delete key on server");
                         }
                     }
                 } else {
@@ -100,9 +97,7 @@ pub async fn command(args: Args) -> Result<()> {
                 }
 
                 if key_dir.exists() {
-                    std::fs::remove_dir_all(key_dir)
-                        .context("Failed to delete key directory")
-                        .unwrap();
+                    std::fs::remove_dir_all(key_dir).context("Failed to delete key directory")?
                 } else {
                     println!("Key {} not on disk", item);
                 }

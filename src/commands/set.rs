@@ -36,7 +36,7 @@ pub async fn command(args: Args) -> Result<()> {
         Some(k) => k,
         None => &config.primary_key,
     };
-    let key = config.get_key(&key)?;
+    let key = config.get_key(key)?;
 
     let project_id = Choice::try_project(args.project_id, &key.fingerprint).await?;
 
