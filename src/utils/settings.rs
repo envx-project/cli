@@ -8,7 +8,7 @@ pub struct Settings {
 impl Settings {
     pub fn default() -> Self {
         Settings {
-            test: Some("test".to_string())
+            test: Some("test".to_string()),
         }
     }
 }
