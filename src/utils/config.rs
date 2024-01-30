@@ -200,11 +200,7 @@ impl Config {
         if self.projects.is_empty() {
             return Err(anyhow!("No projects to delete".red()));
         }
-        if !self
-            .projects
-            .iter()
-            .any(|p| p.project_id == *project_id)
-        {
+        if !self.projects.iter().any(|p| p.project_id == *project_id) {
             return Err(anyhow!("Project not found".red()));
         }
         self.projects.retain(|p| p.project_id != project_id);
