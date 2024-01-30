@@ -14,13 +14,14 @@ pub struct Args {
     key: Option<String>,
 }
 
-pub async fn command(args: Args) -> Result<()> {
+pub async fn command(args: Args) -> anyhow::Result<()> {
     let config = get_config()?;
     let key = config.get_key_or_default(args.key)?;
 
     let client = reqwest::Client::new();
 
-    let auth_token = get_token(&key.fingerprint, &key.uuid.clone().unwrap())
+    let uuid = key.uuid.clone().context("Key does not have a UUID, try `envx upload`")?;
+    let auth_token = get_token(&key.fingerprint, &uuid)
         .await
         .context("Failed to get token")?;
 

@@ -71,7 +71,7 @@ impl Config {
 
     #[allow(dead_code)]
     pub fn primary_key(&self) -> Result<String> {
-        let primary_key = self.primary_key.clone();
+        let primary_key = &self.primary_key;
         let primary_key_location = get_vault_location()?
             .join(primary_key.clone())
             .join("public.key");
@@ -80,6 +80,17 @@ impl Config {
             .context("Failed to read primary public key")?;
 
         Ok(primary_public_key)
+    }
+
+    /// Set the primary key
+    ///
+    /// - Returns an error if the key doesn't exist
+    ///
+    /// Does not write to disk. Call `config.write()` to write to disk
+    pub fn set_primary_key(&mut self, fingerprint: &str) -> Result<()> {
+        let key = self.get_key(fingerprint)?;
+        self.primary_key = key.fingerprint.clone();
+        Ok(())
     }
 
     // TODO: write an implementation to add key to config
@@ -98,6 +109,7 @@ impl Config {
         }
     }
 
+    /// Get a key from the config
     pub fn get_key(&self, partial_fingerprint: &str) -> Result<Key> {
         let key = self
             .keys
@@ -138,7 +150,6 @@ impl Config {
         };
 
         self.projects.push(project);
-        self.write()?;
 
         Ok(())
     }
@@ -165,8 +176,6 @@ impl Config {
         };
 
         self.projects.push(new_project);
-        self.write()?;
-
         Ok(())
     }
 
@@ -184,7 +193,6 @@ impl Config {
         }
 
         self.projects.retain(|p| p.path != path);
-        self.write()?;
         Ok(matching)
     }
 
@@ -195,12 +203,11 @@ impl Config {
         if !self
             .projects
             .iter()
-            .any(|p| p.project_id == project_id.to_string())
+            .any(|p| p.project_id == *project_id)
         {
             return Err(anyhow!("Project not found".red()));
         }
         self.projects.retain(|p| p.project_id != project_id);
-        self.write()?;
         Ok(())
     }
 
@@ -209,7 +216,6 @@ impl Config {
         self.keys.retain(|k| k.fingerprint != fingerprint);
         key.uuid = Some(uuid.to_string());
         self.keys.push(key);
-        self.write()?;
         Ok(())
     }
 }
@@ -221,7 +227,8 @@ pub fn get_config_path() -> Result<PathBuf> {
     // if it doesn't exist, create it
     if !path.exists() {
         let default = serde_json::to_string_pretty(&Config::default())?;
-        fs::create_dir_all(path.parent().unwrap())?;
+        let parent_path = path.parent().context("Failed to get parent directory")?;
+        fs::create_dir_all(parent_path)?;
         let mut file = File::create(&path)?;
         file.write_all(default.as_ref())?;
     }

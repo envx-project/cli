@@ -14,8 +14,8 @@ impl KVPair {
         Self { key, value }
     }
 
-    pub fn from_json(json: String) -> Result<Self> {
-        serde_json::from_str::<KVPair>(&json).context("Failed to parse KVPair")
+    pub fn from_json(json: &str) -> Result<Self> {
+        serde_json::from_str::<KVPair>(json).context("Failed to parse KVPair")
     }
 
     pub fn to_json(&self) -> Result<String> {

@@ -3,6 +3,7 @@ use clap::{Parser, Subcommand};
 use commands::*;
 
 mod commands;
+mod constants;
 mod sdk;
 mod types;
 mod utils;
@@ -44,9 +45,11 @@ commands_enum!(
     variables,
     version,
     // commands with subcommands
+    config,
     delete,
-    new,
-    get
+    get,
+    keyring,
+    new
 );
 
 #[tokio::main]
