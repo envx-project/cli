@@ -20,7 +20,10 @@ pub async fn command(args: Args) -> anyhow::Result<()> {
 
     let client = reqwest::Client::new();
 
-    let uuid = key.uuid.clone().context("Key does not have a UUID, try `envx upload`")?;
+    let uuid = key
+        .uuid
+        .clone()
+        .context("Key does not have a UUID, try `envx upload`")?;
     let auth_token = get_token(&key.fingerprint, &uuid)
         .await
         .context("Failed to get token")?;
