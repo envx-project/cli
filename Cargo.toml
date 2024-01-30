@@ -62,7 +62,4 @@ openssl = { version = "0.10", features = ["vendored"] }
 futures = "0.3"
 keyring = "2.3.1"
 bincode = "1.3.3"
-
-# DEBUG
 pgp = "0.10.2"
-# pgp = { git = "https://github.com/alexng353/rpgp" }
