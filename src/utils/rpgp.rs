@@ -1,4 +1,5 @@
 use super::config::{get_config, Config};
+use super::keyring::try_get_password;
 use anyhow::anyhow;
 use anyhow::{Context, Ok, Result};
 use colored::Colorize;
@@ -83,6 +84,7 @@ pub fn encrypt(msg: &str, pubkey_str: &str) -> Result<String, anyhow::Error> {
         crypto::sym::SymmetricKeyAlgorithm::AES128,
         &[&pubkey],
     )?;
+
     Ok(new_msg.to_armored_string(None)?)
 }
 
@@ -115,7 +117,7 @@ pub fn decrypt(
         .context("Decrypting the message")?;
 
     if let Some(msg) = decryptor.next() {
-        let bytes = msg?.get_content()?.unwrap();
+        let bytes = msg?.get_content()?.context("Failed to get content")?;
         let clear_text = String::from_utf8(bytes)?;
         return Ok(clear_text);
     }
@@ -169,14 +171,16 @@ pub fn decrypt_full(message: String, config: &Config) -> Result<String, anyhow::
     }
 
     let primary_key = &config.primary_key;
-    let (key, _) = if available_keys.iter().any(|k| k.contains(primary_key)) {
+    let (key, fingerprint) = if available_keys.iter().any(|k| k.contains(primary_key)) {
         get_key(primary_key)?
     } else {
         println!("Using key: {}", &available_keys[0]);
         get_key(&available_keys[0])?
     };
 
-    let decrypted = decrypt(message.as_str(), &key, String::from("asdf"))?;
+    let passphrase = try_get_password(&fingerprint, config)?;
+
+    let decrypted = decrypt(message.as_str(), &key, passphrase)?;
 
     Ok(decrypted)
 }
@@ -220,21 +224,26 @@ pub fn decrypt_full_many(
     }
 
     let primary_key = &config.primary_key;
-    let (key, _) = if available_keys.iter().any(|k| k.contains(primary_key)) {
+    let (key, fingerprint) = if available_keys.iter().any(|k| k.contains(primary_key)) {
         get_key(primary_key)?
     } else {
         println!("Using key: {}", &available_keys[0]);
         get_key(&available_keys[0])?
     };
 
+    let passphrase = try_get_password(&fingerprint, config)?;
+
     let decrypted = messages
         .par_iter()
-        .map(|m| decrypt(m.as_str(), &key, String::from("asdf")))
+        .map(|m| decrypt(m.as_str(), &key, passphrase.clone()))
         .collect::<Result<Vec<String>, anyhow::Error>>()?;
 
     Ok(decrypted)
 }
 
+/// Get the key from the keyring
+///
+/// Returns (Key, fingerprint)
 fn get_key<T>(fingerprint: T) -> Result<(SignedSecretKey, String)>
 where
     T: AsRef<Path> + Into<String>,

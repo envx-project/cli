@@ -3,6 +3,7 @@ pub mod btreemap;
 pub mod choice;
 pub mod config;
 pub mod key;
+pub mod keyring;
 pub mod kvpair;
 pub mod partial_variable;
 pub mod prompt;
