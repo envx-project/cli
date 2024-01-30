@@ -29,6 +29,7 @@ pub async fn command(args: Args) -> Result<()> {
             println!("Forced new project");
             println!("Unlinking current project...");
             let old = config.unset_project()?;
+            config.write()?;
             println!(
                 "{} {}",
                 "Unset project(s):".green(),
@@ -51,6 +52,7 @@ pub async fn command(args: Args) -> Result<()> {
     };
 
     config.set_project(&project_id)?;
+    config.write()?;
 
     Ok(())
 }

@@ -1,17 +1,19 @@
-// use crate::utils::vecu8::ToHex;
-
-use crate::sdk::get_api_url;
+use crate::utils::keyring::get_password;
 
 use super::*;
-// use pgp::{composed::message::Message, types::KeyTrait, Deserializable};
 
 /// Unset the current project
 #[derive(Parser)]
-pub struct Args {}
+pub struct Args {
+    #[clap(short, long)]
+    key: Option<String>,
+}
 
 pub async fn command(_args: Args) -> Result<()> {
-    let api_url = get_api_url();
-    println!("API URL: {}", api_url);
+    if let Some(key) = _args.key {
+        let password = get_password(&key)?;
+        println!("Password: {}", password);
+    }
 
     Ok(())
 }

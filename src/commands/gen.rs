@@ -4,14 +4,19 @@ use super::*;
 use crate::sdk::SDK;
 use crate::utils::config::{self};
 use crate::utils::key::Key;
+use crate::utils::keyring::set_password;
 // use crate::utils::prompt::prompt_password;
-use crate::utils::prompt::{prompt_email, prompt_text};
+use crate::constants::MINIMUM_PASSWORD_LENGTH;
+use crate::utils::prompt::{prompt_email, prompt_password, prompt_text};
 use crate::utils::rpgp::{generate_hashed_primary_user_id, generate_key_pair, get_vault_location};
 use crate::utils::vecu8::ToHex;
 use anyhow::Context;
 use pgp::types::KeyTrait;
 use std::fs;
 use std::str;
+
+extern crate keyring;
+use keyring::Error as KeyringError;
 
 /// Generate a key using GPG
 /// Saves the key to ~/.envcli/keys/<fingerprint>
@@ -33,9 +38,10 @@ pub struct Args {
     #[clap(short, long)]
     email: Option<String>,
 
-    // /// Passphrase to encrypt the key with
-    // #[clap(short, long)]
-    // passphrase: Option<String>,
+    /// Passphrase to encrypt the key with
+    #[clap(short, long)]
+    passphrase: Option<String>,
+
     /// force overwrite of existing key
     #[clap(long = "force", short = 'f')]
     force_overwrite: bool,
@@ -51,15 +57,22 @@ pub struct Args {
 fn email_validator(email: &str) -> anyhow::Result<(), anyhow::Error> {
     let regex = regex::Regex::new(r"^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$")
         .context("Failed to create regex for email validation")?;
-    if regex.is_match(email) {
-        Ok(())
-    } else {
-        Err(anyhow::Error::msg("Please enter a valid email address"))
+
+    match regex.is_match(email) {
+        true => Ok(()),
+        false => Err(anyhow::Error::msg("Please enter a valid email address")),
     }
+
+    // if regex.is_match(email) {
+    //     Ok(())
+    // } else {
+    //     Err(anyhow::Error::msg("Please enter a valid email address"))
+    // }
 }
 
 pub async fn command(args: Args) -> Result<()> {
     let mut config = config::get_config().context("Failed to get config")?;
+    let settings = config.get_settings()?;
 
     let name = args
         .name
@@ -79,10 +92,15 @@ pub async fn command(args: Args) -> Result<()> {
         }
     }
 
-    // let passphrase = args
-    //     .passphrase
-    //     .unwrap_or_else(|| prompt_password("password").unwrap());
-    let passphrase = "asdf";
+    let passphrase = args
+        .passphrase
+        .unwrap_or_else(|| prompt_password("password").unwrap());
+
+    if settings.warn_on_short_passwords && passphrase.len() < MINIMUM_PASSWORD_LENGTH {
+        eprintln!("WARNING: Your password is short");
+        eprintln!("This is not recommended");
+        eprintln!("You can disable this warning with `envx config --no-warn-on-short-passwords`");
+    }
 
     let key_pair = generate_key_pair(name.clone(), email.clone(), passphrase.to_owned())
         .expect("Failed to generate key pair");
@@ -97,7 +115,36 @@ pub async fn command(args: Args) -> Result<()> {
         .to_armored_string(None)
         .expect("Failed to convert public key to armored ASCII string");
 
-    let fingerprint: String = key_pair.secret_key.fingerprint().to_hex();
+    let fingerprint = key_pair.secret_key.fingerprint().to_hex();
+
+    let result = set_password(&fingerprint, &passphrase);
+
+    if let Err(e) = result {
+        match e {
+            KeyringError::TooLong(_, length) => {
+                eprintln!("Password is too long to store in keyring");
+                eprintln!("Length: {}", length);
+                eprintln!("Continuing with generation...");
+            }
+            KeyringError::Invalid(_, _) => {
+                eprintln!("Password is invalid");
+                eprintln!("Continuing with generation...");
+            }
+            KeyringError::Ambiguous(c) => {
+                eprintln!("Somehow there are multiple keys with the same fingerprint");
+                eprintln!("Keys: {:?}", c);
+                eprintln!(
+                    "Please submit a bug report at https://github.com/env-cli/rusty-cli/issues/new"
+                );
+                eprintln!("Continuing with generation...");
+            }
+            _ => {
+                eprintln!("Failed to set password in keyring");
+                eprintln!("{}", e);
+                eprintln!("Continuing with generation...");
+            }
+        }
+    }
 
     println!("Fingerprint: {}", fingerprint);
 
@@ -108,6 +155,7 @@ pub async fn command(args: Args) -> Result<()> {
     }
 
     let key_dir = get_vault_location()?.join(fingerprint.clone());
+
     fs::create_dir_all(&key_dir).context("Failed to create key directory")?;
 
     fs::write(key_dir.join("private.key"), &priv_key).expect("Failed to write private key to file");

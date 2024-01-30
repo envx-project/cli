@@ -32,11 +32,11 @@ pub async fn command(args: Args) -> Result<()> {
     }
 
     let config = get_config()?;
-    let key = match args.key {
-        Some(k) => k.to_owned(),
-        None => config.primary_key.clone(),
+    let key = match &args.key {
+        Some(k) => k,
+        None => &config.primary_key,
     };
-    let key = config.get_key(&key)?;
+    let key = config.get_key(key)?;
 
     let project_id = Choice::try_project(args.project_id, &key.fingerprint).await?;
 

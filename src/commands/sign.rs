@@ -1,4 +1,4 @@
-use crate::utils::config::get_config;
+use crate::utils::{config::get_config, keyring::try_get_password};
 
 use super::*;
 use anyhow::Ok;
@@ -30,7 +30,8 @@ pub async fn command(args: Args) -> Result<()> {
 
     println!("{}", message.to_armored_string(None)?);
 
-    let pw = || "asdf".to_string();
+    let passphrase = try_get_password(&args.key, &config)?;
+    let pw = || passphrase;
 
     let signature = message.sign(&key, pw, crypto::hash::HashAlgorithm::SHA3_512)?;
 
