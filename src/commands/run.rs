@@ -62,7 +62,7 @@ pub async fn command(args: Args) -> Result<()> {
 
     let exit_status = tokio::process::Command::new(child_process_name)
         .args(args)
-        .envs(all_variables.iter().map(|v| (v.0.clone(), v.1.clone())))
+        .envs(all_variables)
         .status()
         .await?;
 

@@ -37,8 +37,10 @@ pub async fn command(args: Args) -> Result<()> {
 
     let config = get_config()?;
     let key = config.get_key_or_default(args.key)?;
-    let uuid = key.uuid.clone().unwrap();
 
+    let uuid = key
+        .uuid
+        .context("Key does not have a UUID, try `envx upload`")?;
     let (_, public_key) = SDK::get_user(&key.fingerprint, &user_id)
         .await
         .context("Failed to get user, is the user ID correct?")?;
@@ -70,8 +72,8 @@ pub async fn command(args: Args) -> Result<()> {
 
     let messages = kvpairs
         .par_iter()
-        .map(|k| encrypt_multi(&k.to_json().unwrap(), &pubkeys).unwrap())
-        .collect::<Vec<String>>();
+        .map(|k| encrypt_multi(&k.to_json()?, &pubkeys))
+        .collect::<Result<Vec<String>>>()?;
 
     let partials = partials
         .iter_mut()
@@ -89,7 +91,7 @@ pub async fn command(args: Args) -> Result<()> {
     let client = reqwest::Client::new();
     let auth_token = get_token(&key.fingerprint, &uuid).await?;
 
-    let url = get_api_url().join("/variables/update-many").unwrap();
+    let url = get_api_url().join("/variables/update-many")?;
 
     let res = client
         .post(url)

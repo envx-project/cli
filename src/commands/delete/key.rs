@@ -1,9 +1,12 @@
 use super::*;
 use crate::{
     sdk::SDK,
-    utils::{key::Key, prompt::prompt_multi_options},
+    utils::{
+        key::Key,
+        prompt::{prompt_confirm, prompt_multi_options},
+    },
 };
-use anyhow::Context;
+use anyhow::{bail, Context};
 
 /// Delete a key (Caution, keys will still stay on the server for now)
 #[derive(Debug, Parser)]
@@ -11,6 +14,10 @@ pub struct Args {
     /// Fingerprint of the key to delete
     #[clap(short, long)]
     key: Option<String>,
+
+    /// Force deletion of primary key
+    #[clap(short, long)]
+    force: bool,
 }
 
 // TODOS
@@ -19,6 +26,7 @@ pub struct Args {
 pub async fn command(args: Args) -> Result<()> {
     let mut config = crate::utils::config::get_config().context("Failed to get config")?;
     let kl_arc = std::sync::Arc::new(&config.keys);
+    let primary_key = &config.primary_key;
 
     let selected: Vec<String> = match args.key {
         Some(key) => {
@@ -44,14 +52,29 @@ pub async fn command(args: Args) -> Result<()> {
         })
         .collect::<Vec<_>>();
 
+    if selected.contains(primary_key) {
+        println!("You have selected your primary key for deletion.");
+        println!("You will not be able to use envx until you set a new primary key.");
+
+        if args.force {
+            println!("Continuing because of --force");
+        } else {
+            let confirmation = prompt_confirm("Are you sure you want to continue?")?;
+
+            if !confirmation {
+                println!("Aborting...");
+                return Ok(());
+            }
+
+            println!("Set a new primary key with `envx change primary-key`");
+        }
+    }
+
     println!("Deleting keys: {:?}", selected);
 
     let keys = selected
         .iter()
-        .map(|it| {
-            let key = find(it, &kl_arc).expect("Failed to find key (1)");
-            key
-        })
+        .map(|it| find(it, &kl_arc).expect("Failed to find key (1)"))
         .collect::<Vec<_>>();
 
     let tasks: Vec<_> = keys
@@ -66,7 +89,7 @@ pub async fn command(args: Args) -> Result<()> {
                         Ok(_) => {}
                         Err(e) => {
                             println!("Failed to delete key on server: {}", e);
-                            return Err(anyhow::Error::msg("Failed to delete key on server"));
+                            bail!("Failed to delete key on server");
                         }
                     }
                 } else {
@@ -74,9 +97,7 @@ pub async fn command(args: Args) -> Result<()> {
                 }
 
                 if key_dir.exists() {
-                    std::fs::remove_dir_all(key_dir)
-                        .context("Failed to delete key directory")
-                        .unwrap();
+                    std::fs::remove_dir_all(key_dir).context("Failed to delete key directory")?
                 } else {
                     println!("Key {} not on disk", item);
                 }
