@@ -6,7 +6,10 @@ use pgp::{crypto, Deserializable, SignedSecretKey};
 
 use super::keyring::try_get_password;
 
-pub async fn get_token(fingerprint: &str, token: &str) -> anyhow::Result<String> {
+pub async fn get_token(
+    fingerprint: &str,
+    token: &str,
+) -> anyhow::Result<String> {
     let config = get_config().context("Failed to get config")?;
     let key = config
         .keys
@@ -15,7 +18,8 @@ pub async fn get_token(fingerprint: &str, token: &str) -> anyhow::Result<String>
         .ok_or_else(|| anyhow!("Key not found"))?;
 
     let key = key.secret_key().context("Failed to get secret key")?;
-    let (key, _) = SignedSecretKey::from_string(&key).context("Failed to parse secret key")?;
+    let (key, _) = SignedSecretKey::from_string(&key)
+        .context("Failed to parse secret key")?;
 
     let msg = Message::new_literal("none", &Utc::now().to_string());
 
@@ -45,7 +49,9 @@ pub async fn get_token(fingerprint: &str, token: &str) -> anyhow::Result<String>
         Ok(s) => s,
         Err(e) => {
             println!("Failed to convert signature to armored string: {}", e);
-            return Err(anyhow!("Failed to convert signature to armored string"));
+            return Err(anyhow!(
+                "Failed to convert signature to armored string"
+            ));
         }
     };
 

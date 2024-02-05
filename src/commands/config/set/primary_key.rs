@@ -13,7 +13,10 @@ pub async fn command(args: Args) -> Result<()> {
 
     let fingerprint = match args.key {
         Some(k) => k,
-        None => prompt_select("Select key to set as primary", config.keys.clone())?.fingerprint,
+        None => {
+            prompt_select("Select key to set as primary", config.keys.clone())?
+                .fingerprint
+        }
     };
 
     config.set_primary_key(&fingerprint)?;

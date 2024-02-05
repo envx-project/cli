@@ -26,14 +26,16 @@ pub async fn command(args: Args) -> Result<()> {
 
     let key = SignedSecretKey::from_string(&key.secret_key()?)?.0;
 
-    let message = composed::message::Message::new_literal("none", &args.message);
+    let message =
+        composed::message::Message::new_literal("none", &args.message);
 
     println!("{}", message.to_armored_string(None)?);
 
     let passphrase = try_get_password(&args.key, &config)?;
     let pw = || passphrase;
 
-    let signature = message.sign(&key, pw, crypto::hash::HashAlgorithm::SHA3_512)?;
+    let signature =
+        message.sign(&key, pw, crypto::hash::HashAlgorithm::SHA3_512)?;
 
     println!("{}", signature.to_armored_string(None)?);
 

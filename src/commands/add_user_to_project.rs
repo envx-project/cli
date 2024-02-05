@@ -2,8 +2,9 @@ use super::*;
 use crate::{
     sdk::{get_api_url, SDK},
     utils::{
-        auth::get_token, choice::Choice, config::get_config, partial_variable::PartialVariable,
-        prompt::prompt_text, rpgp::encrypt_multi,
+        auth::get_token, choice::Choice, config::get_config,
+        partial_variable::PartialVariable, prompt::prompt_text,
+        rpgp::encrypt_multi,
     },
 };
 use pgp::{Deserializable, SignedPublicKey};
@@ -45,11 +46,14 @@ pub async fn command(args: Args) -> Result<()> {
         .await
         .context("Failed to get user, is the user ID correct?")?;
 
-    let project_id = Choice::try_project(args.project_id, &key.fingerprint).await?;
+    let project_id =
+        Choice::try_project(args.project_id, &key.fingerprint).await?;
 
-    let project_info = SDK::get_project_info(&project_id, &key.fingerprint).await?;
+    let project_info =
+        SDK::get_project_info(&project_id, &key.fingerprint).await?;
 
-    let (kvpairs, mut partials) = SDK::get_variables(&project_id, &key.fingerprint).await?;
+    let (kvpairs, mut partials) =
+        SDK::get_variables(&project_id, &key.fingerprint).await?;
 
     let mut recipients = project_info
         .users

@@ -24,7 +24,8 @@ pub struct Args {
 // TODO: fix configuration race condition while deleting multiple keys
 
 pub async fn command(args: Args) -> Result<()> {
-    let mut config = crate::utils::config::get_config().context("Failed to get config")?;
+    let mut config =
+        crate::utils::config::get_config().context("Failed to get config")?;
     let kl_arc = std::sync::Arc::new(&config.keys);
     let primary_key = &config.primary_key;
 
@@ -34,10 +35,12 @@ pub async fn command(args: Args) -> Result<()> {
             vec![key.fingerprint.clone()]
         }
 
-        None => prompt_multi_options("Select keys to delete", config.keys.clone())?
-            .iter()
-            .map(|k| k.fingerprint.clone())
-            .collect(),
+        None => {
+            prompt_multi_options("Select keys to delete", config.keys.clone())?
+                .iter()
+                .map(|k| k.fingerprint.clone())
+                .collect()
+        }
     };
 
     let selected = selected
@@ -54,12 +57,15 @@ pub async fn command(args: Args) -> Result<()> {
 
     if selected.contains(primary_key) {
         println!("You have selected your primary key for deletion.");
-        println!("You will not be able to use envx until you set a new primary key.");
+        println!(
+            "You will not be able to use envx until you set a new primary key."
+        );
 
         if args.force {
             println!("Continuing because of --force");
         } else {
-            let confirmation = prompt_confirm("Are you sure you want to continue?")?;
+            let confirmation =
+                prompt_confirm("Are you sure you want to continue?")?;
 
             if !confirmation {
                 println!("Aborting...");
@@ -81,7 +87,8 @@ pub async fn command(args: Args) -> Result<()> {
         .into_iter()
         .map(|item| -> tokio::task::JoinHandle<anyhow::Result<()>> {
             tokio::spawn(async move {
-                let key_dir = crate::utils::rpgp::get_vault_location()?.join(&item.fingerprint);
+                let key_dir = crate::utils::rpgp::get_vault_location()?
+                    .join(&item.fingerprint);
 
                 if item.uuid.is_some() {
                     println!("Deleting key {} on server...", &item);
@@ -97,7 +104,8 @@ pub async fn command(args: Args) -> Result<()> {
                 }
 
                 if key_dir.exists() {
-                    std::fs::remove_dir_all(key_dir).context("Failed to delete key directory")?
+                    std::fs::remove_dir_all(key_dir)
+                        .context("Failed to delete key directory")?
                 } else {
                     println!("Key {} not on disk", item);
                 }
