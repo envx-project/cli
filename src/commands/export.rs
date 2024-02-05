@@ -1,5 +1,7 @@
 use super::*;
-use crate::utils::{config::get_config, key::VecKeyTrait, prompt::prompt_options};
+use crate::utils::{
+    config::get_config, key::VecKeyTrait, prompt::prompt_options,
+};
 
 /// Export a public or secret key
 #[derive(Parser)]

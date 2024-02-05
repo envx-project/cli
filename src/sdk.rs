@@ -5,7 +5,9 @@ use crate::{
         auth::get_token,
         config::get_config,
         kvpair::KVPair,
-        partial_variable::{ParsedPartialVariable, PartialVariable, ToKVPair, ToParsed},
+        partial_variable::{
+            ParsedPartialVariable, PartialVariable, ToKVPair, ToParsed,
+        },
         rpgp::{decrypt_full_many, encrypt_multi},
     },
 };
@@ -107,7 +109,8 @@ impl SDK {
     ) -> Result<Vec<String>> {
         let client = reqwest::Client::new();
 
-        let project_info = Self::get_project_info(project_id, partial_fingerprint).await?;
+        let project_info =
+            Self::get_project_info(project_id, partial_fingerprint).await?;
 
         let recipients = project_info
             .users
@@ -223,7 +226,8 @@ impl SDK {
         // url : /project/:id/variables
         let client = reqwest::Client::new();
 
-        let url = get_api_url().join(&format!("/project/{}/variables", project_id))?;
+        let url = get_api_url()
+            .join(&format!("/project/{}/variables", project_id))?;
 
         let encrypted = client
             .get(url)
@@ -273,9 +277,10 @@ impl SDK {
         project_id: &str,
         partial_fingerprint: &str,
     ) -> Result<Vec<KVPair>> {
-        let (kvpairs, partial) = Self::get_variables(project_id, partial_fingerprint)
-            .await
-            .context("Failed to get variables")?;
+        let (kvpairs, partial) =
+            Self::get_variables(project_id, partial_fingerprint)
+                .await
+                .context("Failed to get variables")?;
         let mut pruned = partial.zip_to_parsed(kvpairs).to_kvpair();
         pruned.sort_by(|a, b| a.key.cmp(&b.key));
         Ok(pruned)
@@ -322,7 +327,8 @@ impl SDK {
             "user_id": user_to_add
         });
 
-        let url = get_api_url().join(&format!("/project/{}/add-user", project_id))?;
+        let url =
+            get_api_url().join(&format!("/project/{}/add-user", project_id))?;
 
         let res = client
             .post(url.join(&format!("/project/{}/add-user", project_id))?)
@@ -343,7 +349,10 @@ impl SDK {
         }
     }
 
-    pub async fn delete_project(partial_fingerprint: &str, project_id: &str) -> Result<()> {
+    pub async fn delete_project(
+        partial_fingerprint: &str,
+        project_id: &str,
+    ) -> Result<()> {
         // url: /project/:id
         let client = reqwest::Client::new();
 
@@ -367,7 +376,10 @@ impl SDK {
         }
     }
 
-    pub async fn delete_variable(variable_id: &str, partial_fingerprint: &str) -> Result<()> {
+    pub async fn delete_variable(
+        variable_id: &str,
+        partial_fingerprint: &str,
+    ) -> Result<()> {
         // url: DELETE /variables/:id
         let client = reqwest::Client::new();
 
@@ -385,7 +397,9 @@ impl SDK {
         Ok(())
     }
 
-    pub async fn list_projects(partial_fingerprint: &str) -> Result<Vec<String>> {
+    pub async fn list_projects(
+        partial_fingerprint: &str,
+    ) -> Result<Vec<String>> {
         // GET /projects
         let client = reqwest::Client::new();
 

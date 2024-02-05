@@ -61,7 +61,8 @@ async fn main() -> Result<()> {
         Err(e) => {
             // If the user cancels the operation, we want to exit successfully
             // This can happen if Ctrl+C is pressed during a prompt
-            if e.root_cause().to_string() == inquire::InquireError::OperationInterrupted.to_string()
+            if e.root_cause().to_string()
+                == inquire::InquireError::OperationInterrupted.to_string()
             {
                 return Ok(());
             }

@@ -19,7 +19,8 @@ impl Key {
             .join(self.fingerprint.clone())
             .join("public.key");
 
-        let key = fs::read_to_string(key_location).context("Failed to read public key")?;
+        let key = fs::read_to_string(key_location)
+            .context("Failed to read public key")?;
 
         Ok(key)
     }
@@ -29,7 +30,8 @@ impl Key {
             .join(self.fingerprint.clone())
             .join("private.key");
 
-        let key = fs::read_to_string(key_location).context("Failed to read secret key")?;
+        let key = fs::read_to_string(key_location)
+            .context("Failed to read secret key")?;
 
         Ok(key)
     }

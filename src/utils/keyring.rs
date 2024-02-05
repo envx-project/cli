@@ -1,5 +1,7 @@
 use super::{config::Config, prompt::prompt_password};
-use crate::{constants::MINIMUM_PASSWORD_LENGTH, utils::prompt::prompt_confirm};
+use crate::{
+    constants::MINIMUM_PASSWORD_LENGTH, utils::prompt::prompt_confirm,
+};
 use anyhow::bail;
 use keyring::{Entry as Keyring, Result as KeyringResult};
 use std::{
@@ -55,7 +57,10 @@ pub fn clear_password(fingerprint: &str) -> KeyringResult<()> {
     keyring.delete_password()
 }
 
-pub fn try_get_password(fingerprint: &str, config: &Config) -> anyhow::Result<String> {
+pub fn try_get_password(
+    fingerprint: &str,
+    config: &Config,
+) -> anyhow::Result<String> {
     let password = get_password(fingerprint);
     let settings = config.get_settings()?;
 
@@ -66,7 +71,9 @@ pub fn try_get_password(fingerprint: &str, config: &Config) -> anyhow::Result<St
             let key = config.get_key(fingerprint)?;
             println!("Enter password for key {}", key);
             let password = prompt_password("Password: ")?;
-            if settings.warn_on_short_passwords && password.len() < MINIMUM_PASSWORD_LENGTH {
+            if settings.warn_on_short_passwords
+                && password.len() < MINIMUM_PASSWORD_LENGTH
+            {
                 eprintln!(
                     "This password is shorter than 8 characters. Are you sure you want to proceed?"
                 );

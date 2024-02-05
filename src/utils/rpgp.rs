@@ -6,7 +6,10 @@ use colored::Colorize;
 use crypto_hash::{hex_digest, Algorithm};
 use hex::ToHex;
 use pgp::composed::message::Message;
-use pgp::{composed, composed::signed_key::*, crypto, types::SecretKeyTrait, Deserializable};
+use pgp::{
+    composed, composed::signed_key::*, crypto, types::SecretKeyTrait,
+    Deserializable,
+};
 use rand::prelude::*;
 use rayon::iter::{IntoParallelRefIterator, ParallelIterator};
 use smallvec::*;
@@ -18,7 +21,8 @@ pub struct KeyPair {
     pub public_key: pgp::SignedPublicKey,
 }
 
-pub(crate) fn get_vault_location() -> anyhow::Result<std::path::PathBuf, anyhow::Error> {
+pub(crate) fn get_vault_location(
+) -> anyhow::Result<std::path::PathBuf, anyhow::Error> {
     let path = home::home_dir()
         .context("Failed to get home directory")?
         .join(".config")
@@ -43,8 +47,13 @@ pub fn generate_key_pair(
         .can_sign(true)
         .can_encrypt(true)
         .passphrase(Some(password.clone()))
-        .primary_user_id(generate_hashed_primary_user_id(name.clone(), email.clone()))
-        .preferred_symmetric_algorithms(smallvec![crypto::sym::SymmetricKeyAlgorithm::AES256]);
+        .primary_user_id(generate_hashed_primary_user_id(
+            name.clone(),
+            email.clone(),
+        ))
+        .preferred_symmetric_algorithms(smallvec![
+            crypto::sym::SymmetricKeyAlgorithm::AES256
+        ]);
 
     let secret_key_params = key_params
         .build()
@@ -88,10 +97,14 @@ pub fn encrypt(msg: &str, pubkey_str: &str) -> Result<String, anyhow::Error> {
     Ok(new_msg.to_armored_string(None)?)
 }
 
-pub fn encrypt_multi(msg: &str, pubkeys: &[SignedPublicKey]) -> Result<String, anyhow::Error> {
+pub fn encrypt_multi(
+    msg: &str,
+    pubkeys: &[SignedPublicKey],
+) -> Result<String, anyhow::Error> {
     let mut rng = StdRng::from_entropy();
 
-    let borrowed_keys = pubkeys.iter().collect::<SmallVec<[&SignedPublicKey; 1]>>();
+    let borrowed_keys =
+        pubkeys.iter().collect::<SmallVec<[&SignedPublicKey; 1]>>();
 
     let msg = composed::message::Message::new_literal("none", msg);
 
@@ -131,10 +144,14 @@ pub fn hash_string(input: &str) -> String {
 }
 
 pub fn generate_hashed_primary_user_id(name: String, email: String) -> String {
-    hash_string(&format!("{}{}{}", name, email, &get_config().unwrap().salt)).to_uppercase()
+    hash_string(&format!("{}{}{}", name, email, &get_config().unwrap().salt))
+        .to_uppercase()
 }
 
-pub fn decrypt_full(message: String, config: &Config) -> Result<String, anyhow::Error> {
+pub fn decrypt_full(
+    message: String,
+    config: &Config,
+) -> Result<String, anyhow::Error> {
     let buf = Cursor::new(message.clone());
     let (msg, _) = composed::message::Message::from_armor_single(buf)
         .context("Failed to convert &str to armored message")?;
@@ -171,12 +188,13 @@ pub fn decrypt_full(message: String, config: &Config) -> Result<String, anyhow::
     }
 
     let primary_key = &config.primary_key;
-    let (key, fingerprint) = if available_keys.iter().any(|k| k.contains(primary_key)) {
-        get_key(primary_key)?
-    } else {
-        println!("Using key: {}", &available_keys[0]);
-        get_key(&available_keys[0])?
-    };
+    let (key, fingerprint) =
+        if available_keys.iter().any(|k| k.contains(primary_key)) {
+            get_key(primary_key)?
+        } else {
+            println!("Using key: {}", &available_keys[0]);
+            get_key(&available_keys[0])?
+        };
 
     let passphrase = try_get_password(&fingerprint, config)?;
 
@@ -224,12 +242,13 @@ pub fn decrypt_full_many(
     }
 
     let primary_key = &config.primary_key;
-    let (key, fingerprint) = if available_keys.iter().any(|k| k.contains(primary_key)) {
-        get_key(primary_key)?
-    } else {
-        println!("Using key: {}", &available_keys[0]);
-        get_key(&available_keys[0])?
-    };
+    let (key, fingerprint) =
+        if available_keys.iter().any(|k| k.contains(primary_key)) {
+            get_key(primary_key)?
+        } else {
+            println!("Using key: {}", &available_keys[0]);
+            get_key(&available_keys[0])?
+        };
 
     let passphrase = try_get_password(&fingerprint, config)?;
 
@@ -250,7 +269,8 @@ where
 {
     let location = get_vault_location()?.join(&fingerprint).join("private.key");
 
-    let priv_key = fs::read_to_string(location).context("Failed to read private key")?;
+    let priv_key =
+        fs::read_to_string(location).context("Failed to read private key")?;
     let (seckey, _) = SignedSecretKey::from_string(priv_key.as_str())
         .context("Failed to convert private key to string")?;
 

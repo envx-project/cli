@@ -42,7 +42,10 @@ pub fn prompt_confirm(message: &str) -> Result<bool> {
 }
 
 #[allow(dead_code)]
-pub fn prompt_confirm_with_default(message: &str, default: bool) -> Result<bool> {
+pub fn prompt_confirm_with_default(
+    message: &str,
+    default: bool,
+) -> Result<bool> {
     let confirm = inquire::Confirm::new(message);
     confirm
         .with_default(default)
@@ -52,7 +55,10 @@ pub fn prompt_confirm_with_default(message: &str, default: bool) -> Result<bool>
 }
 
 #[allow(dead_code)]
-pub fn prompt_multi_options<T: Display>(message: &str, options: Vec<T>) -> Result<Vec<T>> {
+pub fn prompt_multi_options<T: Display>(
+    message: &str,
+    options: Vec<T>,
+) -> Result<Vec<T>> {
     let multi_select = inquire::MultiSelect::new(message, options);
     multi_select
         .with_render_config(get_render_config())
@@ -80,8 +86,10 @@ pub fn prompt_password(message: &str) -> Result<String> {
 #[allow(dead_code)]
 pub fn prompt_email(message: &str) -> Result<String> {
     let validator = |input: &str| {
-        let regex = regex::Regex::new(r"^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$")
-            .context("Failed to create regex for email validation")?;
+        let regex = regex::Regex::new(
+            r"^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$",
+        )
+        .context("Failed to create regex for email validation")?;
 
         if regex.is_match(input) {
             Ok(inquire::validator::Validation::Valid)

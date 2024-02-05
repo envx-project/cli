@@ -26,7 +26,8 @@ pub async fn command(args: Args) -> Result<()> {
     };
     let key = config.get_key(&key)?;
 
-    let project_id = Choice::try_project(args.project_id, &key.fingerprint).await?;
+    let project_id =
+        Choice::try_project(args.project_id, &key.fingerprint).await?;
 
     if project_id.is_empty() {
         return Err(anyhow::anyhow!("No project ID provided"));
@@ -35,7 +36,9 @@ pub async fn command(args: Args) -> Result<()> {
     let mut all_variables = BTreeMap::<String, String>::new();
     all_variables.insert("IN_ENVCLI_SHELL".to_owned(), "true".to_owned());
 
-    let variables = crate::sdk::SDK::get_variables_pruned(&project_id, &key.fingerprint).await?;
+    let variables =
+        crate::sdk::SDK::get_variables_pruned(&project_id, &key.fingerprint)
+            .await?;
 
     for variable in variables {
         all_variables.insert(variable.key, variable.value);
