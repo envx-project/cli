@@ -16,8 +16,8 @@ pub trait FromBTreeMap {
 impl ToBTreeMap for Config {
     fn to_btreemap(&self) -> Result<BTreeMap<String, String>> {
         // Convert Config to JSON value
-        let v: Value =
-            serde_json::to_value(self).context("Failed to convert config to JSON value")?;
+        let v: Value = serde_json::to_value(self)
+            .context("Failed to convert config to JSON value")?;
 
         // Convert JSON value into a BTreeMap
         if let Value::Object(map) = v {
@@ -31,8 +31,8 @@ impl ToBTreeMap for Config {
 impl ToBTreeMap for Settings {
     fn to_btreemap(&self) -> Result<BTreeMap<String, String>> {
         // Convert Settings to JSON value
-        let v: Value =
-            serde_json::to_value(self).context("Failed to convert settings to JSON value")?;
+        let v: Value = serde_json::to_value(self)
+            .context("Failed to convert settings to JSON value")?;
 
         // Convert JSON value into a BTreeMap
         if let Value::Object(map) = v {
@@ -46,11 +46,12 @@ impl ToBTreeMap for Settings {
 impl FromBTreeMap for Settings {
     fn from_btreemap(map: &BTreeMap<String, String>) -> Result<Self> {
         // Convert BTreeMap to JSON value
-        let v: Value =
-            serde_json::to_value(map).context("Failed to convert BTreeMap to JSON value")?;
+        let v: Value = serde_json::to_value(map)
+            .context("Failed to convert BTreeMap to JSON value")?;
 
         // Convert JSON value into Settings
-        serde_json::from_value(v).context("Failed to convert JSON value to Settings")
+        serde_json::from_value(v)
+            .context("Failed to convert JSON value to Settings")
     }
 }
 

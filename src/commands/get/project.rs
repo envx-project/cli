@@ -22,8 +22,10 @@ pub struct Args {
 pub async fn command(args: Args) -> Result<()> {
     let config = get_config()?;
     let key = config.get_key_or_default(args.key)?;
-    let project_id = Choice::try_project(args.project_id, &key.fingerprint).await?;
-    let project_info = SDK::get_project_info(&project_id, &key.fingerprint).await?;
+    let project_id =
+        Choice::try_project(args.project_id, &key.fingerprint).await?;
+    let project_info =
+        SDK::get_project_info(&project_id, &key.fingerprint).await?;
     println!("{:?}", project_info);
     Ok(())
 }

@@ -35,7 +35,8 @@ impl Choice {
             options.push(format!("{} - {}", p, "Remote"));
         });
 
-        let selected = crate::utils::prompt::prompt_options("Select project", options)?;
+        let selected =
+            crate::utils::prompt::prompt_options("Select project", options)?;
 
         if selected.is_empty() {
             return Err(anyhow::anyhow!("No project selected"));

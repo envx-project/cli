@@ -39,7 +39,10 @@ impl ToParsed for Vec<PartialVariable> {
         self.iter().map(|p| p.to_parsed()).collect()
     }
 
-    fn zip_to_parsed(&self, kvpairs: Vec<KVPair>) -> Vec<ParsedPartialVariable> {
+    fn zip_to_parsed(
+        &self,
+        kvpairs: Vec<KVPair>,
+    ) -> Vec<ParsedPartialVariable> {
         self.iter()
             .zip(kvpairs)
             .map(|(p, k)| p.zip_to_parsed(k))

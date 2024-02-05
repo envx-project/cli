@@ -8,7 +8,9 @@ use crate::utils::keyring::set_password;
 // use crate::utils::prompt::prompt_password;
 use crate::constants::MINIMUM_PASSWORD_LENGTH;
 use crate::utils::prompt::{prompt_email, prompt_password, prompt_text};
-use crate::utils::rpgp::{generate_hashed_primary_user_id, generate_key_pair, get_vault_location};
+use crate::utils::rpgp::{
+    generate_hashed_primary_user_id, generate_key_pair, get_vault_location,
+};
 use crate::utils::vecu8::ToHex;
 use anyhow::Context;
 use pgp::types::KeyTrait;
@@ -55,8 +57,9 @@ pub struct Args {
 }
 
 fn email_validator(email: &str) -> anyhow::Result<(), anyhow::Error> {
-    let regex = regex::Regex::new(r"^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$")
-        .context("Failed to create regex for email validation")?;
+    let regex =
+        regex::Regex::new(r"^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$")
+            .context("Failed to create regex for email validation")?;
 
     match regex.is_match(email) {
         true => Ok(()),
@@ -96,14 +99,17 @@ pub async fn command(args: Args) -> Result<()> {
         .passphrase
         .unwrap_or_else(|| prompt_password("password").unwrap());
 
-    if settings.warn_on_short_passwords && passphrase.len() < MINIMUM_PASSWORD_LENGTH {
+    if settings.warn_on_short_passwords
+        && passphrase.len() < MINIMUM_PASSWORD_LENGTH
+    {
         eprintln!("WARNING: Your password is short");
         eprintln!("This is not recommended");
         eprintln!("You can disable this warning with `envx config --no-warn-on-short-passwords`");
     }
 
-    let key_pair = generate_key_pair(name.clone(), email.clone(), passphrase.to_owned())
-        .expect("Failed to generate key pair");
+    let key_pair =
+        generate_key_pair(name.clone(), email.clone(), passphrase.to_owned())
+            .expect("Failed to generate key pair");
 
     let priv_key = key_pair
         .secret_key
@@ -131,7 +137,9 @@ pub async fn command(args: Args) -> Result<()> {
                 eprintln!("Continuing with generation...");
             }
             KeyringError::Ambiguous(c) => {
-                eprintln!("Somehow there are multiple keys with the same fingerprint");
+                eprintln!(
+                    "Somehow there are multiple keys with the same fingerprint"
+                );
                 eprintln!("Keys: {:?}", c);
                 eprintln!(
                     "Please submit a bug report at https://github.com/env-cli/rusty-cli/issues/new"
@@ -158,10 +166,13 @@ pub async fn command(args: Args) -> Result<()> {
 
     fs::create_dir_all(&key_dir).context("Failed to create key directory")?;
 
-    fs::write(key_dir.join("private.key"), &priv_key).expect("Failed to write private key to file");
-    fs::write(key_dir.join("public.key"), &pub_key).expect("Failed to write public key to file");
+    fs::write(key_dir.join("private.key"), &priv_key)
+        .expect("Failed to write private key to file");
+    fs::write(key_dir.join("public.key"), &pub_key)
+        .expect("Failed to write public key to file");
 
-    let hashed_note = generate_hashed_primary_user_id(name.clone(), email.clone());
+    let hashed_note =
+        generate_hashed_primary_user_id(name.clone(), email.clone());
     let mut key_to_insert: Key = Key {
         fingerprint: fingerprint.clone(),
         note: "".to_string(),

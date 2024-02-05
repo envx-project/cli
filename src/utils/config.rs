@@ -57,7 +57,8 @@ impl Config {
     /// should rewrite using file locks
     pub fn write(&self) -> Result<()> {
         let path = get_config_path().context("Failed to get config path")?;
-        let file = File::create(path).context("Failed to create config file")?;
+        let file =
+            File::create(path).context("Failed to create config file")?;
         let mut writer = BufWriter::new(file);
         let contents = serde_json::to_string_pretty(self)
             .context("Failed to serialize config to JSON string")?;
@@ -120,7 +121,10 @@ impl Config {
         Ok(key.clone())
     }
 
-    pub fn get_key_or_default(&self, partial_fingerprint: Option<String>) -> Result<Key> {
+    pub fn get_key_or_default(
+        &self,
+        partial_fingerprint: Option<String>,
+    ) -> Result<Key> {
         let partial_fingerprint = match partial_fingerprint {
             Some(p) => p,
             None => self.primary_key.clone(),
@@ -143,7 +147,11 @@ impl Config {
     }
 
     #[allow(dead_code)]
-    pub fn init_project(&mut self, project_id: &str, path: PathBuf) -> Result<()> {
+    pub fn init_project(
+        &mut self,
+        project_id: &str,
+        path: PathBuf,
+    ) -> Result<()> {
         let project = Project {
             project_id: project_id.to_string(),
             path,
@@ -223,7 +231,8 @@ pub fn get_config_path() -> Result<PathBuf> {
     // if it doesn't exist, create it
     if !path.exists() {
         let default = serde_json::to_string_pretty(&Config::default())?;
-        let parent_path = path.parent().context("Failed to get parent directory")?;
+        let parent_path =
+            path.parent().context("Failed to get parent directory")?;
         fs::create_dir_all(parent_path)?;
         let mut file = File::create(&path)?;
         file.write_all(default.as_ref())?;
@@ -234,6 +243,8 @@ pub fn get_config_path() -> Result<PathBuf> {
 /// Read the configuration file and parse it into a Config struct
 pub fn get_config() -> Result<Config> {
     let path = get_config_path().context("Failed to get config path")?;
-    let contents = fs::read_to_string(path).context("Failed to read config file")?;
-    serde_json::from_str::<Config>(&contents).context("Failed to parse config file")
+    let contents =
+        fs::read_to_string(path).context("Failed to read config file")?;
+    serde_json::from_str::<Config>(&contents)
+        .context("Failed to parse config file")
 }

@@ -19,7 +19,8 @@ pub async fn command(args: Args) -> Result<()> {
     let config = get_config()?;
 
     if args.json {
-        let json = serde_json::to_string_pretty(&config).context("Failed to serialize")?;
+        let json = serde_json::to_string_pretty(&config)
+            .context("Failed to serialize")?;
         println!("{}", json);
         return Ok(());
     };
