@@ -22,8 +22,10 @@ pub async fn command(args: Args) -> Result<()> {
     let variable = match args.variable {
         Some(v) => v,
         None => {
-            let (_, all_variables) = SDK::get_all_variables(&key.fingerprint).await?;
-            prompt::prompt_options("Select variables to delete", all_variables)?.id
+            let (_, all_variables) =
+                SDK::get_all_variables(&key.fingerprint).await?;
+            prompt::prompt_options("Select variables to delete", all_variables)?
+                .id
         }
     };
 

@@ -38,22 +38,25 @@ pub async fn command(args: Args) -> Result<()> {
     };
     let key = config.get_key(key)?;
 
-    let project_id = Choice::try_project(args.project_id, &key.fingerprint).await?;
+    let project_id =
+        Choice::try_project(args.project_id, &key.fingerprint).await?;
 
     if project_id.is_empty() {
         return Err(anyhow::anyhow!("No project ID provided"));
     }
 
-    let (kvpairs, errors): (Vec<KVPair>, Vec<String>) =
-        args.kvpairs
-            .iter()
-            .fold((Vec::new(), Vec::new()), |(mut ok, mut err), k| {
-                match k.split_once('=') {
-                    Some((key, value)) => ok.push(KVPair::new(key.to_uppercase(), value.into())),
-                    None => err.push(format!("Invalid KVPair: {}", k)),
+    let (kvpairs, errors): (Vec<KVPair>, Vec<String>) = args
+        .kvpairs
+        .iter()
+        .fold((Vec::new(), Vec::new()), |(mut ok, mut err), k| {
+            match k.split_once('=') {
+                Some((key, value)) => {
+                    ok.push(KVPair::new(key.to_uppercase(), value.into()))
                 }
-                (ok, err)
-            });
+                None => err.push(format!("Invalid KVPair: {}", k)),
+            }
+            (ok, err)
+        });
 
     errors.iter().for_each(|e| println!("Skipping {}", e));
 

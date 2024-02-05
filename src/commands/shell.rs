@@ -14,7 +14,8 @@ use winapi::shared::minwindef::DWORD;
 use winapi::um::handleapi::{CloseHandle, INVALID_HANDLE_VALUE};
 #[cfg(target_os = "windows")]
 use winapi::um::tlhelp32::{
-    CreateToolhelp32Snapshot, Process32First, Process32Next, PROCESSENTRY32, TH32CS_SNAPPROCESS,
+    CreateToolhelp32Snapshot, Process32First, Process32Next, PROCESSENTRY32,
+    TH32CS_SNAPPROCESS,
 };
 
 /// memory management helpers are also only used on windows
@@ -46,7 +47,8 @@ pub async fn command(args: Args) -> Result<()> {
     };
     let key = config.get_key(&key)?;
 
-    let project_id = Choice::try_project(args.project_id, &key.fingerprint).await?;
+    let project_id =
+        Choice::try_project(args.project_id, &key.fingerprint).await?;
 
     if project_id.is_empty() {
         return Err(anyhow::anyhow!("No project ID provided"));
@@ -55,7 +57,9 @@ pub async fn command(args: Args) -> Result<()> {
     let mut all_variables = BTreeMap::<String, String>::new();
     all_variables.insert("IN_ENVCLI_SHELL".to_owned(), "true".to_owned());
 
-    let variables = crate::sdk::SDK::get_variables_pruned(&project_id, &key.fingerprint).await?;
+    let variables =
+        crate::sdk::SDK::get_variables_pruned(&project_id, &key.fingerprint)
+            .await?;
 
     for variable in variables {
         all_variables.insert(variable.key, variable.value);
@@ -104,7 +108,10 @@ pub async fn command(args: Args) -> Result<()> {
 }
 
 #[cfg(target_os = "windows")]
-unsafe fn node_fix_recursive(process_id: DWORD, recursion: Option<u32>) -> Result<(u32, String)> {
+unsafe fn node_fix_recursive(
+    process_id: DWORD,
+    recursion: Option<u32>,
+) -> Result<(u32, String)> {
     // recursive because for some reason it occasionally is more than one level deep
     let recursion = recursion.unwrap_or(0);
     if recursion > 10 {
@@ -175,7 +182,9 @@ async fn windows_shell_detection() -> Option<WindowsShell> {
 /// get the parent process info, translated from
 // https://gist.github.com/mattn/253013/d47b90159cf8ffa4d92448614b748aa1d235ebe4
 #[cfg(target_os = "windows")]
-unsafe fn get_parent_process_info(pid: Option<DWORD>) -> Option<(DWORD, String)> {
+unsafe fn get_parent_process_info(
+    pid: Option<DWORD>,
+) -> Option<(DWORD, String)> {
     let pid = pid.unwrap_or(std::process::id());
 
     let mut pe32: PROCESSENTRY32 = unsafe { zeroed() };
@@ -228,8 +237,10 @@ unsafe fn get_process_name(pid: DWORD) -> Option<String> {
     if unsafe { Process32First(h_snapshot, &mut pe32) } != 0 {
         loop {
             if pe32.th32ProcessID == pid {
-                let process_name_cstr = unsafe { CStr::from_ptr(pe32.szExeFile.as_ptr()) };
-                let process_name = process_name_cstr.to_string_lossy().into_owned();
+                let process_name_cstr =
+                    unsafe { CStr::from_ptr(pe32.szExeFile.as_ptr()) };
+                let process_name =
+                    process_name_cstr.to_string_lossy().into_owned();
                 unsafe { CloseHandle(h_snapshot) };
                 return Some(process_name);
             }

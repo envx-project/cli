@@ -22,10 +22,11 @@ pub async fn command(args: Args) -> Result<()> {
 
     let primary_key = config.primary_key.clone();
 
-    let primary_key_location = get_vault_location()?.join(primary_key).join("public.key");
+    let primary_key_location =
+        get_vault_location()?.join(primary_key).join("public.key");
 
-    let primary_public_key =
-        std::fs::read_to_string(primary_key_location).context("Failed to read primary key")?;
+    let primary_public_key = std::fs::read_to_string(primary_key_location)
+        .context("Failed to read primary key")?;
 
     let encrypted = encrypt(&args.message, primary_public_key.as_str())?;
 

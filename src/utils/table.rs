@@ -45,17 +45,23 @@ impl Table {
         let edge_width = console::measure_text_width(edge.as_str());
 
         let middle_padding = format!(" {} ", box_drawing::light::VERTICAL);
-        let middle_padding_width = console::measure_text_width(middle_padding.as_str());
+        let middle_padding_width =
+            console::measure_text_width(middle_padding.as_str());
         let middle_padding = middle_padding.cyan().dimmed().to_string();
 
-        let box_width =
-            ((edge_width * 2) + first_column_width + middle_padding_width + max_right_content)
-                .clamp(MIN_BOX_WIDTH, MAX_BOX_WIDTH);
+        let box_width = ((edge_width * 2)
+            + first_column_width
+            + middle_padding_width
+            + max_right_content)
+            .clamp(MIN_BOX_WIDTH, MAX_BOX_WIDTH);
 
-        let second_column_width =
-            box_width - (edge_width * 2) - first_column_width - middle_padding_width;
+        let second_column_width = box_width
+            - (edge_width * 2)
+            - first_column_width
+            - middle_padding_width;
 
-        let title_side_padding = ((box_width as f64) - (title_width as f64) - 2.0) / 2.0;
+        let title_side_padding =
+            ((box_width as f64) - (title_width as f64) - 2.0) / 2.0;
 
         let top_box = format!(
             "{}{}{}{}{}",
@@ -149,7 +155,13 @@ fn print_row(
     let mut output = format!(
         "{}{}{}{}{}",
         left_edge.cyan().dimmed(),
-        console::pad_str(title, first_column_width, console::Alignment::Left, None).bold(),
+        console::pad_str(
+            title,
+            first_column_width,
+            console::Alignment::Left,
+            None
+        )
+        .bold(),
         middle,
         console::pad_str(
             &list_lines[0],
@@ -165,9 +177,19 @@ fn print_row(
             "{}\n{}{}{}{}{}",
             output,
             left_edge.cyan().dimmed(),
-            console::pad_str("", first_column_width, console::Alignment::Left, None),
+            console::pad_str(
+                "",
+                first_column_width,
+                console::Alignment::Left,
+                None
+            ),
             middle,
-            console::pad_str(line, second_column_width, console::Alignment::Left, None),
+            console::pad_str(
+                line,
+                second_column_width,
+                console::Alignment::Left,
+                None
+            ),
             right_edge.cyan().dimmed()
         );
     }
