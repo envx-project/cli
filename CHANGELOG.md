@@ -1,5 +1,20 @@
 # Changelog
 
+## [0.5.0](https://github.com/env-store/rusty-cli/compare/v0.4.1...v0.5.0) (2024-03-10)
+
+
+### Features
+
+* list users in project ([c125e68](https://github.com/env-store/rusty-cli/commit/c125e68800faab9443bfc25910eb2974a958d3ae))
+* remove user from project ([1926438](https://github.com/env-store/rusty-cli/commit/19264387d2189b381b95e5d8c02e0fc48bc15779))
+
+
+### Bug Fixes
+
+* cargo fmt ([1a4a3a2](https://github.com/env-store/rusty-cli/commit/1a4a3a22c960803a5da69c97151572c270062b04))
+* cargo fmt ([e0b8534](https://github.com/env-store/rusty-cli/commit/e0b85346d4a10581d4498bf4dd5b3070d8e41f04))
+* make test an Option&lt;String&gt; ([6c04b52](https://github.com/env-store/rusty-cli/commit/6c04b52fd720e9a11e9888a064dbaddea817cf36))
+
 ## [0.4.1](https://github.com/env-store/rusty-cli/compare/v0.4.0...v0.4.1) (2024-01-02)
 
 
