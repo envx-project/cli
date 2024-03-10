@@ -9,6 +9,12 @@ pub struct User {
     pub public_key: String,
 }
 
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct PartialUser {
+    pub id: String,
+    pub username: String,
+}
+
 #[derive(Serialize, Deserialize, Debug)]
 pub struct ProjectInfo {
     pub project_id: String,
@@ -16,6 +22,21 @@ pub struct ProjectInfo {
 }
 
 impl Display for User {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{} - {}", self.username, self.id)
+    }
+}
+
+impl From<User> for PartialUser {
+    fn from(user: User) -> Self {
+        PartialUser {
+            id: user.id,
+            username: user.username,
+        }
+    }
+}
+
+impl Display for PartialUser {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{} - {}", self.username, self.id)
     }

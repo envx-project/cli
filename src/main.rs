@@ -34,6 +34,7 @@ commands_enum!(
     gen,
     import,
     link,
+    list_keys,
     run,
     set,
     shell,
