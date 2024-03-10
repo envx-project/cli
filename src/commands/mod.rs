@@ -8,6 +8,7 @@ pub mod delete;
 pub mod get;
 pub mod keyring;
 pub mod new;
+pub mod project;
 
 // No subcommands
 pub mod add_user_to_project;

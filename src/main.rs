@@ -49,7 +49,8 @@ commands_enum!(
     delete,
     get,
     keyring,
-    new
+    new,
+    project
 );
 
 #[tokio::main]
