@@ -11,8 +11,9 @@ use crate::{
     sdk::{get_api_url, SDK},
     types::User,
     utils::{
-        auth::get_token, choice::Choice, config::get_config, partial_variable::PartialVariable,
-        prompt::prompt_multi_options, rpgp::encrypt_multi,
+        auth::get_token, choice::Choice, config::get_config,
+        partial_variable::PartialVariable, prompt::prompt_multi_options,
+        rpgp::encrypt_multi,
     },
 };
 
@@ -40,18 +41,24 @@ pub async fn command(args: Args) -> anyhow::Result<()> {
         .uuid
         .context("Key does not have a UUID, try `envx upload`")?;
 
-    let project_id = Choice::try_project(args.project_id, &key.fingerprint).await?;
-    let project_info = SDK::get_project_info(&project_id, &key.fingerprint).await?;
+    let project_id =
+        Choice::try_project(args.project_id, &key.fingerprint).await?;
+    let project_info =
+        SDK::get_project_info(&project_id, &key.fingerprint).await?;
 
     let users_to_remove = match args.user_id {
         Some(u) => vec![u],
         None => {
-            let users = prompt_multi_options("Users to Remove", project_info.users.clone())?;
+            let users = prompt_multi_options(
+                "Users to Remove",
+                project_info.users.clone(),
+            )?;
             users.into_iter().map(|u| u.id).collect()
         }
     };
 
-    let (kvpairs, mut partials) = SDK::get_variables(&project_id, &key.fingerprint).await?;
+    let (kvpairs, mut partials) =
+        SDK::get_variables(&project_id, &key.fingerprint).await?;
 
     let users_without_users_to_remove = project_info
         .users
