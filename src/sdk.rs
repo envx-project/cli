@@ -361,7 +361,8 @@ impl SDK {
             "users": users_to_remove
         });
 
-        let url = get_api_url().join(&format!("/project/{}/remove-user", project_id))?;
+        let url = get_api_url()
+            .join(&format!("/project/{}/remove-user", project_id))?;
 
         let res = client
             .post(url)
