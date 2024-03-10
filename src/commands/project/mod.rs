@@ -5,8 +5,8 @@ pub(super) use clap::Parser;
 pub(super) use colored::Colorize;
 
 pub mod add_user;
-pub mod remove_user;
 pub mod list_users;
+pub mod remove_user;
 
 use crate::commands_enum;
 use clap::Subcommand;

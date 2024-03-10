@@ -53,7 +53,10 @@ pub async fn command(args: Args) -> Result<()> {
 
     if args.all {
         for user in project_info.users.iter() {
-            println!("{} - {} - {} - {}", user.username, user.id, user.created_at, user.public_key);
+            println!(
+                "{} - {} - {} - {}",
+                user.username, user.id, user.created_at, user.public_key
+            );
         }
         println!("{:?}", &project_info.users);
         return Ok(());
@@ -61,7 +64,7 @@ pub async fn command(args: Args) -> Result<()> {
 
     for user in project_info.users.iter() {
         println!("{}", user);
-    } 
+    }
 
     Ok(())
 }
