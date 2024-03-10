@@ -26,7 +26,6 @@ pub struct Args {
 // Generates the commands based on the modules in the commands directory
 // Specify the modules you want to include in the commands_enum! macro
 commands_enum!(
-    add_user_to_project,
     auth,
     debug,
     decrypt,
@@ -49,7 +48,8 @@ commands_enum!(
     delete,
     get,
     keyring,
-    new
+    new,
+    project
 );
 
 #[tokio::main]
