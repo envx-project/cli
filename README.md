@@ -18,7 +18,7 @@ curl -fsSL get.envx.sh | bash
 ```
 
 For windows users:
-Download the binary from [this page](/releases/latest), then you can run that binary as an application.
+Download the binary from [this page](github.com/env-store/rusty-cli/releases/latest), then you can run that binary as an application.
 
 ### Usage
 
