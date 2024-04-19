@@ -10,6 +10,16 @@ A very simple cli written for [env-store/envs](https://github.com/env-store/envs
 
 - Revert to a single global configuration file
 
+## Installation
+
+```bash
+# MacOS, Linux
+curl -fsSL get.envx.sh | bash
+```
+
+For windows users:
+Download the binary from [this page](/releases/latest), then you can run that binary as an application.
+
 ### Usage
 
 ```bash
