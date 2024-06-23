@@ -28,6 +28,8 @@ pub async fn command(args: Args) -> anyhow::Result<()> {
         .await
         .context("Failed to get token")?;
 
+    println!("auth token:\n{}", auth_token.signature);
+
     let res = client
         .post(format!("{}/test-auth", get_api_url()))
         .header(header::AUTHORIZATION, format!("Bearer {}", auth_token))
