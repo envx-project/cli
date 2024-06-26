@@ -1,4 +1,7 @@
-use super::{config::Config, prompt::prompt_password};
+use super::{
+    config::{get_config, Config},
+    prompt::prompt_password,
+};
 use crate::{
     constants::MINIMUM_PASSWORD_LENGTH, utils::prompt::prompt_confirm,
 };
@@ -31,6 +34,14 @@ pub fn set_password(fingerprint: &str, password: &str) -> KeyringResult<()> {
 }
 
 pub fn get_password(fingerprint: &str) -> anyhow::Result<String> {
+    let config = get_config()?;
+
+    if fingerprint == config.primary_key {
+        if let Some(password) = config.primary_key_password {
+            return Ok(password);
+        }
+    }
+
     let expiry = fs::read(get_session_path(fingerprint));
     let expiry = match expiry {
         Ok(e) => e,
@@ -62,11 +73,12 @@ pub fn try_get_password(
     config: &Config,
 ) -> anyhow::Result<String> {
     let password = get_password(fingerprint);
-    let settings = config.get_settings()?;
 
     match password {
         Ok(p) => Ok(p),
         Err(e) => {
+            let settings = config.get_settings()?;
+
             eprintln!("Failed to get password: {}", e);
             let key = config.get_key(fingerprint)?;
             println!("Enter password for key {}", key);

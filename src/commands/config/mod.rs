@@ -9,7 +9,7 @@ use clap::Subcommand;
 
 pub mod set;
 
-/// Delete a resource. (project, key)
+/// Configure envx
 #[derive(Parser)]
 pub struct Args {
     #[clap(subcommand)]
