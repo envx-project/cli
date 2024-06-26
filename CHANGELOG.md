@@ -1,5 +1,16 @@
 # Changelog
 
+## [1.0.0](https://github.com/env-store/rusty-cli/compare/v0.1.0...v1.0.0) (2024-06-26)
+
+
+### ⚠ BREAKING CHANGES
+
+* bump semver major
+
+### Features
+
+* bump semver major ([41b990e](https://github.com/env-store/rusty-cli/commit/41b990e40698dbd282dff4047c70788df50535f5))
+
 ## 0.1.0 (2024-06-26)
 
 
