@@ -28,6 +28,8 @@ pub struct Config {
     pub settings: Option<Settings>,
     /// Projects
     pub projects: Vec<Project>,
+    /// Password for the primary key
+    pub primary_key_password: Option<String>,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -48,6 +50,7 @@ impl Default for Config {
             sdk_url: Some("https://api.env-cli.com".into()),
             settings: None,
             projects: vec![],
+            primary_key_password: None,
         }
     }
 }

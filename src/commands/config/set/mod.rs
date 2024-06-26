@@ -8,6 +8,7 @@ use crate::commands_enum;
 use clap::Subcommand;
 
 pub mod primary_key;
+pub mod unsafe_password;
 
 /// Delete a resource. (project, key)
 #[derive(Parser)]
@@ -16,7 +17,7 @@ pub struct Args {
     command: Commands,
 }
 
-commands_enum!(primary_key);
+commands_enum!(primary_key, unsafe_password);
 
 pub async fn command(args: Args) -> Result<()> {
     Commands::exec(args).await?;
