@@ -10,6 +10,7 @@ A very simple cli written for [env-store/envs](https://github.com/env-store/envs
 
 - Revert to a single global configuration file
 
+
 ## Installation
 
 ```bash
