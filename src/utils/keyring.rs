@@ -2,6 +2,7 @@ use super::{
     config::{get_config, Config},
     prompt::prompt_password,
 };
+use crate::utils::settings::KeyringExpiry;
 use crate::{
     constants::MINIMUM_PASSWORD_LENGTH, utils::prompt::prompt_confirm,
 };
@@ -20,10 +21,24 @@ fn get_session_path(fingerprint: &str) -> PathBuf {
     std::env::temp_dir().join(format!("envx-{}", fingerprint))
 }
 
-pub fn set_password(fingerprint: &str, password: &str) -> KeyringResult<()> {
+pub fn set_password(
+    fingerprint: &str,
+    password: &str,
+    expiry: KeyringExpiry,
+) -> KeyringResult<()> {
     let keyring = Keyring::new(SERVICE, fingerprint)?;
 
-    let expiration = SystemTime::now() + Duration::from_secs(60 * 60 * 24 * 30);
+    if expiry == KeyringExpiry::Never {
+        return keyring.set_password(password);
+    }
+
+    let days: u64 = match expiry {
+        KeyringExpiry::Days(d) => d.into(),
+        _ => unreachable!(),
+    };
+
+    let expiration =
+        SystemTime::now() + Duration::from_secs(days * 24 * 60 * 60);
     let exp_bytes = bincode::serialize(&expiration).unwrap();
     fs::File::create(get_session_path(fingerprint))
         .unwrap()
@@ -35,6 +50,7 @@ pub fn set_password(fingerprint: &str, password: &str) -> KeyringResult<()> {
 
 pub fn get_password(fingerprint: &str) -> anyhow::Result<String> {
     let config = get_config()?;
+    let settings = config.get_settings()?;
 
     if fingerprint == config.primary_key {
         if let Some(password) = config.primary_key_password {
@@ -42,20 +58,22 @@ pub fn get_password(fingerprint: &str) -> anyhow::Result<String> {
         }
     }
 
-    let expiry = fs::read(get_session_path(fingerprint));
-    let expiry = match expiry {
-        Ok(e) => e,
-        Err(_) => {
+    if let Some(_) = settings.get_keyring_expiry_days() {
+        let expiry = fs::read(get_session_path(fingerprint));
+        let expiry = match expiry {
+            Ok(e) => e,
+            Err(_) => {
+                clear_password(fingerprint)?;
+                bail!("No session found");
+            }
+        };
+
+        let expiry: SystemTime = bincode::deserialize(&expiry)?;
+
+        if expiry < SystemTime::now() {
             clear_password(fingerprint)?;
-            bail!("No session found");
+            bail!("Session expired");
         }
-    };
-
-    let expiry: SystemTime = bincode::deserialize(&expiry)?;
-
-    if expiry < SystemTime::now() {
-        clear_password(fingerprint)?;
-        bail!("Session expired");
     }
 
     let keyring = Keyring::new(SERVICE, fingerprint)?;
@@ -95,7 +113,9 @@ pub fn try_get_password(
                 }
             }
 
-            if let Err(e) = set_password(fingerprint, &password) {
+            let expiry = settings.get_keyring_expiry();
+
+            if let Err(e) = set_password(fingerprint, &password, expiry) {
                 eprintln!("Failed to set password: {}", e);
             }
 

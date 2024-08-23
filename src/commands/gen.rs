@@ -123,7 +123,8 @@ pub async fn command(args: Args) -> Result<()> {
 
     let fingerprint = key_pair.secret_key.fingerprint().to_hex();
 
-    let result = set_password(&fingerprint, &passphrase);
+    let result =
+        set_password(&fingerprint, &passphrase, settings.get_keyring_expiry());
 
     if let Err(e) = result {
         match e {

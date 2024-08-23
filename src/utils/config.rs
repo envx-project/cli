@@ -179,7 +179,7 @@ impl Config {
         Err(anyhow::anyhow!("Failed to find project"))
     }
 
-    pub fn set_project(&mut self, project_id: &str) -> Result<()> {
+    pub fn link_project(&mut self, project_id: &str) -> Result<()> {
         let path = std::env::current_dir()?;
         let new_project = Project {
             project_id: project_id.to_string(),
@@ -190,7 +190,7 @@ impl Config {
         Ok(())
     }
 
-    pub fn unset_project(&mut self) -> Result<Vec<String>> {
+    pub fn unlink_project(&mut self) -> Result<Vec<String>> {
         let path = std::env::current_dir()?;
         let matching = self
             .projects

@@ -8,7 +8,7 @@ pub struct Args {}
 pub async fn command(_args: Args) -> Result<()> {
     let mut config = get_config()?;
 
-    let unset = config.unset_project()?;
+    let unset = config.unlink_project()?;
     config.write()?;
 
     // There should only ever be one project unset

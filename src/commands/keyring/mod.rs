@@ -7,18 +7,17 @@ pub(super) use colored::Colorize;
 use crate::commands_enum;
 use clap::Subcommand;
 
-pub mod check;
 pub mod clear;
 pub mod view;
 
-/// Delete a resource. (project, key)
+/// Interact with the keyring
 #[derive(Parser)]
 pub struct Args {
     #[clap(subcommand)]
     command: Commands,
 }
 
-commands_enum!(view, check, clear);
+commands_enum!(view, clear);
 
 pub async fn command(args: Args) -> Result<()> {
     Commands::exec(args).await?;

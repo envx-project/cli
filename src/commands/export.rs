@@ -7,7 +7,7 @@ use crate::utils::{
 #[derive(Parser)]
 pub struct Args {
     /// The fingerprint of the key to export
-    #[clap(short, long)]
+    #[clap(short = 'k', long = "key")]
     fingerprint: Option<String>,
 
     /// Export the secret key
@@ -32,7 +32,11 @@ pub async fn command(args: Args) -> Result<()> {
     let key = config
         .keys
         .iter()
-        .find(|k| k.fingerprint.starts_with(&fingerprint))
+        .find(|k| {
+            k.fingerprint
+                .to_uppercase()
+                .starts_with(&fingerprint.to_uppercase())
+        })
         .context("Failed to find key".red())?;
 
     let key = if args.secret_key {

@@ -28,7 +28,7 @@ pub async fn command(args: Args) -> Result<()> {
         if args.force {
             println!("Forced new project");
             println!("Unlinking current project...");
-            let old = config.unset_project()?;
+            let old = config.unlink_project()?;
             config.write()?;
             println!(
                 "{} {}",
@@ -51,7 +51,7 @@ pub async fn command(args: Args) -> Result<()> {
         None => Choice::choose_project(&key.fingerprint).await?,
     };
 
-    config.set_project(&project_id)?;
+    config.link_project(&project_id)?;
     config.write()?;
 
     Ok(())
