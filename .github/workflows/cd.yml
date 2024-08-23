@@ -97,6 +97,12 @@ jobs:
           sudo apt-get update
           sudo apt-get install musl-tools -y
 
+      - name: Install OPENSSL
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          sudo apt-get update
+          sudo apt-get install libssl-dev pkg-config
+
       - name: Build release binary
         uses: actions-rs/cargo@v1
         with:
