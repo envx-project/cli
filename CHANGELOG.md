@@ -1,5 +1,20 @@
 # Changelog
 
+## [1.1.0](https://github.com/envx-project/cli/compare/v1.0.0...v1.1.0) (2024-08-23)
+
+
+### Features
+
+* keyring expiry ([815a6ff](https://github.com/envx-project/cli/commit/815a6ff9da750ac776e1b7f92e7534db100de4d7))
+* settings for keyring expiry ([815a6ff](https://github.com/envx-project/cli/commit/815a6ff9da750ac776e1b7f92e7534db100de4d7))
+
+
+### Bug Fixes
+
+* consistency with `k` flags ([815a6ff](https://github.com/envx-project/cli/commit/815a6ff9da750ac776e1b7f92e7534db100de4d7))
+* export key works ([815a6ff](https://github.com/envx-project/cli/commit/815a6ff9da750ac776e1b7f92e7534db100de4d7))
+* keyring on linux ([815a6ff](https://github.com/envx-project/cli/commit/815a6ff9da750ac776e1b7f92e7534db100de4d7))
+
 ## [1.0.0](https://github.com/env-store/rusty-cli/compare/v0.1.0...v1.0.0) (2024-06-26)
 
 
