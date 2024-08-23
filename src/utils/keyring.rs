@@ -65,7 +65,7 @@ pub fn get_password(fingerprint: &str) -> anyhow::Result<String> {
 
 pub fn clear_password(fingerprint: &str) -> KeyringResult<()> {
     let keyring = Keyring::new(SERVICE, fingerprint)?;
-    keyring.delete_password()
+    keyring.delete_credential()
 }
 
 pub fn try_get_password(
