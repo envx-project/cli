@@ -1,0 +1,90 @@
+name: Test Build Release
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  test:
+    name: Test Build Release
+    permissions:
+      contents: write
+    runs-on: ${{ matrix.os }}
+    continue-on-error: true
+    strategy:
+      matrix:
+        include:
+          - target: x86_64-unknown-linux-gnu
+            os: ubuntu-latest
+
+          - target: x86_64-unknown-linux-musl
+            os: ubuntu-latest
+
+          # - target: i686-unknown-linux-musl
+          #   os: ubuntu-latest
+          #   install-musl: true
+
+          # - target: aarch64-unknown-linux-musl
+          #   os: ubuntu-latest
+
+          # - target: arm-unknown-linux-musleabihf
+          #   os: ubuntu-latest
+
+          - target: x86_64-apple-darwin
+            os: macOS-latest
+
+          - target: aarch64-apple-darwin
+            os: macOS-latest
+
+          - target: x86_64-pc-windows-msvc
+            os: windows-latest
+
+          # - target: i686-pc-windows-msvc
+          #   os: windows-latest
+
+          - target: x86_64-pc-windows-gnu
+            os: windows-latest
+
+          # - target: i686-pc-windows-gnu
+          #   os: windows-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+
+      - name: install system dependencies
+        run: sudo apt update && sudo apt install -y make libssl-dev pkg-config
+        if: ${{ matrix.os == 'ubuntu-latest' }}
+        
+      - name: install musl
+        run: sudo apt install -y musl-tools musl-dev linux-headers-$(uname -r)
+        if: ${{ matrix.install-musl }}
+      - name: install wget and make
+        run: sudo apt install -y wget make
+        if: ${{ matrix.install-musl }}
+      - name: Install OpenSSL for x86 MUSL
+        run: |
+          sudo ln -s /usr/include/x86_64-linux-gnu/asm /usr/include/x86_64-linux-musl/asm && ln -s /usr/include/asm-generic /usr/include/x86_64-linux-musl/asm-generic && ln -s /usr/include/linux /usr/include/x86_64-linux-musl/linux
+          sudo mkdir /musl
+          wget https://github.com/openssl/openssl/archive/OpenSSL_1_1_1f.tar.gz
+          tar zxf OpenSSL_1_1_1f.tar.gz 
+          cd openssl-OpenSSL_1_1_1f/
+          CC="musl-gcc -fPIE -pie -static -idirafter /usr/include/ -idirafter /usr/include/x86_64-linux-gnu/" ./Configure no-shared no-async --prefix=/musl --openssldir=/musl/ssl linux-x86_64
+          make depend
+          make -j$(nproc)
+          sudo make install
+        if: ${{ matrix.target == 'x86_64-unknown-linux-musl' }}
+
+      - name: Build
+        run: cargo build --release --locked --target ${{ matrix.target }}
+        if: ${{ !matrix.install-musl }}
+
+      - name: Build MUSL
+        run: OPENSSL_DIR=/musl OPENSSL_STATIC=true PKG_CONFIG_ALLOW_CROSS=1 cargo build --release --locked --target ${{ matrix.target }}
+        if: ${{ matrix.install-musl }}
+
