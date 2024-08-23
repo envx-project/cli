@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.1.1](https://github.com/envx-project/cli/compare/v1.1.0...v1.1.1) (2024-08-23)
+
+
+### Bug Fixes
+
+* cargo fmt ([3d788a0](https://github.com/envx-project/cli/commit/3d788a064d1f8f4161fb3e99def0d46dc90c3797))
+* install openssl in cd ([2f7dc1f](https://github.com/envx-project/cli/commit/2f7dc1f90c62f23263f89119d39d53307db7a7fc))
+
 ## [1.1.0](https://github.com/envx-project/cli/compare/v1.0.0...v1.1.0) (2024-08-23)
 
 
