@@ -7,9 +7,9 @@ pub(super) use colored::Colorize;
 use crate::commands_enum;
 use clap::Subcommand;
 
+pub mod keyring_expiry;
 pub mod primary_key;
 pub mod unsafe_password;
-pub mod keyring_expiry;
 
 /// Delete a resource. (project, key)
 #[derive(Parser)]
