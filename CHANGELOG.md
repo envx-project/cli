@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.1.3](https://github.com/envx-project/cli/compare/v1.1.2...v1.1.3) (2024-08-24)
+
+
+### Bug Fixes
+
+* ci targets ([2ddf7e0](https://github.com/envx-project/cli/commit/2ddf7e0de004f381592fad477ff6bdf7e9fd20cb))
+
 ## [1.1.2](https://github.com/envx-project/cli/compare/v1.1.1...v1.1.2) (2024-08-24)
 
 
