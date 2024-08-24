@@ -90,10 +90,10 @@ jobs:
 
       - name: install musl
         run: sudo apt install -y musl-tools musl-dev linux-headers-$(uname -r)
-        if: ${{ matrix.install-musl }}
+        if: ${{ matrix.target == 'x86_64-unknown-linux-musl' }}
       - name: install wget and make
         run: sudo apt install -y wget make
-        if: ${{ matrix.install-musl }}
+        if: ${{ matrix.target == 'x86_64-unknown-linux-musl' }}
       - name: Install OpenSSL for x86 MUSL
         run: |
           sudo ln -s /usr/include/x86_64-linux-gnu/asm /usr/include/x86_64-linux-musl/asm && ln -s /usr/include/asm-generic /usr/include/x86_64-linux-musl/asm-generic && ln -s /usr/include/linux /usr/include/x86_64-linux-musl/linux
