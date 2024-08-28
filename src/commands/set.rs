@@ -3,7 +3,10 @@ use anyhow::bail;
 use super::*;
 use crate::{
     sdk::SDK,
-    utils::{choice::Choice, config::get_config, kvpair::KVPair},
+    utils::{
+        choice::Choice, config::get_config, kvpair::KVPair,
+        partial_variable::ToParsed, prompt::prompt_confirm,
+    },
 };
 
 /// Set a variable
@@ -62,6 +65,46 @@ pub async fn command(args: Args) -> Result<()> {
 
     if kvpairs.is_empty() {
         return Err(anyhow::anyhow!("No valid KV pairs provided"));
+    }
+
+    let (variables, partials) =
+        SDK::get_variables(&project_id, &key.fingerprint).await?;
+
+    let parsed = partials.zip_to_parsed(variables);
+
+    let existing_keys = parsed
+        .iter()
+        .filter(|k| {
+            kvpairs
+                .iter()
+                .any(|kv| kv.key.to_uppercase() == k.value.key.to_uppercase())
+        })
+        .collect::<Vec<_>>();
+
+    if !existing_keys.is_empty() {
+        println!("The following variables already exist:");
+        for key in &existing_keys {
+            println!(
+                "{} - {}={}",
+                key.id.green(),
+                key.value.key.blue(),
+                key.value.value.yellow()
+            );
+        }
+
+        let overwrite =
+            prompt_confirm("Do you want to override existing variables?")?;
+
+        if !overwrite {
+            println!("Aborting...");
+            return Ok(());
+        }
+
+        println!("Overwriting existing variables...");
+        for k in existing_keys {
+            let id = k.id.clone();
+            SDK::delete_variable(&id, &key.fingerprint).await?;
+        }
     }
 
     let ids = SDK::set_many(kvpairs, &key.fingerprint, &project_id).await?;
