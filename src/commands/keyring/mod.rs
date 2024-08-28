@@ -10,7 +10,7 @@ use clap::Subcommand;
 pub mod clear;
 pub mod view;
 
-/// Interact with the keyring
+/// Interact with the envx keyring. All commands are interactive.
 #[derive(Parser)]
 pub struct Args {
     #[clap(subcommand)]

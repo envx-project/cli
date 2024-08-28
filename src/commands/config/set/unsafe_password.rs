@@ -4,6 +4,10 @@ use crate::utils::{
     prompt::{prompt_confirm, prompt_password},
 };
 
+/// Set the primary key password in plain text
+///
+/// This command is VERY insecure. It will store your password in PLAIN TEXT in the config file.
+/// Enter "" to unset the password.
 #[derive(Parser)]
 pub struct Args {
     /// UNSAFE: Set the primary key password in plain text. Enter "" to unset the password.

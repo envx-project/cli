@@ -4,6 +4,9 @@ use crate::utils::{
 
 use super::*;
 
+/// Clear the saved passphrase for a key
+///
+/// This command is interactive
 #[derive(Parser)]
 pub struct Args {
     /// Partial fingerprint of the key to set

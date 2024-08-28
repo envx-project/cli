@@ -1,6 +1,7 @@
 use super::*;
 use crate::utils::{config::get_config, prompt::prompt_select};
 
+/// Set the primary key in the global config
 #[derive(Parser)]
 pub struct Args {
     /// Partial fingerprint of the key to set

@@ -36,10 +36,11 @@ pub async fn get_token(
             if let pgp::errors::Error::Incomplete(_) = e {
                 eprintln!("This is most likely due to a missing or incorrect passphrase.");
                 println!(
-                    "You can view the saved passphrase with 'envx keyring view <fingerprint>'"
+                    "You can view the saved passphrase with 'envx keyring view [fingerprint]'"
                 );
-                println!("Or you can check against the saved passphrase with 'envx keyring check -k <fingerprint> -p <passphrase>'");
-                println!("Both of these commands are interactive")
+                println!("This command is interactive");
+                // println!("Or you can check against the saved passphrase with 'envx keyring check -k <fingerprint> -p <passphrase>'");
+                // println!("Both of these commands are interactive")
             }
 
             return Err(anyhow!("Failed to sign API authentication challenge"));

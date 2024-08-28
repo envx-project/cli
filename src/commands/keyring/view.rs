@@ -6,6 +6,9 @@ use crate::utils::{
 
 use super::*;
 
+/// View the saved passphrase for a key
+///
+/// This command is interactive
 #[derive(Parser)]
 pub struct Args {
     /// Partial fingerprint of the key to set

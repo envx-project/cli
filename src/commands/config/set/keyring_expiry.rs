@@ -2,6 +2,9 @@ use crate::utils::config::get_config;
 
 use super::*;
 
+/// Set the keyring expiry in days
+///
+/// 0 for never
 #[derive(Parser)]
 pub struct Args {
     /// Number of days before the keyring password expires
