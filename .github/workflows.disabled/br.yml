@@ -60,7 +60,7 @@ jobs:
       - name: install system dependencies
         run: sudo apt update && sudo apt install -y make libssl-dev pkg-config
         if: ${{ matrix.os == 'ubuntu-latest' }}
-        
+
       - name: install musl
         run: sudo apt install -y musl-tools musl-dev linux-headers-$(uname -r)
         if: ${{ matrix.install-musl }}
@@ -87,4 +87,3 @@ jobs:
       - name: Build MUSL
         run: OPENSSL_DIR=/musl OPENSSL_STATIC=true PKG_CONFIG_ALLOW_CROSS=1 cargo build --release --locked --target ${{ matrix.target }}
         if: ${{ matrix.install-musl }}
-

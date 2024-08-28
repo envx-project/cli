@@ -1,15 +1,17 @@
-# env-cli
+# envx cli v1.1.5
 
 ## this CLI is in alpha and is not guaranteed to work
 
+(yes, it's alpha despite being v1.1.5)\
+Semver happens to hate me.
+
 Author: [@alexng353](https://github.com/alexng353)
 
-A very simple cli written for [env-store/envs](https://github.com/env-store/envs)
+A very simple cli written for [envx-project/api](https://github.com/envx-project/api)
 
-## Todo
-
-- Revert to a single global configuration file
-
+<!-- ## Todo --> <!-- Who even wrote this? -->
+<!---->
+<!-- - Revert to a single global configuration file -->
 
 ## Installation
 
@@ -19,7 +21,9 @@ curl -fsSL get.envx.sh | bash
 ```
 
 For windows users:
-Download the binary from [this page](https://github.com/env-store/rusty-cli/releases/latest), then you can run that binary as an application.
+Download the binary from [this page](https://github.com/envx-project/cli/releases/latest), then you can run that binary as an application.
+
+For more detailed instructions, see [windows installation](https://github.com/envx-project/cli/blob/main/windows-installation.md)
 
 ### Usage
 
@@ -37,9 +41,9 @@ Commands:
   gen        Generate a key using GPG Saves the key to ~/.envcli/keys/<fingerprint>
   import     Import ascii armored keys from a file
   link       Get all environment variables for a project
-  list-keys
+  list-keys  List all keys in the config
   run        Run a local command using variables from the active environment
-  set        Set a variable
+  set        Set a variable (Interactive)
   shell      Open a subshell with envcli variables available
   sign       Sign a message with a key
   unlink     Unset the current project
@@ -47,10 +51,10 @@ Commands:
   upload     If your key is not in the database, use this command to upload it
   variables  Get all environment variables for the current configured directory
   version    Fancy, pretty-printed version information
-  config     Delete a resource. (project, key)
+  config     Configure envx
   delete     Delete a resource. (project, key)
   get        Get a resource. (project, key, config)
-  keyring    Delete a resource. (project, key)
+  keyring    Interact with the envx keyring. All commands are interactive
   new        Create a resource. (project)
   project    Command group for project related commands
   help       Print this message or the help of the given subcommand(s)
