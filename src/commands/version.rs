@@ -7,7 +7,7 @@ pub struct Args {}
 pub async fn command(_args: Args) -> Result<()> {
     println!(
         "{} {} {} {}",
-        "env-cli".cyan(),
+        "envx".cyan(),
         env!("CARGO_PKG_VERSION").magenta(),
         "by".blue(),
         "alexng353".yellow()
