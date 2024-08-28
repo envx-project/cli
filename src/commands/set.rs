@@ -9,7 +9,9 @@ use crate::{
     },
 };
 
-/// Set a variable
+/// Set a variable (Interactive)
+///
+/// Overwrites existing variables if they exist.
 #[derive(Parser)]
 pub struct Args {
     /// KVPairs

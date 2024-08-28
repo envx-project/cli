@@ -1,6 +1,7 @@
 use super::*;
 use crate::utils::config::get_config;
 
+/// List all keys in the config
 #[derive(Parser)]
 pub struct Args {
     /// Use full length fingerprints
