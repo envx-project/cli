@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.1.5](https://github.com/envx-project/cli/compare/v1.1.4...v1.1.5) (2024-08-28)
+
+
+### Bug Fixes
+
+* rename env-cli to envx ([0001beb](https://github.com/envx-project/cli/commit/0001beb972f5e2c4df13e9a1d15b0bcdc1772128)), closes [#39](https://github.com/envx-project/cli/issues/39)
+* set command now overwrites existing variables ([f9dc3b5](https://github.com/envx-project/cli/commit/f9dc3b5c8cf86dc155bec61b20be649aa061612b))
+
 ## [1.1.4](https://github.com/envx-project/cli/compare/v1.1.3...v1.1.4) (2024-08-24)
 
 
