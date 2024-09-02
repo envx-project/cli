@@ -58,7 +58,7 @@ pub fn get_password(fingerprint: &str) -> anyhow::Result<String> {
         }
     }
 
-    if let Some(_) = settings.get_keyring_expiry_days() {
+    if settings.get_keyring_expiry_days().is_some() {
         let expiry = fs::read(get_session_path(fingerprint));
         let expiry = match expiry {
             Ok(e) => e,
