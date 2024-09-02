@@ -7,6 +7,7 @@ pub(super) use colored::Colorize;
 use crate::commands_enum;
 use clap::Subcommand;
 
+pub mod migrate;
 pub mod set;
 
 /// Configure envx
@@ -16,7 +17,7 @@ pub struct Args {
     command: Commands,
 }
 
-commands_enum!(set);
+commands_enum!(set, migrate);
 
 pub async fn command(args: Args) -> Result<()> {
     Commands::exec(args).await?;

@@ -1,6 +1,7 @@
 use anyhow::Result;
 use clap::{Parser, Subcommand};
 use commands::*;
+use home::home_dir;
 
 mod commands;
 mod constants;
@@ -34,8 +35,22 @@ commands_enum!(
 
 #[tokio::main]
 async fn main() -> Result<()> {
-    let cli = Args::parse();
+    // check if config file exists at ~/.config/envcli/config.json
+    let mut config_path = home_dir().unwrap();
+    config_path.push(".config/envcli/config.json");
 
+    if config_path.exists() {
+        let args = std::env::args().collect::<Vec<String>>();
+
+        if !(args.iter().any(|a| a == "config")
+            && args.iter().any(|a| a == "migrate"))
+        {
+            eprintln!("The version 1 config file has been detected. Please run `{}` to migrate your config file to the new format.", "envx config migrate".green());
+            return Ok(());
+        }
+    }
+
+    let cli = Args::parse();
     match Commands::exec(cli).await {
         Ok(_) => {}
         Err(e) => {
