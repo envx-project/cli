@@ -34,7 +34,7 @@ pub async fn command(args: Args) -> Result<()> {
     }
 
     let mut all_variables = BTreeMap::<String, String>::new();
-    all_variables.insert("IN_ENVCLI_SHELL".to_owned(), "true".to_owned());
+    all_variables.insert("IN_ENVX_SHELL".to_owned(), "true".to_owned());
 
     let variables =
         crate::sdk::SDK::get_variables_pruned(&project_id, &key.fingerprint)

@@ -1,4 +1,4 @@
-// configuration path = ~/.config/envcli/config.json
+// configuration path = ~/.config/envx/config.json
 
 use super::key::Key;
 use super::rpgp::get_vault_location;
@@ -227,10 +227,10 @@ impl Config {
     }
 }
 
-/// Get the configuration path ~/.config/envcli/config.json
+/// Get the configuration path ~/.config/envx/config.json
 pub fn get_config_path() -> Result<PathBuf> {
     let mut path = home_dir().context("Failed to get home directory")?;
-    path.push(".config/envcli/config.json");
+    path.push(".config/envx/config.json");
     // if it doesn't exist, create it
     if !path.exists() {
         let default = serde_json::to_string_pretty(&Config::default())?;

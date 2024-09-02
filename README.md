@@ -38,13 +38,13 @@ Commands:
   decrypt    Decrypt a string using GPG
   encrypt    Encrypt a string using GPG
   export     Export a public or secret key
-  gen        Generate a key using GPG Saves the key to ~/.envcli/keys/<fingerprint>
+  gen        Generate a key using GPG Saves the key to ~/.envx/keys/<fingerprint>
   import     Import ascii armored keys from a file
   link       Get all environment variables for a project
   list-keys  List all keys in the config
   run        Run a local command using variables from the active environment
   set        Set a variable (Interactive)
-  shell      Open a subshell with envcli variables available
+  shell      Open a subshell with envx variables available
   sign       Sign a message with a key
   unlink     Unset the current project
   unset      Unset (delete) an environment variable

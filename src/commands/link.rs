@@ -37,8 +37,8 @@ pub async fn command(args: Args) -> Result<()> {
             );
         } else {
             println!("A project is already linked to this directory");
-            println!("  Use `envcli unlink` to unlink the current project");
-            println!("  Or force a new project with `envcli link --force`");
+            println!("  Use `envx unlink` to unlink the current project");
+            println!("  Or force a new project with `envx link --force`");
             println!("{} {}", "Current project:".green(), project.project_id);
             return Ok(());
         }

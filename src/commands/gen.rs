@@ -22,7 +22,7 @@ extern crate keyring;
 use keyring::Error as KeyringError;
 
 /// Generate a key using GPG
-/// Saves the key to ~/.envcli/keys/<fingerprint>
+/// Saves the key to ~/.config/envx/keys/<fingerprint>
 #[derive(Parser)]
 pub struct Args {
     /// Interactive mode
@@ -193,7 +193,7 @@ pub async fn command(args: Args) -> Result<()> {
             Err(_) => {
                 eprintln!("Failed to create user on API");
                 eprintln!("Continuing with generation...");
-                eprintln!("You can create a user later with `envcli upload`");
+                eprintln!("You can create a user later with `envx upload`");
             }
         };
     }

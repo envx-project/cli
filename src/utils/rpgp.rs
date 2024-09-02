@@ -28,7 +28,7 @@ pub(crate) fn get_vault_location(
     let path = home::home_dir()
         .context("Failed to get home directory")?
         .join(".config")
-        .join("envcli")
+        .join("envx")
         .join("keys");
 
     Ok(path)

@@ -24,7 +24,7 @@ use std::ffi::CStr;
 #[cfg(target_os = "windows")]
 use std::mem::zeroed;
 
-/// Open a subshell with envcli variables available
+/// Open a subshell with envx variables available
 #[derive(Parser)]
 pub struct Args {
     /// Project ID
@@ -55,7 +55,7 @@ pub async fn command(args: Args) -> Result<()> {
     }
 
     let mut all_variables = BTreeMap::<String, String>::new();
-    all_variables.insert("IN_ENVCLI_SHELL".to_owned(), "true".to_owned());
+    all_variables.insert("IN_ENVX_SHELL".to_owned(), "true".to_owned());
 
     let variables =
         crate::sdk::SDK::get_variables_pruned(&project_id, &key.fingerprint)
@@ -85,7 +85,7 @@ pub async fn command(args: Args) -> Result<()> {
     };
 
     if !args.silent {
-        println!("Entering subshell with envcli variables available. Type 'exit' to exit.\n");
+        println!("Entering subshell with envx variables available. Type 'exit' to exit.\n");
     }
 
     // a bit janky :/
@@ -103,7 +103,7 @@ pub async fn command(args: Args) -> Result<()> {
         .await
         .context("Failed to wait for command")?;
 
-    println!("Exited subshell, envcli variables no longer available.");
+    println!("Exited subshell, envx variables no longer available.");
     Ok(())
 }
 
