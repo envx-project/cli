@@ -2,7 +2,7 @@ use crate::utils::{config::get_config, keyring::try_get_password};
 
 use super::*;
 use anyhow::Ok;
-use pgp::{composed, crypto, Deserializable, SignedSecretKey};
+use pgp::{composed, crypto, ArmorOptions, Deserializable, SignedSecretKey};
 
 /// Sign a message with a key
 #[derive(Parser)]
@@ -29,7 +29,7 @@ pub async fn command(args: Args) -> Result<()> {
     let message =
         composed::message::Message::new_literal("none", &args.message);
 
-    println!("{}", message.to_armored_string(None)?);
+    println!("{}", message.to_armored_string(ArmorOptions::default())?);
 
     let passphrase = try_get_password(&args.key, &config)?;
     let pw = || passphrase;
@@ -37,7 +37,7 @@ pub async fn command(args: Args) -> Result<()> {
     let signature =
         message.sign(&key, pw, crypto::hash::HashAlgorithm::SHA3_512)?;
 
-    println!("{}", signature.to_armored_string(None)?);
+    println!("{}", signature.to_armored_string(ArmorOptions::default())?);
 
     Ok(())
 }

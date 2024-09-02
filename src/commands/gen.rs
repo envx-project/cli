@@ -14,6 +14,7 @@ use crate::utils::rpgp::{
 use crate::utils::vecu8::ToHex;
 use anyhow::Context;
 use pgp::types::KeyTrait;
+use pgp::ArmorOptions;
 use std::fs;
 use std::str;
 
@@ -113,12 +114,12 @@ pub async fn command(args: Args) -> Result<()> {
 
     let priv_key = key_pair
         .secret_key
-        .to_armored_string(None)
+        .to_armored_string(ArmorOptions::default())
         .expect("Failed to convert private key to armored ASCII string");
 
     let pub_key = key_pair
         .public_key
-        .to_armored_string(None)
+        .to_armored_string(ArmorOptions::default())
         .expect("Failed to convert public key to armored ASCII string");
 
     let fingerprint = key_pair.secret_key.fingerprint().to_hex();

@@ -6,6 +6,8 @@ use colored::Colorize;
 use crypto_hash::{hex_digest, Algorithm};
 use hex::ToHex;
 use pgp::composed::message::Message;
+// use pgp::crypto::ecc_curve::ECCCurve;
+use pgp::ArmorOptions;
 use pgp::{
     composed, composed::signed_key::*, crypto, types::SecretKeyTrait,
     Deserializable,
@@ -39,11 +41,15 @@ pub fn generate_key_pair(
 ) -> Result<KeyPair, anyhow::Error> {
     let mut key_params = composed::key::SecretKeyParamsBuilder::default();
 
+    key_params.key_type(composed::KeyType::Rsa(2048));
+
     // name email mix, + salt and hash as the primary_user_id
     key_params
         // change to 4096 later
-        .key_type(composed::KeyType::Rsa(2048))
-        .can_create_certificates(false)
+        // .key_type(composed::KeyType::ECDH(ECCCurve::Curve25519))
+        .key_type(composed::KeyType::Rsa(4096))
+        .can_certify(false)
+        // .can_create_certificates(false)
         .can_sign(true)
         .can_encrypt(true)
         .passphrase(Some(password.clone()))
@@ -94,7 +100,7 @@ pub fn encrypt(msg: &str, pubkey_str: &str) -> Result<String, anyhow::Error> {
         &[&pubkey],
     )?;
 
-    Ok(new_msg.to_armored_string(None)?)
+    Ok(new_msg.to_armored_string(ArmorOptions::default())?)
 }
 
 pub fn encrypt_multi(
@@ -114,7 +120,7 @@ pub fn encrypt_multi(
         &borrowed_keys,
     )?;
 
-    Ok(new_msg.to_armored_string(None)?)
+    Ok(new_msg.to_armored_string(ArmorOptions::default())?)
 }
 
 pub fn decrypt(
@@ -125,17 +131,25 @@ pub fn decrypt(
     let buf = Cursor::new(armored);
     let (msg, _) = composed::message::Message::from_armor_single(buf)
         .context("Failed to convert &str to armored message")?;
-    let (mut decryptor, _) = msg
+    let (dec, _) = msg
         .decrypt(|| password, &[seckey])
         .context("Decrypting the message")?;
 
-    if let Some(msg) = decryptor.next() {
-        let bytes = msg?.get_content()?.context("Failed to get content")?;
-        let clear_text = String::from_utf8(bytes)?;
-        return Ok(clear_text);
-    }
+    let clear_text = dec
+        .get_literal()
+        .ok_or(anyhow::Error::msg("Failed to find message"))?
+        .to_string()
+        .context("Failed to convert literal to string")?;
 
-    Err(anyhow::Error::msg("Failed to find message"))
+    return Ok(clear_text);
+
+    // if let Some(msg) = decryptor.next() {
+    //     let bytes = msg?.get_content()?.context("Failed to get content")?;
+    //     let clear_text = String::from_utf8(bytes)?;
+    //     return Ok(clear_text);
+    // }
+
+    // Err(anyhow::Error::msg("Failed to find message"))
 }
 
 pub fn hash_string(input: &str) -> String {

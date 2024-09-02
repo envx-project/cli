@@ -2,7 +2,7 @@ use crate::utils::config::get_config;
 use anyhow::{anyhow, Context};
 use chrono::Utc;
 use pgp::composed::message::Message;
-use pgp::{crypto, Deserializable, SignedSecretKey};
+use pgp::{crypto, ArmorOptions, Deserializable, SignedSecretKey};
 use serde::{Deserialize, Serialize};
 
 use super::keyring::try_get_password;
@@ -47,7 +47,7 @@ pub async fn get_token(
         }
     };
 
-    let signature = match signature.to_armored_string(None) {
+    let signature = match signature.to_armored_string(ArmorOptions::default()) {
         Ok(s) => s,
         Err(e) => {
             println!("Failed to convert signature to armored string: {}", e);

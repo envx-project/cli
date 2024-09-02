@@ -4,6 +4,7 @@ use crate::utils::prompt::prompt_text;
 use crate::utils::rpgp::get_vault_location;
 use crate::utils::vecu8::ToHex;
 use clap::Subcommand;
+use pgp::ArmorOptions;
 use pgp::{types::KeyTrait, Deserializable};
 use std::fs;
 use std::io::Cursor;
@@ -73,7 +74,7 @@ pub async fn command(args: Args) -> Result<()> {
             };
 
             vault_path.push(format!("{}/public.key", &key.fingerprint));
-            fs::write(vault_path, pubkey.to_armored_string(None)?)?;
+            fs::write(vault_path, pubkey.to_armored_string(ArmorOptions::default())?)?;
         }
     }
 
