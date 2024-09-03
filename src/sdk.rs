@@ -5,9 +5,7 @@ use crate::{
         auth::get_token,
         config::get_config,
         kvpair::KVPair,
-        partial_variable::{
-            ParsedPartialVariable, PartialVariable, ToKVPair, ToParsed,
-        },
+        partial_variable::{DecryptedVariable, EncryptedVariable, ToKVPair},
         rpgp::{decrypt_full_many, encrypt_multi},
     },
 };
@@ -163,7 +161,8 @@ impl SDK {
 
     pub async fn get_all_variables(
         partial_fingerprint: &str,
-    ) -> Result<(Vec<KVPair>, Vec<ParsedPartialVariable>)> {
+        // ) -> Result<(Vec<KVPair>, Vec<DecryptedVariable>)> {
+    ) -> Result<Vec<DecryptedVariable>> {
         // GET /user/:id/variables
         let config = get_config()?;
         let key = config.get_key(partial_fingerprint)?;
@@ -185,9 +184,9 @@ impl SDK {
             .send()
             .await
             .context("Failed to get variables")?
-            .json::<Vec<PartialVariable>>()
+            .json::<Vec<EncryptedVariable>>()
             .await
-            .context("Failed to parse API response into PartialVariables")?;
+            .context("Failed to parse API response into EncryptedVariables")?;
 
         let decrypted = decrypt_full_many(
             encrypted
@@ -197,32 +196,32 @@ impl SDK {
             &get_config()?,
         )?;
 
-        let parsed = decrypted
+        let kvpairs = decrypted
             .iter()
             .map(|d| KVPair::from_json(d))
             .collect::<Result<Vec<KVPair>>>()?;
 
-        let partials = decrypted
+        let parsed = encrypted
             .into_iter()
-            .zip(encrypted.into_iter())
-            .map(move |(d, e)| {
-                Ok(ParsedPartialVariable {
-                    id: e.id,
-                    value: KVPair::from_json(&d)?,
-                    project_id: e.project_id,
-                    created_at: e.created_at,
-                })
+            .zip(kvpairs.into_iter())
+            .map(|(d, e)| DecryptedVariable {
+                id: d.id,
+                value: e,
+                project_id: d.project_id,
+                created_at: d.created_at,
             })
-            .collect::<Result<Vec<ParsedPartialVariable>>>()?;
+            .collect::<Vec<DecryptedVariable>>();
 
-        Ok((parsed, partials))
+        Ok(parsed)
+
+        // Ok((kvpairs, parsed))
     }
 
     /// You're probably looking for `get_variables_pruned` instead
     pub async fn get_variables(
         project_id: &str,
         partial_fingerprint: &str,
-    ) -> Result<(Vec<KVPair>, Vec<PartialVariable>)> {
+    ) -> Result<Vec<DecryptedVariable>> {
         // url : /project/:id/variables
         let client = reqwest::Client::new();
 
@@ -238,9 +237,9 @@ impl SDK {
             .send()
             .await
             .context("Failed to get variables")?
-            .json::<Vec<PartialVariable>>()
+            .json::<Vec<EncryptedVariable>>()
             .await
-            .context("Failed to parse API response into PartialVariables")?;
+            .context("Failed to parse API response into EncryptedVariables")?;
 
         let decrypted = decrypt_full_many(
             encrypted
@@ -250,24 +249,23 @@ impl SDK {
             &get_config()?,
         )?;
 
-        // splice decrypted and encrypted into a Vector of PartialKey
-        let partials = decrypted
-            .iter()
-            .zip(encrypted.into_iter())
-            .map(|(d, e)| PartialVariable {
-                id: e.id,
-                value: d.clone(),
-                project_id: e.project_id,
-                created_at: e.created_at,
-            })
-            .collect::<Vec<PartialVariable>>();
-
-        let parsed = decrypted
+        let kvpairs = decrypted
             .iter()
             .map(|d| KVPair::from_json(d))
             .collect::<Result<Vec<KVPair>>>()?;
 
-        Ok((parsed, partials))
+        let parsed = encrypted
+            .into_iter()
+            .zip(kvpairs.into_iter())
+            .map(|(d, e)| DecryptedVariable {
+                id: d.id,
+                value: e,
+                project_id: d.project_id,
+                created_at: d.created_at,
+            })
+            .collect::<Vec<DecryptedVariable>>();
+
+        Ok(parsed)
     }
 
     /// Return variables as a list of kv pairs
@@ -277,13 +275,13 @@ impl SDK {
         project_id: &str,
         partial_fingerprint: &str,
     ) -> Result<Vec<KVPair>> {
-        let (kvpairs, partial) =
-            Self::get_variables(project_id, partial_fingerprint)
-                .await
-                .context("Failed to get variables")?;
-        let mut pruned = partial.zip_to_parsed(kvpairs).to_kvpair();
-        pruned.sort_by(|a, b| a.key.cmp(&b.key));
-        Ok(pruned)
+        let variables = Self::get_variables(project_id, partial_fingerprint)
+            .await
+            .context("Failed to get variables")?;
+
+        let mut kvpairs = variables.to_kvpair();
+        kvpairs.sort_by(|a, b| a.key.cmp(&b.key));
+        Ok(kvpairs)
     }
 
     pub async fn get_user(

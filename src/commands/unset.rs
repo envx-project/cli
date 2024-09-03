@@ -1,6 +1,5 @@
 use super::*;
 use crate::utils::choice::Choice;
-use crate::utils::partial_variable::ToParsed;
 use crate::utils::prompt;
 use crate::{sdk::SDK, utils::config::get_config};
 
@@ -36,12 +35,9 @@ pub async fn command(args: Args) -> Result<()> {
         Some(v) => v,
         None => {
             let variables = if let Some(project_id) = project_id {
-                SDK::get_variables(&project_id, &key.fingerprint)
-                    .await?
-                    .1
-                    .to_parsed()?
+                SDK::get_variables(&project_id, &key.fingerprint).await?
             } else {
-                SDK::get_all_variables(&key.fingerprint).await?.1
+                SDK::get_all_variables(&key.fingerprint).await?
             };
 
             prompt::prompt_options("Select variables to delete", variables)?.id

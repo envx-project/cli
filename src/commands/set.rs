@@ -4,8 +4,11 @@ use super::*;
 use crate::{
     sdk::SDK,
     utils::{
-        choice::Choice, config::get_config, kvpair::KVPair,
-        partial_variable::ToParsed, prompt::prompt_confirm,
+        choice::Choice,
+        config::get_config,
+        kvpair::KVPair,
+        // partial_variable::ToParsed,
+        prompt::prompt_confirm,
     },
 };
 
@@ -69,12 +72,9 @@ pub async fn command(args: Args) -> Result<()> {
         return Err(anyhow::anyhow!("No valid KV pairs provided"));
     }
 
-    let (variables, partials) =
-        SDK::get_variables(&project_id, &key.fingerprint).await?;
+    let variables = SDK::get_variables(&project_id, &key.fingerprint).await?;
 
-    let parsed = partials.zip_to_parsed(variables);
-
-    let existing_keys = parsed
+    let existing_keys = variables
         .iter()
         .filter(|k| {
             kvpairs

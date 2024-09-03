@@ -2,8 +2,11 @@ use super::*;
 use crate::{
     sdk::{get_api_url, SDK},
     utils::{
-        auth::get_token, choice::Choice, config::get_config,
-        partial_variable::PartialVariable, prompt::prompt_text,
+        auth::get_token,
+        choice::Choice,
+        config::get_config,
+        partial_variable::{EncryptedVariable, ToKVPair},
+        prompt::prompt_text,
         rpgp::encrypt_multi,
     },
 };
@@ -52,8 +55,8 @@ pub async fn command(args: Args) -> Result<()> {
     let project_info =
         SDK::get_project_info(&project_id, &key.fingerprint).await?;
 
-    let (kvpairs, mut partials) =
-        SDK::get_variables(&project_id, &key.fingerprint).await?;
+    let variables = SDK::get_variables(&project_id, &key.fingerprint).await?;
+    let kvpairs = variables.to_kvpair();
 
     let mut recipients = project_info
         .users
@@ -79,17 +82,19 @@ pub async fn command(args: Args) -> Result<()> {
         .map(|k| encrypt_multi(&k.to_json()?, &pubkeys))
         .collect::<Result<Vec<String>>>()?;
 
-    let partials = partials
-        .iter_mut()
-        .zip(messages.iter())
-        .map(|(p, m)| {
-            p.value = m.into();
-            p
+    let encrypted: Vec<EncryptedVariable> = messages
+        .into_iter()
+        .zip(variables.into_iter())
+        .map(|(m, k)| EncryptedVariable {
+            id: k.id,
+            value: m,
+            project_id: k.project_id,
+            created_at: k.created_at,
         })
-        .collect::<Vec<&mut PartialVariable>>();
+        .collect();
 
     let body = json!({
-        "variables": partials,
+        "variables": encrypted,
     });
 
     let client = reqwest::Client::new();
