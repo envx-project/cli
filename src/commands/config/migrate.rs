@@ -1,3 +1,5 @@
+use std::path::PathBuf;
+
 use home::home_dir;
 
 use super::*;
@@ -8,54 +10,69 @@ pub struct Args {
     verbose: bool,
 }
 
+fn envx_dir() -> Result<PathBuf> {
+    let mut home_dir =
+        home_dir().ok_or(anyhow!("Failed to get home directory"))?;
+    home_dir.push(".config/envx");
+    Ok(home_dir)
+}
+
+fn envcli_dir() -> Result<PathBuf> {
+    let mut home_dir =
+        home_dir().ok_or(anyhow!("Failed to get home directory"))?;
+    home_dir.push(".config/envcli");
+    Ok(home_dir)
+}
+
+fn config_dir() -> Result<PathBuf> {
+    let mut home_dir =
+        home_dir().ok_or(anyhow!("Failed to get home directory"))?;
+    home_dir.push(".config");
+    Ok(home_dir)
+}
+
 pub async fn command(args: Args) -> Result<()> {
     println!("Migrating config file... Please do not interrupt this process.");
 
-    let mut old_config_path =
-        home_dir().ok_or(anyhow!("Failed to get home directory"))?;
-    old_config_path.push(".config/envcli/config.json");
+    let old_config_dir = envcli_dir()?;
 
-    if !old_config_path.exists() {
+    if !old_config_dir.exists() {
         println!(
             "Config file not found at {}. Skipping migration.",
-            old_config_path
+            old_config_dir
                 .to_str()
                 .ok_or(anyhow!("Failed to get path"))?
         );
         return Ok(());
     }
 
-    // mkdir at ~/.config/envx
-    let mut new_config_path =
-        home_dir().ok_or(anyhow!("Failed to get home directory"))?;
-    new_config_path.push(".config/envx/config.json");
-    if !new_config_path
-        .parent()
-        .ok_or(anyhow!("Failed to get parent directory"))?
-        .exists()
+    let new_config_dir = envx_dir()?;
+    if !new_config_dir.exists() {
+        std::fs::create_dir_all(&new_config_dir)?;
+    }
+
     {
-        std::fs::create_dir_all(new_config_path.clone())?;
+        let old_config_path = old_config_dir.join("config.json");
+        let new_config_path = new_config_dir.join("config.json");
+        if args.verbose {
+            println!(
+                "Copying {} to {}",
+                old_config_path
+                    .to_str()
+                    .ok_or(anyhow!("Failed to get path"))?,
+                new_config_path
+                    .to_str()
+                    .ok_or(anyhow!("Failed to get path"))?
+            );
+        }
+
+        std::fs::copy(old_config_path, new_config_path)?;
     }
 
-    if args.verbose {
-        println!(
-            "Copying {} to {}",
-            old_config_path
-                .to_str()
-                .ok_or(anyhow!("Failed to get path"))?,
-            new_config_path
-                .to_str()
-                .ok_or(anyhow!("Failed to get path"))?
-        );
-    }
-    std::fs::copy(old_config_path.clone(), new_config_path)?;
-
-    let mut old_key_dir =
-        home_dir().ok_or(anyhow!("Failed to get home directory"))?;
-    old_key_dir.push(".config/envcli/keys");
-    let mut new_key_dir =
-        home_dir().ok_or(anyhow!("Failed to get home directory"))?;
-    new_key_dir.push(".config/envx/keys");
+    let mut old_key_dir = envcli_dir()?;
+    old_key_dir.push("keys");
+    let mut new_key_dir = envx_dir()?;
+    new_key_dir.push("keys");
 
     if !old_key_dir.exists() {
         println!(
@@ -66,11 +83,7 @@ pub async fn command(args: Args) -> Result<()> {
     }
 
     // mkdir at ~/.config/envx/keys
-    if !new_key_dir
-        .parent()
-        .ok_or(anyhow!("Failed to get parent directory"))?
-        .exists()
-    {
+    if !new_key_dir.exists() {
         if args.verbose {
             println!(
                 "Creating key directory at {}",
@@ -157,7 +170,9 @@ pub async fn command(args: Args) -> Result<()> {
         }
     }
 
-    std::fs::remove_dir_all(old_config_path)?;
+    std::fs::remove_dir_all(old_config_dir)?;
+
+    println!("{}", "Migration complete. Try running `envx variables` to see if everything worked.".green());
 
     Ok(())
 }

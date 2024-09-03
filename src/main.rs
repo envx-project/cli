@@ -46,6 +46,7 @@ async fn main() -> Result<()> {
             && args.iter().any(|a| a == "migrate"))
         {
             eprintln!("The version 1 config file has been detected. Please run `{}` to migrate your config file to the new format.", "envx config migrate".green());
+            eprintln!("If you have already migrated, please delete the old config file at {}", config_path.to_str().unwrap_or("INVALID PATH"));
             return Ok(());
         }
     }
