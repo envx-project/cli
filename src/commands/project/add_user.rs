@@ -5,9 +5,9 @@ use crate::{
         auth::get_token,
         choice::Choice,
         config::get_config,
-        partial_variable::{EncryptedVariable, ToKVPair},
         prompt::prompt_text,
         rpgp::encrypt_multi,
+        variable::{EncryptedVariable, ToKVPair},
     },
 };
 use pgp::{Deserializable, SignedPublicKey};

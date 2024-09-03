@@ -2,8 +2,7 @@ use super::*;
 use crate::{
     sdk::SDK,
     utils::{
-        btreemap::ToBTreeMap, choice::Choice, config::get_config,
-        partial_variable::ToKVPair, table::Table,
+        btreemap::ToBTreeMap, choice::Choice, config::get_config, table::Table, variable::ToKVPair
     },
 };
 /// Get all environment variables for the current configured directory

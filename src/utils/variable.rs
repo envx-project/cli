@@ -1,4 +1,3 @@
-use anyhow::Result;
 use serde::{Deserialize, Serialize};
 
 use super::kvpair::KVPair;
@@ -26,20 +25,16 @@ use std::{collections::HashMap, fmt::Display};
 
 impl DeDupe for Vec<DecryptedVariable> {
     fn dedupe(&self) -> Self {
-        // Sort the vector based on the `created_at` timestamp in descending order
         let mut sorted_vec = self.clone();
         sorted_vec.sort_by(|a, b| b.created_at.cmp(&a.created_at));
 
-        // HashMap to track encountered keys
         let mut seen: HashMap<String, DecryptedVariable> = HashMap::new();
 
-        // Iterate and populate the HashMap
         for variable in sorted_vec {
             let key = variable.value.key.clone();
             seen.entry(key).or_insert(variable);
         }
 
-        // Collect the deduplicated variables into a new Vec
         seen.into_values().collect()
     }
 }

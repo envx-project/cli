@@ -5,7 +5,7 @@ pub mod config;
 pub mod key;
 pub mod keyring;
 pub mod kvpair;
-pub mod partial_variable;
+pub mod variable;
 pub mod prompt;
 pub mod rpgp;
 pub mod settings;

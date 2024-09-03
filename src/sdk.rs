@@ -5,8 +5,8 @@ use crate::{
         auth::get_token,
         config::get_config,
         kvpair::KVPair,
-        partial_variable::{DecryptedVariable, EncryptedVariable, ToKVPair},
         rpgp::{decrypt_full_many, encrypt_multi},
+        variable::{DecryptedVariable, EncryptedVariable, ToKVPair},
     },
 };
 use anyhow::bail;
@@ -16,7 +16,7 @@ use reqwest::header;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 use url::Url;
-use utils::partial_variable::DeDupe;
+use utils::variable::DeDupe;
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct SetEnvParams {
