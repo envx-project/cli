@@ -219,10 +219,13 @@ impl Config {
     }
 
     pub fn set_uuid(&mut self, fingerprint: &str, uuid: &str) -> Result<()> {
-        let mut key = Self::get_key(self, fingerprint)?.clone();
-        self.keys.retain(|k| k.fingerprint != fingerprint);
-        key.uuid = Some(uuid.to_string());
-        self.keys.push(key);
+        for k in self.keys.iter_mut() {
+            if k.fingerprint == fingerprint {
+                k.uuid = Some(uuid.to_string());
+                return Ok(());
+            }
+        }
+
         Ok(())
     }
 }

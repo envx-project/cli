@@ -1,6 +1,7 @@
-use serde::{Deserialize, Serialize};
-
 use super::kvpair::KVPair;
+use serde::{Deserialize, Serialize};
+use std::{collections::HashMap, fmt::Display};
+
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct EncryptedVariable {
     pub id: String,
@@ -20,8 +21,6 @@ pub struct DecryptedVariable {
 pub trait DeDupe {
     fn dedupe(&self) -> Self;
 }
-
-use std::{collections::HashMap, fmt::Display};
 
 impl DeDupe for Vec<DecryptedVariable> {
     fn dedupe(&self) -> Self {

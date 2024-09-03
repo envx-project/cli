@@ -29,11 +29,7 @@ pub async fn command(args: Args) -> Result<()> {
     let id = SDK::new_user(&username, &key.public_key()?).await?;
     println!("UUID: {}", &id);
 
-    for k in config.keys.iter_mut() {
-        if k.fingerprint == key.fingerprint {
-            k.uuid = Some(id.clone());
-        }
-    }
+    config.set_uuid(&key.fingerprint, &id)?;
 
     config.write()?;
 

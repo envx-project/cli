@@ -28,9 +28,6 @@ impl Settings {
     pub fn set_keyring_expiry_never(&mut self) {
         self.keyring_expiry = Some(KeyringExpiry::Never);
     }
-    pub fn set_warn_on_short_passwords(&mut self, warn: bool) {
-        self.warn_on_short_passwords = warn;
-    }
     pub fn get_keyring_expiry_days(&self) -> Option<u32> {
         match self.keyring_expiry {
             Some(KeyringExpiry::Days(d)) => Some(d),
