@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.0.1](https://github.com/envx-project/cli/compare/v2.0.0...v2.0.1) (2024-09-03)
+
+
+### Bug Fixes
+
+* migration command ([a0709a0](https://github.com/envx-project/cli/commit/a0709a09b4a019f59a6d1eabda7082bda6183d2c))
+
 ## [2.0.0](https://github.com/envx-project/cli/compare/v1.1.5...v2.0.0) (2024-09-03)
 
 
