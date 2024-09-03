@@ -1,4 +1,4 @@
-# envx cli v2.0.0
+# envx cli v2.0.1
 
 ## this CLI is in alpha and is not guaranteed to work
 
