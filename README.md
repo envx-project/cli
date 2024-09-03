@@ -1,13 +1,16 @@
-# envx cli v1.1.5
+# envx cli v2.0.0
 
 ## this CLI is in alpha and is not guaranteed to work
-
-(yes, it's alpha despite being v1.1.5)\
-Semver happens to hate me.
 
 Author: [@alexng353](https://github.com/alexng353)
 
 A very simple cli written for [envx-project/api](https://github.com/envx-project/api)
+
+## Migration from v1 to v2
+
+- envx config folder has been moved from `~/.config/envx` to `~/.config/envx/config.json`
+
+Please run `envx config migrate` to migrate your config file to the new format.
 
 <!-- ## Todo --> <!-- Who even wrote this? -->
 <!---->
