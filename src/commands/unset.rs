@@ -39,7 +39,7 @@ pub async fn command(args: Args) -> Result<()> {
                 SDK::get_variables(&project_id, &key.fingerprint)
                     .await?
                     .1
-                    .to_parsed()
+                    .to_parsed()?
             } else {
                 SDK::get_all_variables(&key.fingerprint).await?.1
             };

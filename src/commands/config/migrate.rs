@@ -1,5 +1,3 @@
-use std::path::Path;
-
 use home::home_dir;
 
 use super::*;

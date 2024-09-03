@@ -1,4 +1,5 @@
 use serde::{Deserialize, Serialize};
+use anyhow::Result;
 
 use super::kvpair::KVPair;
 #[derive(Serialize, Deserialize, Clone, Debug)]
@@ -10,13 +11,13 @@ pub struct PartialVariable {
 }
 
 impl PartialVariable {
-    pub fn to_parsed(&self) -> ParsedPartialVariable {
-        ParsedPartialVariable {
+    pub fn to_parsed(&self) -> Result<ParsedPartialVariable> {
+        Ok(ParsedPartialVariable {
             id: self.id.clone(),
-            value: KVPair::from_json(&self.value).unwrap(),
+            value: KVPair::from_json(&self.value)?,
             project_id: self.project_id.clone(),
             created_at: self.created_at.clone(),
-        }
+        })
     }
 
     pub fn zip_to_parsed(&self, kvpair: KVPair) -> ParsedPartialVariable {
@@ -30,13 +31,18 @@ impl PartialVariable {
 }
 
 pub trait ToParsed {
-    fn to_parsed(&self) -> Vec<ParsedPartialVariable>;
+    fn to_parsed(&self) -> Result<Vec<ParsedPartialVariable>>;
     fn zip_to_parsed(&self, kvpair: Vec<KVPair>) -> Vec<ParsedPartialVariable>;
 }
 
 impl ToParsed for Vec<PartialVariable> {
-    fn to_parsed(&self) -> Vec<ParsedPartialVariable> {
-        self.iter().map(|p| p.to_parsed()).collect()
+    fn to_parsed(&self) -> Result<Vec<ParsedPartialVariable>> {
+        Ok(self
+            .iter()
+            .map(|p| p.to_parsed())
+            .collect::<Result<Vec<ParsedPartialVariable>>>()?)
+
+        // self.iter().map(|p| p.to_parsed()).collect()
     }
 
     fn zip_to_parsed(
