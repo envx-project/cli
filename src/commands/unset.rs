@@ -7,7 +7,7 @@ use crate::{sdk::SDK, utils::config::get_config};
 /// Unset (delete) an environment variable
 #[derive(Parser)]
 pub struct Args {
-    /// Variable to unset 
+    /// Variable to unset
     #[clap(short, long)]
     variable: Option<String>,
 
