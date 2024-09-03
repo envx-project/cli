@@ -1,5 +1,29 @@
 # Changelog
 
+## [2.0.0](https://github.com/envx-project/cli/compare/v1.1.5...v2.0.0) (2024-09-03)
+
+
+### ⚠ BREAKING CHANGES
+
+* envcli -> envx
+
+### Features
+
+* add all flag to unset ([9f578d3](https://github.com/envx-project/cli/commit/9f578d3c5b306003d4b7bc886249107743f7be66))
+* add all flag to variables command ([a674b20](https://github.com/envx-project/cli/commit/a674b20c376e53fd16462b911a281884dc7adcbf))
+* migrate command ([fe39a93](https://github.com/envx-project/cli/commit/fe39a93d2d4b28af40cc91b714012934c8c7d075))
+
+
+### Bug Fixes
+
+* breaking change on the decrypt function ([8b9d4fe](https://github.com/envx-project/cli/commit/8b9d4fed6b6d405d61e1edce4cc39caead146e11))
+* cargo clippy ([54d5856](https://github.com/envx-project/cli/commit/54d58567a0f6d2f44bf004a3807c926040a827c8))
+* change key type to RSA 4096 ([834cc65](https://github.com/envx-project/cli/commit/834cc65489d6911c6167cf32d0cc9376840890c6))
+* envcli -&gt; envx ([04e0421](https://github.com/envx-project/cli/commit/04e0421fc74ddb33e2d37d227b1f4f4f49a92ee9))
+* proper error handling for parsing partial variables ([8a89e34](https://github.com/envx-project/cli/commit/8a89e34fa8e9db4fa7c4b8954c334060b75c5a67))
+* unset defaults to current project ([9f578d3](https://github.com/envx-project/cli/commit/9f578d3c5b306003d4b7bc886249107743f7be66))
+* unwrap -&gt; ok_or and ? ([f796c69](https://github.com/envx-project/cli/commit/f796c692ff0d84aa7ed949e36f2bcaf00342720a))
+
 ## [1.1.5](https://github.com/envx-project/cli/compare/v1.1.4...v1.1.5) (2024-08-28)
 
 
