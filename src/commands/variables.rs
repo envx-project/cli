@@ -2,7 +2,8 @@ use super::*;
 use crate::{
     sdk::SDK,
     utils::{
-        btreemap::ToBTreeMap, choice::Choice, config::get_config, table::Table,
+        btreemap::ToBTreeMap, choice::Choice, config::get_config,
+        partial_variable::ToKVPair, table::Table,
     },
 };
 /// Get all environment variables for the current configured directory
@@ -21,6 +22,10 @@ pub struct Args {
     /// Output as a list of key=value pairs
     #[clap(long)]
     kv: bool,
+
+    /// Output all variables (this project only)
+    #[clap(short, long, default_value_t = false)]
+    all: bool,
 }
 
 pub async fn command(args: Args) -> Result<()> {
@@ -30,9 +35,14 @@ pub async fn command(args: Args) -> Result<()> {
     let key = config.get_key_or_default(args.key)?;
     let project_id =
         Choice::try_project(args.project_id, &key.fingerprint).await?;
-    let mut kvpairs =
-        SDK::get_variables_pruned(&project_id, &key.fingerprint).await?;
-    kvpairs.sort_by(|a, b| a.key.cmp(&b.key));
+
+    let kvpairs = if args.all {
+        SDK::get_variables(&project_id, &key.fingerprint)
+            .await?
+            .to_kvpair()
+    } else {
+        SDK::get_variables_pruned(&project_id, &key.fingerprint).await?
+    };
 
     match mode {
         Mode::KV => {

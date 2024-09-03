@@ -16,6 +16,7 @@ use reqwest::header;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 use url::Url;
+use utils::partial_variable::DeDupe;
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct SetEnvParams {
@@ -279,8 +280,7 @@ impl SDK {
             .await
             .context("Failed to get variables")?;
 
-        let mut kvpairs = variables.to_kvpair();
-        kvpairs.sort_by(|a, b| a.key.cmp(&b.key));
+        let kvpairs = variables.dedupe().to_kvpair();
         Ok(kvpairs)
     }
 

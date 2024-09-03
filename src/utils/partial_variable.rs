@@ -10,50 +10,6 @@ pub struct EncryptedVariable {
     pub created_at: String,
 }
 
-impl EncryptedVariable {
-    // pub fn to_parsed(&self) -> Result<DecryptedVariable> {
-    //     Ok(DecryptedVariable {
-    //         id: self.id.clone(),
-    //         value: KVPair::from_json(&self.value)?,
-    //         project_id: self.project_id.clone(),
-    //         created_at: self.created_at.clone(),
-    //     })
-    // }
-    //
-    // pub fn zip_to_parsed(&self, kvpair: KVPair) -> DecryptedVariable {
-    //     DecryptedVariable {
-    //         id: self.id.clone(),
-    //         value: kvpair,
-    //         project_id: self.project_id.clone(),
-    //         created_at: self.created_at.clone(),
-    //     }
-    // }
-}
-
-// pub trait ToParsed {
-//     fn to_parsed(&self) -> Result<Vec<DecryptedVariable>>;
-//     fn zip_to_parsed(&self, kvpair: Vec<KVPair>) -> Vec<DecryptedVariable>;
-// }
-//
-// impl ToParsed for Vec<EncryptedVariable> {
-//     fn to_parsed(&self) -> Result<Vec<DecryptedVariable>> {
-//         Ok(self
-//             .iter()
-//             .map(|p| p.to_parsed())
-//             .collect::<Result<Vec<DecryptedVariable>>>()?)
-//     }
-//
-//     fn zip_to_parsed(
-//         &self,
-//         kvpairs: Vec<KVPair>,
-//     ) -> Vec<DecryptedVariable> {
-//         self.iter()
-//             .zip(kvpairs)
-//             .map(|(p, k)| p.zip_to_parsed(k))
-//             .collect()
-//     }
-// }
-
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct DecryptedVariable {
     pub id: String,
