@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.0.2](https://github.com/envx-project/cli/compare/v2.0.1...v2.0.2) (2024-09-12)
+
+
+### Bug Fixes
+
+* set variables command and add debug to auth ([d44b849](https://github.com/envx-project/cli/commit/d44b849fcd80495198ed1b610d641c5a0147c9d6))
+
 ## [2.0.1](https://github.com/envx-project/cli/compare/v2.0.0...v2.0.1) (2024-09-03)
 
 
