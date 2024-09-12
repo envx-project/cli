@@ -210,7 +210,12 @@ pub fn decrypt_full_many(
     messages: Vec<String>,
     config: &Config,
 ) -> Result<Vec<String>, anyhow::Error> {
-    let first = messages.first().ok_or_else(|| anyhow!("No messages"))?;
+    let first = if let Some(first) = messages.first() {
+        first
+    } else {
+        return Ok(vec![]);
+    };
+
     let msg = Message::from_string(first.as_str())?.0;
 
     let recipients: Vec<String> = msg

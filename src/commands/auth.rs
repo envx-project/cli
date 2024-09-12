@@ -12,6 +12,10 @@ pub struct Args {
     /// Key to sign with
     #[clap(short, long)]
     key: Option<String>,
+
+    /// Debug output
+    #[clap(short, long)]
+    debug: bool,
 }
 
 pub async fn command(args: Args) -> anyhow::Result<()> {
@@ -30,11 +34,21 @@ pub async fn command(args: Args) -> anyhow::Result<()> {
 
     println!("auth token:\n{}", auth_token.signature);
 
+    let url = format!("{}test-auth", get_api_url());
+
+    if args.debug {
+        dbg!(&url);
+    }
+
     let res = client
-        .post(format!("{}/test-auth", get_api_url()))
+        .post(url)
         .header(header::AUTHORIZATION, format!("Bearer {}", auth_token))
         .send()
         .await?;
+
+    if args.debug {
+        dbg!(&res);
+    }
 
     let status = res.status();
 
