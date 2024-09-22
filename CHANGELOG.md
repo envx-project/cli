@@ -1,5 +1,15 @@
 # Changelog
 
+## [2.0.3](https://github.com/envx-project/cli/compare/v2.0.2...v2.0.3) (2024-09-22)
+
+
+### Bug Fixes
+
+* cargo clippy ([b68d2f5](https://github.com/envx-project/cli/commit/b68d2f551933c673400a05dc3d6241d2d7468709))
+* keyring expiry ([7e92656](https://github.com/envx-project/cli/commit/7e926565f332c07fe4c4cef63bc2a32c37c01fe1))
+* remove debug command ([03a2236](https://github.com/envx-project/cli/commit/03a2236356ef4a5be6e6bae965c48eb8c56ffe2f))
+* view command has proper prompts ([b68d2f5](https://github.com/envx-project/cli/commit/b68d2f551933c673400a05dc3d6241d2d7468709))
+
 ## [2.0.2](https://github.com/envx-project/cli/compare/v2.0.1...v2.0.2) (2024-09-12)
 
 
