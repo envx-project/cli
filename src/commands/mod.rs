@@ -12,7 +12,6 @@ pub mod project;
 
 // No subcommands
 pub mod auth;
-pub mod debug;
 pub mod decrypt;
 pub mod encrypt;
 pub mod export;
