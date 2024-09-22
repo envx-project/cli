@@ -28,13 +28,6 @@ impl Settings {
     pub fn set_keyring_expiry_never(&mut self) {
         self.keyring_expiry = Some(KeyringExpiry::Never);
     }
-    pub fn get_keyring_expiry_days(&self) -> Option<u32> {
-        match self.keyring_expiry {
-            Some(KeyringExpiry::Days(d)) => Some(d),
-            _ => None,
-        }
-    }
-
     pub fn get_keyring_expiry(&self) -> KeyringExpiry {
         let expiry = self.keyring_expiry.clone();
         expiry.unwrap_or(KeyringExpiry::Days(30))

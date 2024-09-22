@@ -24,13 +24,6 @@ fn envcli_dir() -> Result<PathBuf> {
     Ok(home_dir)
 }
 
-fn config_dir() -> Result<PathBuf> {
-    let mut home_dir =
-        home_dir().ok_or(anyhow!("Failed to get home directory"))?;
-    home_dir.push(".config");
-    Ok(home_dir)
-}
-
 pub async fn command(args: Args) -> Result<()> {
     println!("Migrating config file... Please do not interrupt this process.");
 

@@ -1,7 +1,7 @@
 use crate::utils::{
     config::get_config,
     keyring::get_password,
-    prompt::{prompt_confirm, prompt_select},
+    prompt::{prompt_confirm_with_default, prompt_select},
 };
 
 use super::*;
@@ -26,7 +26,7 @@ pub async fn command(args: Args) -> Result<()> {
     let fingerprint = match args.key {
         Some(key) => config.get_key(&key)?.fingerprint,
         None => {
-            prompt_select("Select key to clear password", config.keys)?
+            prompt_select("Select key to view password", config.keys)?
                 .fingerprint
         }
     };
@@ -39,7 +39,10 @@ pub async fn command(args: Args) -> Result<()> {
     }
 
     println!("This will print the saved password in PLAIN TEXT");
-    match prompt_confirm("Are you sure you want to continue?") {
+    match prompt_confirm_with_default(
+        "Are you sure you want to continue? (y/N)",
+        false,
+    ) {
         Ok(true) => {
             println!("Password:");
             println!("{}", password)

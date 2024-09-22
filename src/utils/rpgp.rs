@@ -1,7 +1,6 @@
 use super::config::{get_config, Config};
 use super::keyring::try_get_password;
-use anyhow::anyhow;
-use anyhow::{Context, Ok, Result};
+use anyhow::{anyhow, Context, Ok, Result};
 use colored::Colorize;
 use crypto_hash::{hex_digest, Algorithm};
 use hex::ToHex;
@@ -23,8 +22,7 @@ pub struct KeyPair {
     pub public_key: pgp::SignedPublicKey,
 }
 
-pub(crate) fn get_vault_location(
-) -> anyhow::Result<std::path::PathBuf, anyhow::Error> {
+pub(crate) fn get_vault_location() -> anyhow::Result<std::path::PathBuf> {
     let path = home::home_dir()
         .context("Failed to get home directory")?
         .join(".config")
@@ -38,7 +36,7 @@ pub fn generate_key_pair(
     name: String,
     email: String,
     password: String,
-) -> Result<KeyPair, anyhow::Error> {
+) -> Result<KeyPair> {
     let mut key_params = composed::key::SecretKeyParamsBuilder::default();
 
     // name email mix, + salt and hash as the primary_user_id
@@ -85,7 +83,7 @@ pub fn generate_key_pair(
     Ok(key_pair)
 }
 
-pub fn encrypt(msg: &str, pubkey_str: &str) -> Result<String, anyhow::Error> {
+pub fn encrypt(msg: &str, pubkey_str: &str) -> Result<String> {
     let (pubkey, _) = SignedPublicKey::from_string(pubkey_str)?;
     // Requires a file name as the first arg, in this case I pass "none", as it's not used
     let msg = composed::message::Message::new_literal("none", msg);
@@ -100,10 +98,7 @@ pub fn encrypt(msg: &str, pubkey_str: &str) -> Result<String, anyhow::Error> {
     Ok(new_msg.to_armored_string(ArmorOptions::default())?)
 }
 
-pub fn encrypt_multi(
-    msg: &str,
-    pubkeys: &[SignedPublicKey],
-) -> Result<String, anyhow::Error> {
+pub fn encrypt_multi(msg: &str, pubkeys: &[SignedPublicKey]) -> Result<String> {
     let mut rng = StdRng::from_entropy();
 
     let borrowed_keys =
@@ -124,7 +119,7 @@ pub fn decrypt(
     armored: &str,
     seckey: &SignedSecretKey,
     password: String,
-) -> Result<String, anyhow::Error> {
+) -> Result<String> {
     let buf = Cursor::new(armored);
     let (msg, _) = composed::message::Message::from_armor_single(buf)
         .context("Failed to convert &str to armored message")?;
@@ -134,7 +129,7 @@ pub fn decrypt(
 
     let clear_text = dec
         .get_literal()
-        .ok_or(anyhow::Error::msg("Failed to find message"))?
+        .ok_or(anyhow!("Failed to find message"))?
         .to_string()
         .context("Failed to convert literal to string")?;
 
@@ -151,10 +146,7 @@ pub fn generate_hashed_primary_user_id(name: String, email: String) -> String {
         .to_uppercase()
 }
 
-pub fn decrypt_full(
-    message: String,
-    config: &Config,
-) -> Result<String, anyhow::Error> {
+pub fn decrypt_full(message: String, config: &Config) -> Result<String> {
     let buf = Cursor::new(message.clone());
     let (msg, _) = composed::message::Message::from_armor_single(buf)
         .context("Failed to convert &str to armored message")?;
@@ -209,7 +201,7 @@ pub fn decrypt_full(
 pub fn decrypt_full_many(
     messages: Vec<String>,
     config: &Config,
-) -> Result<Vec<String>, anyhow::Error> {
+) -> Result<Vec<String>> {
     let first = if let Some(first) = messages.first() {
         first
     } else {
@@ -263,7 +255,7 @@ pub fn decrypt_full_many(
     let decrypted = messages
         .par_iter()
         .map(|m| decrypt(m.as_str(), &key, passphrase.clone()))
-        .collect::<Result<Vec<String>, anyhow::Error>>()?;
+        .collect::<Result<Vec<String>>>()?;
 
     Ok(decrypted)
 }
