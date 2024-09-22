@@ -58,21 +58,26 @@ pub fn get_password(fingerprint: &str) -> anyhow::Result<String> {
         }
     }
 
-    if settings.get_keyring_expiry_days().is_some() {
-        let expiry = fs::read(get_session_path(fingerprint));
-        let expiry = match expiry {
-            Ok(e) => e,
-            Err(_) => {
+    match settings.get_keyring_expiry() {
+        KeyringExpiry::Days(_) => {
+            let expiry = fs::read(get_session_path(fingerprint));
+            let expiry = match expiry {
+                Ok(e) => e,
+                Err(_) => {
+                    clear_password(fingerprint)?;
+                    bail!("No session found");
+                }
+            };
+
+            let expiry: SystemTime = bincode::deserialize(&expiry)?;
+
+            if expiry < SystemTime::now() {
                 clear_password(fingerprint)?;
-                bail!("No session found");
+                bail!("Session expired");
             }
-        };
-
-        let expiry: SystemTime = bincode::deserialize(&expiry)?;
-
-        if expiry < SystemTime::now() {
-            clear_password(fingerprint)?;
-            bail!("Session expired");
+        }
+        _ => {
+            println!("No keyring expiry set");
         }
     }
 

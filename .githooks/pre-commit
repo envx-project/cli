@@ -1,0 +1,9 @@
+#!/bin/bash
+
+STAGED_FILES=$(git diff --cached --name-only)
+
+cargo fmt || exit 1
+
+echo "$STAGED_FILES" | xargs git add
+
+exit 0
