@@ -22,7 +22,7 @@ pub struct ProjectInfo {
     pub users: Vec<User>,
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Debug)]
 pub struct ListProjects {
     pub project_id: String,
     pub project_name: String,
