@@ -18,8 +18,9 @@ pub async fn command(args: Args) -> Result<()> {
         .context("Failed to get projects from server".red())?;
     let remote_projects = remote_projects
         .iter()
-        .filter(|p| !local_projects.iter().any(|lp| lp.project_id == **p))
-        .map(|p| format!("{} - {}", p, "Remote".green()));
+        .filter(|p| !local_projects.iter().any(|lp| lp.project_id == p.project_id))
+        .map(|p| format!("{} - {} - {}", p.project_id, p.project_name, "Remote".green()));
+
     let local_projects = local_projects
         .iter()
         .map(|p| format!("{} - {}", p.project_id, p.path.display()));

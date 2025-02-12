@@ -1,6 +1,7 @@
 use super::*;
 use crate::{
     types::ProjectInfo,
+    types::ListProjects,
     utils::{
         auth::get_token,
         config::get_config,
@@ -81,9 +82,10 @@ impl SDK {
         project_id: &str,
         partial_fingerprint: &str,
     ) -> Result<ProjectInfo> {
+        // GET /v2/project/:id
         let client = reqwest::Client::new();
 
-        let url = get_api_url().join("project/")?.join(project_id)?;
+        let url = get_api_url().join("v2/project/")?.join(project_id)?;
 
         let project_info = client
             .get(url)
@@ -431,11 +433,11 @@ impl SDK {
 
     pub async fn list_projects(
         partial_fingerprint: &str,
-    ) -> Result<Vec<String>> {
-        // GET /projects
+    ) -> Result<Vec<ListProjects>> {
+        // GET /v2/projects
         let client = reqwest::Client::new();
 
-        let url = get_api_url().join("projects")?;
+        let url = get_api_url().join("v2/projects")?;
 
         let res = client
             .get(url)
@@ -447,24 +449,37 @@ impl SDK {
             .await
             .context("Failed to get projects")?;
 
-        let res = res
-            .json::<Vec<String>>()
+        let projects = res
+            .json::<Vec<ListProjects>>()
             .await
-            .context("Failed to parse API response into Vec<String>")?;
+            .context("Failed to parse API response into Vec<ProjectInfo>")?;
 
-        Ok(res)
+        let project_data = projects
+            .iter()
+            .map(|p| ListProjects {
+                project_id: p.project_id.clone(),
+                project_name: p.project_name.clone(),
+            })
+            .collect::<Vec<ListProjects>>();
+
+        Ok(project_data)
     }
 
-    pub async fn new_project(partial_fingerprint: &str) -> Result<String> {
-        // POST /projects/new
+    pub async fn new_project(partial_fingerprint: &str, project_name: &str) -> Result<String> {
+        // POST /v2/projects/new
         let client = reqwest::Client::new();
 
+        let body = json!({
+            "name": project_name
+        });
+
         let res = client
-            .post(get_api_url().join("projects/new")?)
+            .post(get_api_url().join("v2/projects/new")?)
             .header(
                 header::AUTHORIZATION,
                 Self::auth_header(partial_fingerprint).await?,
             )
+            .json(&body)
             .send()
             .await?
             .text()

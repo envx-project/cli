@@ -14,7 +14,6 @@ impl Choice {
         let key = config.get_key(partial_fingerprint)?;
         Ok((key, config))
     }
-
     pub async fn choose_project(partial_fingerprint: &str) -> Result<String> {
         let (key, config) = Self::get_key(partial_fingerprint)?;
         let all_projects = SDK::list_projects(&key.fingerprint).await?;
@@ -23,7 +22,7 @@ impl Choice {
 
         let all_projects = all_projects
             .iter()
-            .filter(|p| !local_projects.iter().any(|lp| &lp.project_id == *p))
+            .filter(|p| !local_projects.iter().any(|lp| lp.project_id == p.project_id))
             .collect::<Vec<_>>();
 
         let mut options = local_projects
@@ -32,7 +31,7 @@ impl Choice {
             .collect::<Vec<_>>();
 
         all_projects.iter().for_each(|p| {
-            options.push(format!("{} - {}", p, "Remote"));
+            options.push(format!("{} - {} - {}", p.project_id, p.project_name, "Remote"));
         });
 
         let selected =

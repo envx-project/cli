@@ -18,7 +18,14 @@ pub struct PartialUser {
 #[derive(Serialize, Deserialize, Debug)]
 pub struct ProjectInfo {
     pub project_id: String,
+    pub project_name: String,
     pub users: Vec<User>,
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+pub struct ListProjects {
+    pub project_id: String,
+    pub project_name: String,
 }
 
 impl Display for User {
