@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.1.0](https://github.com/envx-project/cli/compare/v2.0.3...v2.1.0) (2025-02-12)
+
+
+### Features
+
+* cli calls v2 functions to get and declare new project name ([#45](https://github.com/envx-project/cli/issues/45)) ([f1ac78c](https://github.com/envx-project/cli/commit/f1ac78c1629c51daa6741e3d9754934794cdf7ea))
+
 ## [2.0.3](https://github.com/envx-project/cli/compare/v2.0.2...v2.0.3) (2024-09-22)
 
 
