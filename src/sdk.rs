@@ -1,7 +1,7 @@
 use super::*;
 use crate::{
-    types::ProjectInfo,
     types::ListProjects,
+    types::ProjectInfo,
     utils::{
         auth::get_token,
         config::get_config,
@@ -465,7 +465,10 @@ impl SDK {
         Ok(project_data)
     }
 
-    pub async fn new_project(partial_fingerprint: &str, project_name: &str) -> Result<String> {
+    pub async fn new_project(
+        partial_fingerprint: &str,
+        project_name: &str,
+    ) -> Result<String> {
         // POST /v2/projects/new
         let client = reqwest::Client::new();
 

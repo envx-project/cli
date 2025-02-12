@@ -22,7 +22,11 @@ impl Choice {
 
         let all_projects = all_projects
             .iter()
-            .filter(|p| !local_projects.iter().any(|lp| lp.project_id == p.project_id))
+            .filter(|p| {
+                !local_projects
+                    .iter()
+                    .any(|lp| lp.project_id == p.project_id)
+            })
             .collect::<Vec<_>>();
 
         let mut options = local_projects
@@ -31,7 +35,10 @@ impl Choice {
             .collect::<Vec<_>>();
 
         all_projects.iter().for_each(|p| {
-            options.push(format!("{} - {} - {}", p.project_id, p.project_name, "Remote"));
+            options.push(format!(
+                "{} - {} - {}",
+                p.project_id, p.project_name, "Remote"
+            ));
         });
 
         let selected =
