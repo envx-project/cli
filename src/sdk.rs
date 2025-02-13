@@ -26,7 +26,7 @@ pub struct SetEnvParams {
     pub project_id: Option<String>,
 }
 
-pub fn get_api_url() -> Url {
+pub fn api_url() -> Url {
     fn try_get_url() -> Result<Url> {
         let dev_mode = std::env::var("DEV_MODE").is_ok();
         if dev_mode {
@@ -34,7 +34,7 @@ pub fn get_api_url() -> Url {
         }
         let url = get_config()?
             .sdk_url
-            .unwrap_or("https://api.env-cli.com".into());
+            .unwrap_or("https://api.envx.sh".into());
         let url = Url::parse(&url)?;
         Ok(url)
     }
@@ -67,7 +67,7 @@ impl SDK {
             "public_key": public_key
         });
 
-        let url = get_api_url().join("/user/new")?;
+        let url = api_url().join("/user/new")?;
         let res = client.post(url).json(&body).send().await;
 
         let res = match res {
@@ -85,7 +85,7 @@ impl SDK {
         // GET /v2/project/:id
         let client = reqwest::Client::new();
 
-        let url = get_api_url().join("v2/project/")?.join(project_id)?;
+        let url = api_url().join("v2/project/")?.join(project_id)?;
 
         let project_info = client
             .get(url)
@@ -139,7 +139,7 @@ impl SDK {
             pub id: String,
         }
 
-        let url = get_api_url().join("/variables/set-many")?;
+        let url = api_url().join("/variables/set-many")?;
 
         let res = client
             .post(url)
@@ -172,7 +172,7 @@ impl SDK {
 
         let client = reqwest::Client::new();
 
-        let mut url = get_api_url();
+        let mut url = api_url();
         url.set_path(&format!(
             "/user/{}/variables",
             key.uuid.context("No UUID for key, try `envx upload`")?
@@ -228,8 +228,8 @@ impl SDK {
         // url : /project/:id/variables
         let client = reqwest::Client::new();
 
-        let url = get_api_url()
-            .join(&format!("/project/{}/variables", project_id))?;
+        let url =
+            api_url().join(&format!("/project/{}/variables", project_id))?;
 
         let encrypted = client
             .get(url)
@@ -299,7 +299,7 @@ impl SDK {
             pub public_key: String,
         }
 
-        let url = get_api_url().join("user/")?.join(user_to_get)?;
+        let url = api_url().join("user/")?.join(user_to_get)?;
 
         let user = client
             .get(url)
@@ -328,7 +328,7 @@ impl SDK {
         });
 
         let url =
-            get_api_url().join(&format!("/project/{}/add-user", project_id))?;
+            api_url().join(&format!("/project/{}/add-user", project_id))?;
 
         let res = client
             .post(url.join(&format!("/project/{}/add-user", project_id))?)
@@ -361,8 +361,8 @@ impl SDK {
             "users": users_to_remove
         });
 
-        let url = get_api_url()
-            .join(&format!("/project/{}/remove-user", project_id))?;
+        let url =
+            api_url().join(&format!("/project/{}/remove-user", project_id))?;
 
         let res = client
             .post(url)
@@ -390,7 +390,7 @@ impl SDK {
         // url: /project/:id
         let client = reqwest::Client::new();
 
-        let url = get_api_url().join(&format!("/project/{}", project_id))?;
+        let url = api_url().join(&format!("/project/{}", project_id))?;
 
         let res = client
             .delete(url)
@@ -417,7 +417,7 @@ impl SDK {
         // url: DELETE /variables/:id
         let client = reqwest::Client::new();
 
-        let url = get_api_url().join("variables/")?.join(variable_id)?;
+        let url = api_url().join("variables/")?.join(variable_id)?;
 
         client
             .delete(url)
@@ -437,7 +437,7 @@ impl SDK {
         // GET /v2/projects
         let client = reqwest::Client::new();
 
-        let url = get_api_url().join("v2/projects")?;
+        let url = api_url().join("v2/projects")?;
 
         let res = client
             .get(url)
@@ -477,7 +477,7 @@ impl SDK {
         });
 
         let res = client
-            .post(get_api_url().join("v2/projects/new")?)
+            .post(api_url().join("v2/projects/new")?)
             .header(
                 header::AUTHORIZATION,
                 Self::auth_header(partial_fingerprint).await?,
@@ -499,7 +499,7 @@ impl SDK {
 
         let uuid = key.uuid.context("No UUID for key, try `envx upload`")?;
 
-        let url = get_api_url().join("user/")?.join(&uuid)?;
+        let url = api_url().join("user/")?.join(&uuid)?;
 
         client
             .delete(url)

@@ -8,7 +8,7 @@ use reqwest::header;
 use serde_json::json;
 
 use crate::{
-    sdk::{get_api_url, SDK},
+    sdk::{api_url, SDK},
     types::User,
     utils::{
         auth::get_token,
@@ -108,7 +108,7 @@ pub async fn command(args: Args) -> anyhow::Result<()> {
     let client = reqwest::Client::new();
     let auth_token = get_token(&key.fingerprint, &uuid).await?;
 
-    let url = get_api_url().join("/variables/update-many")?;
+    let url = api_url().join("/variables/update-many")?;
 
     let res = client
         .post(url)

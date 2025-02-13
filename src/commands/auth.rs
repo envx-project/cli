@@ -1,6 +1,6 @@
 use super::*;
 use crate::{
-    sdk::get_api_url,
+    sdk::api_url,
     utils::{auth::get_token, config::get_config},
 };
 use anyhow::bail;
@@ -34,7 +34,7 @@ pub async fn command(args: Args) -> anyhow::Result<()> {
 
     println!("auth token:\n{}", auth_token.signature);
 
-    let url = format!("{}test-auth", get_api_url());
+    let url = format!("{}test-auth", api_url());
 
     if args.debug {
         dbg!(&url);

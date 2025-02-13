@@ -35,10 +35,13 @@ impl Choice {
             .collect::<Vec<_>>();
 
         all_projects.iter().for_each(|p| {
-            options.push(format!(
-                "{} - {} - {}",
-                p.project_id, p.project_name, "Remote"
-            ));
+            let pname = if p.project_name.trim().is_empty() {
+                "<unnamed>"
+            } else {
+                &p.project_name
+            };
+            options
+                .push(format!("{} - {} - {}", p.project_id, pname, "Remote"));
         });
 
         let selected =
