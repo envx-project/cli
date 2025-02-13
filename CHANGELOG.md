@@ -1,5 +1,13 @@
 # Changelog
 
+## [2.1.1](https://github.com/envx-project/cli/compare/v2.1.0...v2.1.1) (2025-02-13)
+
+
+### Bug Fixes
+
+* add default value for project name ([437a73c](https://github.com/envx-project/cli/commit/437a73c21c8a0fa893a30e13c3462899713ee0ae))
+* update function name everywhere ([437a73c](https://github.com/envx-project/cli/commit/437a73c21c8a0fa893a30e13c3462899713ee0ae))
+
 ## [2.1.0](https://github.com/envx-project/cli/compare/v2.0.3...v2.1.0) (2025-02-12)
 
 
