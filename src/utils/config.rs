@@ -9,7 +9,7 @@ use colored::Colorize;
 use home::home_dir;
 use serde::{Deserialize, Serialize};
 use std::fs::{self, File};
-use std::io::{BufWriter, Write};
+use std::io::{BufWriter, IsTerminal, Write};
 use std::path::PathBuf;
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -40,14 +40,13 @@ pub struct Project {
 
 impl Default for Config {
     fn default() -> Self {
-        let salt = rand::random::<[u8; 32]>();
-        let salt = hex::encode(salt);
+        let salt = hex::encode(rand::random::<[u8; 32]>());
         Self {
             salt,
             primary_key: "".into(),
             keys: vec![],
             online: true,
-            sdk_url: Some("https://api.env-cli.com".into()),
+            sdk_url: Some("https://api.envx.sh".into()),
             settings: None,
             projects: vec![],
             primary_key_password: None,
@@ -59,13 +58,32 @@ impl Config {
     /// Vulnerable to fs race conditions
     /// should rewrite using file locks
     pub fn write(&self) -> Result<()> {
+        let is_terminal = std::io::stdout().is_terminal();
+        if !is_terminal
+            || self.sdk_url != Some("https://api.env-cli.com".into())
+        {
+            Config::priv_write(self)
+        } else {
+            let mut clone = self.clone();
+            println!("Just to let you know, your configuration file still has our old api url (https://api.env-cli.com).");
+            println!("We have switched our url to https://api.envx.sh, and this change will be reflected in your config.");
+
+            clone.sdk_url = Some("https://api.envx.sh".into());
+            Config::priv_write(&clone)
+        }
+    }
+
+    fn priv_write<T>(value: &T) -> Result<()>
+    where
+        T: ?Sized + Serialize,
+    {
         let path = get_config_path().context("Failed to get config path")?;
         let file =
             File::create(path).context("Failed to create config file")?;
         let mut writer = BufWriter::new(file);
-        let contents = serde_json::to_string_pretty(self)
-            .context("Failed to serialize config to JSON string")?;
 
+        let contents = serde_json::to_string_pretty(value)
+            .context("Failed to serialize config to JSON string")?;
         writer
             .write_all(contents.as_bytes())
             .context("Failed to write config to file")?;
