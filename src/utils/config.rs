@@ -72,6 +72,13 @@ struct GithubApiRelease {
 }
 
 impl Config {
+    pub fn get() -> Result<Self> {
+        let path = get_config_path().context("Failed to get config path")?;
+        let contents =
+            fs::read_to_string(path).context("Failed to read config file")?;
+        serde_json::from_str::<Self>(&contents)
+            .context("Failed to parse config file")
+    }
     pub async fn check_update(
         &mut self,
         force: bool,
@@ -319,10 +326,7 @@ pub fn get_config_path() -> Result<PathBuf> {
 }
 
 /// Read the configuration file and parse it into a Config struct
+#[deprecated]
 pub fn get_config() -> Result<Config> {
-    let path = get_config_path().context("Failed to get config path")?;
-    let contents =
-        fs::read_to_string(path).context("Failed to read config file")?;
-    serde_json::from_str::<Config>(&contents)
-        .context("Failed to parse config file")
+    Config::get()
 }

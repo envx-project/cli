@@ -25,6 +25,7 @@ pub mod shell;
 pub mod sign;
 pub mod unlink;
 pub mod unset;
+pub mod update;
 pub mod upload;
 pub mod variables;
 pub mod version;

@@ -41,18 +41,18 @@ commands_enum!(
 );
 
 fn spawn_update_task(
-    mut configs: Config,
+    mut config: Config,
 ) -> tokio::task::JoinHandle<Result<(), anyhow::Error>> {
     tokio::spawn(async move {
         if !std::io::stdout().is_terminal() {
             return Ok::<(), anyhow::Error>(());
         }
 
-        let result = configs.check_update(false).await;
+        let result = config.check_update(false).await;
         if let Ok(Some(latest_version)) = result {
-            configs.new_version_available = Some(latest_version);
+            config.new_version_available = Some(latest_version);
         }
-        configs.write()?;
+        config.write()?;
         Ok::<(), anyhow::Error>(())
     })
 }
