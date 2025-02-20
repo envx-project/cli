@@ -1,5 +1,13 @@
 # Changelog
 
+## [2.2.0](https://github.com/envx-project/cli/compare/v2.1.1...v2.2.0) (2025-02-20)
+
+
+### Features
+
+* add update command ([4c411d2](https://github.com/envx-project/cli/commit/4c411d27a198aa493b123b18ff1e9e3d8630b616))
+* check updates ([0f132c1](https://github.com/envx-project/cli/commit/0f132c1386768cc76d5926b6d23fd0286904ab53))
+
 ## [2.1.1](https://github.com/envx-project/cli/compare/v2.1.0...v2.1.1) (2025-02-13)
 
 
