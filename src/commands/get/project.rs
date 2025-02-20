@@ -1,5 +1,5 @@
 use super::*;
-use crate::utils::config::get_config;
+use crate::utils::config::Config;
 use crate::{sdk::SDK, utils::choice::Choice};
 
 /// Get all environment variables for a project
@@ -20,7 +20,7 @@ pub struct Args {
 
 // TODO: Pretty print project info (in a table?)
 pub async fn command(args: Args) -> Result<()> {
-    let config = get_config()?;
+    let config = Config::get()?;
     let key = config.get_key_or_default(args.key)?;
     let project_id =
         Choice::try_project(args.project_id, &key.fingerprint).await?;

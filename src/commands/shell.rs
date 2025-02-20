@@ -1,4 +1,5 @@
 use crate::utils::choice::Choice;
+use crate::utils::config::Config;
 
 use super::*;
 use std::collections::BTreeMap;
@@ -40,7 +41,7 @@ pub struct Args {
 }
 
 pub async fn command(args: Args) -> Result<()> {
-    let config = crate::utils::config::get_config()?;
+    let config = Config::get()?;
     let key = match args.key {
         Some(k) => k.to_owned(),
         None => config.primary_key.clone(),

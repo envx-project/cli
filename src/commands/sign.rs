@@ -1,4 +1,4 @@
-use crate::utils::{config::get_config, keyring::try_get_password};
+use crate::utils::{config::Config, keyring::try_get_password};
 
 use super::*;
 use anyhow::Ok;
@@ -16,7 +16,7 @@ pub struct Args {
 }
 
 pub async fn command(args: Args) -> Result<()> {
-    let config = get_config().context("Failed to get config")?;
+    let config = Config::get().context("Failed to get config")?;
 
     let key = config
         .keys

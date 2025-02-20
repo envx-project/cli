@@ -1,7 +1,7 @@
 use anyhow::Context;
 
 use crate::utils::{
-    config::get_config,
+    config::Config,
     rpgp::{encrypt, get_vault_location},
 };
 
@@ -18,7 +18,7 @@ pub struct Args {
 }
 
 pub async fn command(args: Args) -> Result<()> {
-    let config = get_config().context("Failed to get config")?;
+    let config = Config::get().context("Failed to get config")?;
 
     let primary_key = config.primary_key.clone();
 

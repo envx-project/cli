@@ -1,7 +1,7 @@
 use super::*;
 use crate::{
     sdk::api_url,
-    utils::{auth::get_token, config::get_config},
+    utils::{auth::get_token, config::Config},
 };
 use anyhow::bail;
 use reqwest::header;
@@ -19,7 +19,7 @@ pub struct Args {
 }
 
 pub async fn command(args: Args) -> anyhow::Result<()> {
-    let config = get_config()?;
+    let config = Config::get()?;
     let key = config.get_key_or_default(args.key)?;
 
     let client = reqwest::Client::new();

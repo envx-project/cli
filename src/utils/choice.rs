@@ -2,15 +2,12 @@ use anyhow::{Context, Result};
 
 use crate::sdk::SDK;
 
-use super::{
-    config::{get_config, Config},
-    key::Key,
-};
+use super::{config::Config, key::Key};
 
 pub struct Choice {}
 impl Choice {
     pub fn get_key(partial_fingerprint: &str) -> Result<(Key, Config)> {
-        let config = get_config().context("Failed to get config")?;
+        let config = Config::get().context("Failed to get config")?;
         let key = config.get_key(partial_fingerprint)?;
         Ok((key, config))
     }
@@ -67,7 +64,7 @@ impl Choice {
         match project_id {
             Some(p) => Ok(p),
             None => {
-                let config = get_config().context("Failed to get config")?;
+                let config = Config::get().context("Failed to get config")?;
                 let project = config.get_project();
 
                 match project {

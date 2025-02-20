@@ -1,6 +1,6 @@
 use super::*;
 use crate::utils::{
-    config::{get_config, get_config_path},
+    config::{get_config_path, Config},
     prompt::{prompt_confirm, prompt_password},
 };
 
@@ -19,7 +19,7 @@ pub async fn command(args: Args) -> Result<()> {
     println!("This command is VERY insecure. It will store your password in PLAIN TEXT in the config file.");
     prompt_confirm("Are you sure you want to continue?")?;
 
-    let mut config = get_config()?;
+    let mut config = Config::get()?;
 
     let password = match args.password {
         Some(k) => k,

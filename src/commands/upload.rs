@@ -1,7 +1,7 @@
 use super::*;
 use crate::{
     sdk::SDK,
-    utils::{config::get_config, prompt::prompt_text},
+    utils::{config::Config, prompt::prompt_text},
 };
 
 /// If your key is not in the database, use this command to upload it
@@ -17,7 +17,7 @@ pub struct Args {
 }
 
 pub async fn command(args: Args) -> Result<()> {
-    let mut config = get_config()?;
+    let mut config = Config::get()?;
 
     let key = config.get_key(&args.key)?;
 

@@ -1,6 +1,6 @@
 use super::*;
 use crate::utils::btreemap::ToBTreeMap;
-use crate::utils::config::get_config;
+use crate::utils::config::Config;
 use crate::utils::table::Table;
 use anyhow::Context;
 use anyhow::Result;
@@ -16,7 +16,7 @@ pub struct Args {
 }
 
 pub async fn command(args: Args) -> Result<()> {
-    let config = get_config()?;
+    let config = Config::get()?;
 
     if args.json {
         let json = serde_json::to_string_pretty(&config)

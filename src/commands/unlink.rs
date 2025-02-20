@@ -1,12 +1,12 @@
 use super::*;
-use crate::utils::config::get_config;
+use crate::utils::config::Config;
 
 /// Unset the current project
 #[derive(Parser)]
 pub struct Args {}
 
 pub async fn command(_args: Args) -> Result<()> {
-    let mut config = get_config()?;
+    let mut config = Config::get()?;
 
     let unset = config.unlink_project()?;
     config.write()?;

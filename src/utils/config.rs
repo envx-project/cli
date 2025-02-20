@@ -324,9 +324,3 @@ pub fn get_config_path() -> Result<PathBuf> {
     }
     Ok(path)
 }
-
-/// Read the configuration file and parse it into a Config struct
-#[deprecated]
-pub fn get_config() -> Result<Config> {
-    Config::get()
-}

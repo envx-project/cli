@@ -1,5 +1,5 @@
 use super::*;
-use crate::utils::config::get_config;
+use crate::utils::config::Config;
 
 /// List all keys in the config
 #[derive(Parser)]
@@ -10,7 +10,7 @@ pub struct Args {
 }
 
 pub async fn command(_args: Args) -> Result<()> {
-    let config = get_config().context("Failed to get config")?;
+    let config = Config::get().context("Failed to get config")?;
 
     println!("Keys:");
     for key in config.keys.iter() {

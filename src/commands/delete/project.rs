@@ -1,6 +1,6 @@
 use crate::{
     sdk::SDK,
-    utils::{choice::Choice, config::get_config},
+    utils::{choice::Choice, config::Config},
 };
 
 use super::*;
@@ -16,7 +16,7 @@ pub struct Args {
 }
 
 pub async fn command(args: Args) -> Result<()> {
-    let mut config = get_config()?;
+    let mut config = Config::get()?;
     let key = config.get_key_or_default(args.key)?;
 
     let project_id =

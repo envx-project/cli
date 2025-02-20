@@ -5,7 +5,7 @@ use crate::{
     sdk::SDK,
     utils::{
         choice::Choice,
-        config::get_config,
+        config::Config,
         kvpair::KVPair,
         // partial_variable::ToParsed,
         prompt::prompt_confirm,
@@ -39,7 +39,7 @@ pub async fn command(args: Args) -> Result<()> {
         );
     }
 
-    let config = get_config()?;
+    let config = Config::get()?;
     let key = match &args.key {
         Some(k) => k,
         None => &config.primary_key,

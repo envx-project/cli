@@ -2,7 +2,7 @@ use super::*;
 use crate::{
     sdk::SDK,
     utils::{
-        btreemap::ToBTreeMap, choice::Choice, config::get_config, table::Table,
+        btreemap::ToBTreeMap, choice::Choice, config::Config, table::Table,
         variable::ToKVPair,
     },
 };
@@ -31,7 +31,7 @@ pub struct Args {
 pub async fn command(args: Args) -> Result<()> {
     let mode = Mode::from_args(&args);
 
-    let config = get_config()?;
+    let config = Config::get()?;
     let key = config.get_key_or_default(args.key)?;
     let project_id =
         Choice::try_project(args.project_id, &key.fingerprint).await?;

@@ -4,7 +4,7 @@ use crate::{
     types::ProjectInfo,
     utils::{
         auth::get_token,
-        config::get_config,
+        config::Config,
         kvpair::KVPair,
         rpgp::{decrypt_full_many, encrypt_multi},
         variable::{DecryptedVariable, EncryptedVariable, ToKVPair},
@@ -32,7 +32,7 @@ pub fn api_url() -> Url {
         if dev_mode {
             return Ok(Url::parse("http://localhost:3000")?);
         }
-        let url = get_config()?
+        let url = Config::get()?
             .sdk_url
             .unwrap_or("https://api.envx.sh".into());
         let url = Url::parse(&url)?;
@@ -50,7 +50,7 @@ pub fn api_url() -> Url {
 pub(crate) struct SDK {}
 impl SDK {
     async fn auth_header(partial_fingerprint: &str) -> Result<String> {
-        let config = get_config()?;
+        let config = Config::get()?;
         let key = config.get_key(partial_fingerprint)?;
         let Some(uuid) = key.uuid else {
             bail!("No UUID for key {}\nTry envx upload", partial_fingerprint)
@@ -167,7 +167,7 @@ impl SDK {
         // ) -> Result<(Vec<KVPair>, Vec<DecryptedVariable>)> {
     ) -> Result<Vec<DecryptedVariable>> {
         // GET /user/:id/variables
-        let config = get_config()?;
+        let config = Config::get()?;
         let key = config.get_key(partial_fingerprint)?;
 
         let client = reqwest::Client::new();
@@ -196,7 +196,7 @@ impl SDK {
                 .iter()
                 .map(|e| e.value.clone())
                 .collect::<Vec<String>>(),
-            &get_config()?,
+            &Config::get()?,
         )?;
 
         let kvpairs = decrypted
@@ -249,7 +249,7 @@ impl SDK {
                 .iter()
                 .map(|e| e.value.clone())
                 .collect::<Vec<String>>(),
-            &get_config()?,
+            &Config::get()?,
         )?;
 
         let kvpairs = decrypted
@@ -494,7 +494,7 @@ impl SDK {
         // DELETE /user/:id
         let client = reqwest::Client::new();
 
-        let config = get_config()?;
+        let config = Config::get()?;
         let key = config.get_key(partial_fingerprint)?;
 
         let uuid = key.uuid.context("No UUID for key, try `envx upload`")?;

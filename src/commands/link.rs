@@ -1,6 +1,6 @@
 use super::*;
 use crate::utils::choice::Choice;
-use crate::utils::config::get_config;
+use crate::utils::config::Config;
 
 /// Get all environment variables for a project
 #[derive(Parser)]
@@ -19,7 +19,7 @@ pub struct Args {
 }
 
 pub async fn command(args: Args) -> Result<()> {
-    let mut config = get_config()?;
+    let mut config = Config::get()?;
 
     let projects = &config.projects;
     let cwd = std::env::current_dir()?;

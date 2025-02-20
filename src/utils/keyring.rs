@@ -1,7 +1,4 @@
-use super::{
-    config::{get_config, Config},
-    prompt::prompt_password,
-};
+use super::{config::Config, prompt::prompt_password};
 use crate::utils::settings::KeyringExpiry;
 use crate::{
     constants::MINIMUM_PASSWORD_LENGTH, utils::prompt::prompt_confirm,
@@ -49,7 +46,7 @@ pub fn set_password(
 }
 
 pub fn get_password(fingerprint: &str) -> anyhow::Result<String> {
-    let config = get_config()?;
+    let config = Config::get()?;
     let settings = config.get_settings()?;
 
     if fingerprint == config.primary_key {

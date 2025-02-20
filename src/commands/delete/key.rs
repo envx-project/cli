@@ -2,6 +2,7 @@ use super::*;
 use crate::{
     sdk::SDK,
     utils::{
+        config::Config,
         key::Key,
         prompt::{prompt_confirm, prompt_multi_options},
     },
@@ -24,8 +25,7 @@ pub struct Args {
 // TODO: fix configuration race condition while deleting multiple keys
 
 pub async fn command(args: Args) -> Result<()> {
-    let mut config =
-        crate::utils::config::get_config().context("Failed to get config")?;
+    let mut config = Config::get().context("Failed to get config")?;
     let kl_arc = std::sync::Arc::new(&config.keys);
     let primary_key = &config.primary_key;
 

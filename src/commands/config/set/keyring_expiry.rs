@@ -1,4 +1,4 @@
-use crate::utils::config::get_config;
+use crate::utils::config::Config;
 
 use super::*;
 
@@ -18,7 +18,7 @@ pub async fn command(args: Args) -> Result<()> {
     } else {
         println!("Setting keyring expiry to {} days", args.days);
     }
-    let mut config = get_config()?;
+    let mut config = Config::get()?;
     let mut settings = config.get_settings()?;
 
     if args.days == 0 {

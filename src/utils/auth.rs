@@ -1,4 +1,4 @@
-use crate::utils::config::get_config;
+use crate::utils::config::Config;
 use anyhow::{anyhow, Context};
 use chrono::Utc;
 use pgp::composed::message::Message;
@@ -11,7 +11,7 @@ pub async fn get_token(
     fingerprint: &str,
     token: &str,
 ) -> anyhow::Result<AuthToken> {
-    let config = get_config().context("Failed to get config")?;
+    let config = Config::get().context("Failed to get config")?;
     let key = config
         .keys
         .iter()

@@ -4,11 +4,7 @@ use anyhow::Result;
 use clap::{error::ErrorKind, Parser, Subcommand};
 use commands::*;
 use home::home_dir;
-use tokio::task::JoinHandle;
-use utils::{
-    compare_semver,
-    config::{get_config, Config},
-};
+use utils::{compare_semver, config::Config};
 
 mod commands;
 mod constants;
@@ -96,7 +92,7 @@ async fn main() -> Result<()> {
     }
 
     let check_updates_handle = if std::io::stdout().is_terminal() {
-        let mut config = get_config()?;
+        let mut config = Config::get()?;
 
         if let Some(new_version) = &config.new_version_available {
             if matches!(

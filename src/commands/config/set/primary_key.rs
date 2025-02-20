@@ -1,5 +1,5 @@
 use super::*;
-use crate::utils::{config::get_config, prompt::prompt_select};
+use crate::utils::{config::Config, prompt::prompt_select};
 
 /// Set the primary key in the global config
 #[derive(Parser)]
@@ -10,7 +10,7 @@ pub struct Args {
 }
 
 pub async fn command(args: Args) -> Result<()> {
-    let mut config = get_config()?;
+    let mut config = Config::get()?;
 
     let fingerprint = match args.key {
         Some(k) => k,

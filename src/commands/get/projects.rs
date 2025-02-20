@@ -1,4 +1,4 @@
-use crate::{sdk::SDK, utils::config::get_config};
+use crate::{sdk::SDK, utils::config::Config};
 
 use super::*;
 
@@ -9,7 +9,7 @@ pub struct Args {
 }
 
 pub async fn command(args: Args) -> Result<()> {
-    let config = get_config()?;
+    let config = Config::get()?;
     let key = config.get_key_or_default(None)?;
 
     let local_projects = config.projects.clone();

@@ -1,7 +1,7 @@
 use super::*;
 use crate::utils::choice::Choice;
 use crate::utils::prompt;
-use crate::{sdk::SDK, utils::config::get_config};
+use crate::{sdk::SDK, utils::config::Config};
 
 /// Unset (delete) an environment variable
 #[derive(Parser)]
@@ -22,7 +22,7 @@ pub struct Args {
 }
 
 pub async fn command(args: Args) -> Result<()> {
-    let config = get_config()?;
+    let config = Config::get()?;
     let key = config.get_key_or_default(args.key)?;
     let project_id = match args.all {
         true => None,

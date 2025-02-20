@@ -1,5 +1,5 @@
 use crate::utils::{
-    config::get_config,
+    config::Config,
     keyring::get_password,
     prompt::{prompt_confirm_with_default, prompt_select},
 };
@@ -21,7 +21,7 @@ pub struct Args {
 }
 
 pub async fn command(args: Args) -> Result<()> {
-    let config = get_config()?;
+    let config = Config::get()?;
 
     let fingerprint = match args.key {
         Some(key) => config.get_key(&key)?.fingerprint,

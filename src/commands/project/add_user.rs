@@ -4,7 +4,7 @@ use crate::{
     utils::{
         auth::get_token,
         choice::Choice,
-        config::get_config,
+        config::Config,
         prompt::prompt_text,
         rpgp::encrypt_multi,
         variable::{EncryptedVariable, ToKVPair},
@@ -39,7 +39,7 @@ pub async fn command(args: Args) -> Result<()> {
     };
     let user_id = user_id.trim().to_string();
 
-    let config = get_config()?;
+    let config = Config::get()?;
     let key = config.get_key_or_default(args.key)?;
 
     let uuid = key

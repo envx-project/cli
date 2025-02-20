@@ -1,6 +1,6 @@
 use super::*;
 use crate::utils::prompt::prompt_text;
-use crate::{sdk::SDK, utils::config::get_config};
+use crate::{sdk::SDK, utils::config::Config};
 
 /// Create a new project
 #[derive(Parser)]
@@ -18,7 +18,7 @@ pub struct Args {
 }
 
 pub async fn command(args: Args) -> Result<()> {
-    let config = get_config()?;
+    let config = Config::get()?;
     let key = config.get_key_or_default(args.key)?;
 
     // check if nn flag is set

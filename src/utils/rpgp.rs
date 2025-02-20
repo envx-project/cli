@@ -1,4 +1,4 @@
-use super::config::{get_config, Config};
+use super::config::Config;
 use super::keyring::try_get_password;
 use anyhow::{anyhow, Context, Ok, Result};
 use colored::Colorize;
@@ -142,8 +142,13 @@ pub fn hash_string(input: &str) -> String {
 }
 
 pub fn generate_hashed_primary_user_id(name: String, email: String) -> String {
-    hash_string(&format!("{}{}{}", name, email, &get_config().unwrap().salt))
-        .to_uppercase()
+    hash_string(&format!(
+        "{}{}{}",
+        name,
+        email,
+        &Config::get().unwrap().salt
+    ))
+    .to_uppercase()
 }
 
 pub fn decrypt_full(message: String, config: &Config) -> Result<String> {

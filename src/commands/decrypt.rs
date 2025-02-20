@@ -1,5 +1,5 @@
 use super::*;
-use crate::utils::{config::get_config, rpgp::decrypt_full};
+use crate::utils::{config::Config, rpgp::decrypt_full};
 use anyhow::{Context, Result};
 
 /// Decrypt a string using GPG
@@ -9,7 +9,7 @@ pub struct Args {
 }
 
 pub async fn command(args: Args) -> Result<()> {
-    let config = get_config().context("Failed to get config")?;
+    let config = Config::get().context("Failed to get config")?;
 
     let decrypted = decrypt_full(args.message, &config)?;
 
