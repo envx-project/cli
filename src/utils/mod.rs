@@ -1,6 +1,8 @@
 pub mod auth;
 pub mod btreemap;
 pub mod choice;
+mod compare_semver;
+pub use compare_semver::compare_semver;
 pub mod config;
 pub mod key;
 pub mod keyring;

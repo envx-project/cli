@@ -1,13 +1,16 @@
 // configuration path = ~/.config/envx/config.json
 
+use super::compare_semver;
 use super::key::Key;
 use super::rpgp::get_vault_location;
 use super::settings::Settings;
 use anyhow::anyhow;
 use anyhow::{Context, Result};
+use chrono::{DateTime, Utc};
 use colored::Colorize;
 use home::home_dir;
 use serde::{Deserialize, Serialize};
+use std::cmp::Ordering;
 use std::fs::{self, File};
 use std::io::{BufWriter, IsTerminal, Write};
 use std::path::PathBuf;
@@ -30,6 +33,10 @@ pub struct Config {
     pub projects: Vec<Project>,
     /// Password for the primary key
     pub primary_key_password: Option<String>,
+    /// Last time the config was updated
+    pub last_update_check: Option<DateTime<Utc>>,
+    /// New version available
+    pub new_version_available: Option<String>,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -50,11 +57,58 @@ impl Default for Config {
             settings: None,
             projects: vec![],
             primary_key_password: None,
+            last_update_check: None,
+            new_version_available: None,
         }
     }
 }
 
+const GITHUB_API_RELEASE_URL: &'static str =
+    "https://api.github.com/repos/envx-project/cli/releases/latest";
+
+#[derive(Deserialize)]
+struct GithubApiRelease {
+    tag_name: String,
+}
+
 impl Config {
+    pub async fn check_update(
+        &mut self,
+        force: bool,
+    ) -> anyhow::Result<Option<String>> {
+        // outputting would break json output on CI
+        if !std::io::stdout().is_terminal() && !force {
+            return Ok(None);
+        }
+
+        if let Some(last_update_check) = self.last_update_check {
+            if Utc::now().date_naive() == last_update_check.date_naive()
+                && !force
+            {
+                return Ok(None);
+            }
+        }
+
+        let client = reqwest::Client::new();
+        let response = client
+            .get(GITHUB_API_RELEASE_URL)
+            .header("User-Agent", "envx")
+            .send()
+            .await?;
+
+        self.last_update_check = Some(Utc::now());
+        self.write()
+            .context("Failed to save time since last update check")?;
+
+        let response = response.json::<GithubApiRelease>().await?;
+        let latest_version = response.tag_name.trim_start_matches('v');
+
+        match compare_semver(env!("CARGO_PKG_VERSION"), &latest_version) {
+            Ordering::Less => Ok(Some(latest_version.to_owned())),
+            _ => Ok(None),
+        }
+    }
+
     /// Vulnerable to fs race conditions
     /// should rewrite using file locks
     pub fn write(&self) -> Result<()> {
