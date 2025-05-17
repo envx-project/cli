@@ -1,3 +1,5 @@
+use std::io::Read;
+
 use anyhow::Context;
 
 use crate::utils::{
@@ -11,10 +13,11 @@ use super::*;
 #[derive(Parser)]
 pub struct Args {
     /// recipient's public key fingerprint
+    #[clap(long, short)]
     recipient: String,
 
     /// string to encrypt
-    message: String,
+    message: Option<String>,
 }
 
 pub async fn command(args: Args) -> Result<()> {
@@ -28,7 +31,22 @@ pub async fn command(args: Args) -> Result<()> {
     let primary_public_key = std::fs::read_to_string(primary_key_location)
         .context("Failed to read primary key")?;
 
-    let encrypted = encrypt(&args.message, primary_public_key.as_str())?;
+    let message = match args.message {
+        Some(message) => message,
+        None => {
+            let mut message = String::new();
+            std::io::stdin()
+                .read_to_string(&mut message)
+                .context("Failed to read message")?;
+            message
+        }
+    };
+
+    if message.is_empty() {
+        anyhow::bail!("Message is empty");
+    }
+
+    let encrypted = encrypt(&message, primary_public_key.as_str())?;
 
     println!("{}", encrypted);
 

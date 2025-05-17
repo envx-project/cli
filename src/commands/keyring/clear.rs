@@ -12,10 +12,21 @@ pub struct Args {
     /// Partial fingerprint of the key to set
     #[clap(short, long)]
     key: Option<String>,
+
+    /// Clear all saved keys
+    #[clap(short, long)]
+    all: bool,
 }
 
 pub async fn command(args: Args) -> Result<()> {
     let config = Config::get()?;
+
+    if args.all {
+        config.keys.iter().for_each(|key| {
+            clear_password(&key.fingerprint).unwrap();
+        });
+        return Ok(());
+    }
 
     let fingerprint = match args.key {
         Some(key) => config.get_key(&key)?.fingerprint,

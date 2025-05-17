@@ -15,9 +15,9 @@ pub struct Args {
     #[clap(short, long)]
     key: Option<String>,
 
-    /// Force, don't prompt for confirmation
+    /// Don't prompt for confirmation
     #[clap(short, long)]
-    force: bool,
+    yes: bool,
 }
 
 pub async fn command(args: Args) -> Result<()> {
@@ -33,7 +33,7 @@ pub async fn command(args: Args) -> Result<()> {
 
     let password = get_password(&fingerprint)?;
 
-    if args.force {
+    if args.yes {
         println!("{}", password);
         return Ok(());
     }
