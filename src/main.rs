@@ -30,8 +30,8 @@ pub struct Args {
 // Generates the commands based on the modules in the commands directory
 // Specify the modules you want to include in the commands_enum! macro
 commands_enum!(
-    auth, decrypt, encrypt, export, gen, import, link, list_keys, run, set,
-    shell, sign, unlink, unset, update, upload, variables, version,
+    auth, export, gen, import, link, list_keys, run, set, shell, unlink, unset,
+    update, upload, variables, version,
     // commands with subcommands
     config, delete, get, keyring, new, project
 );

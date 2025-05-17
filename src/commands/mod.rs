@@ -12,8 +12,6 @@ pub mod project;
 
 // No subcommands
 pub mod auth;
-pub mod decrypt;
-pub mod encrypt;
 pub mod export;
 pub mod gen;
 pub mod import;
@@ -22,7 +20,6 @@ pub mod list_keys;
 pub mod run;
 pub mod set;
 pub mod shell;
-pub mod sign;
 pub mod unlink;
 pub mod unset;
 pub mod update;

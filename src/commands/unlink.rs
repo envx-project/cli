@@ -19,7 +19,5 @@ pub async fn command(_args: Args) -> Result<()> {
         println!("  {}", project);
     }
 
-    // println!("{} {}", "Unset project:".green(), unset[0]);
-
     Ok(())
 }
