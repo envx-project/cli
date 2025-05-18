@@ -10,6 +10,7 @@ use crate::constants::MINIMUM_PASSWORD_LENGTH;
 use crate::utils::prompt::{prompt_email, prompt_password, prompt_text};
 use crate::utils::rpgp::{
     generate_hashed_primary_user_id, generate_key_pair, get_vault_location,
+    user_id,
 };
 use crate::utils::vecu8::ToHex;
 use anyhow::Context;
@@ -29,17 +30,9 @@ pub struct Args {
     #[clap(short, long)]
     interactive: bool,
 
-    /// Username
+    /// Nickname for the key. Do NOT use your real name.
     #[clap(short, long)]
-    username: Option<String>,
-
-    /// Your real name
-    #[clap(short, long)]
-    name: Option<String>,
-
-    /// Your email address
-    #[clap(short, long)]
-    email: Option<String>,
+    nickname: Option<String>,
 
     /// Passphrase to encrypt the key with
     #[clap(short, long)]
@@ -78,23 +71,9 @@ pub async fn command(args: Args) -> Result<()> {
     let mut config = config::Config::get().context("Failed to get config")?;
     let settings = config.get_settings()?;
 
-    let name = args
-        .name
-        .unwrap_or_else(|| prompt_text("What is your name?").unwrap());
-
-    let username = args
-        .username
-        .unwrap_or_else(|| prompt_text("What is your username?").unwrap());
-
-    let email = args.email.unwrap_or_else(|| prompt_email("email").unwrap());
-
-    match email_validator(&email) {
-        Ok(_) => {}
-        Err(e) => {
-            eprintln!("{}", e);
-            std::process::exit(1);
-        }
-    }
+    let nickname = args
+        .nickname
+        .unwrap_or_else(|| prompt_text("Set a nickname for the key").unwrap());
 
     let passphrase = args
         .passphrase
@@ -108,9 +87,8 @@ pub async fn command(args: Args) -> Result<()> {
         eprintln!("You can disable this warning with `envx config --no-warn-on-short-passwords`");
     }
 
-    let key_pair =
-        generate_key_pair(name.clone(), email.clone(), passphrase.to_owned())
-            .expect("Failed to generate key pair");
+    let key_pair = generate_key_pair(&nickname, passphrase.to_owned())
+        .expect("Failed to generate key pair");
 
     let priv_key = key_pair
         .secret_key
@@ -173,19 +151,16 @@ pub async fn command(args: Args) -> Result<()> {
     fs::write(key_dir.join("public.key"), &pub_key)
         .expect("Failed to write public key to file");
 
-    let hashed_note =
-        generate_hashed_primary_user_id(name.clone(), email.clone());
     let mut key_to_insert: Key = Key {
         fingerprint: fingerprint.clone(),
         note: "".to_string(),
-        primary_user_id: format!("{} <{}>", &name, &email),
-        hashed_note: hashed_note.clone(),
+        primary_user_id: user_id(&nickname),
         pubkey_only: None,
         uuid: None,
     };
 
     if config.online {
-        match SDK::new_user(&username, &pub_key).await {
+        match SDK::new_user(&nickname, &pub_key).await {
             Ok(id) => {
                 println!("User ID: {}", id);
                 key_to_insert.uuid = Some(id);

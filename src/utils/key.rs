@@ -8,7 +8,6 @@ pub struct Key {
     pub fingerprint: String,
     pub note: String,
     pub primary_user_id: String,
-    pub hashed_note: String,
     pub pubkey_only: Option<bool>,
     pub uuid: Option<String>,
 }

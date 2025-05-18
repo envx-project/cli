@@ -59,6 +59,7 @@ impl SDK {
         Ok(format!("Bearer {}", auth_token))
     }
 
+    // TODO: remove username entirely
     pub async fn new_user(username: &str, public_key: &str) -> Result<String> {
         let client = reqwest::Client::new();
 
