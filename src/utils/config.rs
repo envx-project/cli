@@ -36,6 +36,7 @@ pub struct Config {
     pub new_version_available: Option<String>,
 }
 
+// TODO: add project name
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Project {
     pub project_id: String,

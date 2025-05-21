@@ -59,6 +59,15 @@ pub async fn command(args: Args) -> Result<()> {
     println!("Linking project...");
 
     let mut config = config;
+    match config.unlink_project() {
+        Ok(unlinked) => {
+            println!("Unlinked project(s):");
+            for project in unlinked {
+                println!("  {}", project);
+            }
+        }
+        Err(_) => {}
+    }
     config.link_project(&new_project_id)?;
     config.write()?;
 
