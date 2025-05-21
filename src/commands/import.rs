@@ -5,7 +5,7 @@ use crate::utils::rpgp::get_vault_location;
 use crate::utils::vecu8::ToHex;
 use clap::Subcommand;
 use pgp::ArmorOptions;
-use pgp::{types::KeyTrait, Deserializable};
+use pgp::{types::PublicKeyTrait, Deserializable};
 use std::fs;
 use std::io::Cursor;
 
@@ -33,7 +33,8 @@ pub async fn command(args: Args) -> Result<()> {
                 pgp::composed::SignedPublicKey::from_armor_single(buf)
                     .context("Failed to parse armored key")?;
 
-            let fingerprint = pubkey.fingerprint().to_hex().to_uppercase();
+            let fingerprint =
+                pubkey.fingerprint().as_bytes().to_hex().to_uppercase();
 
             println!("Importing key: {}", fingerprint);
 
@@ -46,6 +47,7 @@ pub async fn command(args: Args) -> Result<()> {
                 .id()
                 .to_string();
 
+            // TODO: fix this
             let (primary_user_id, hashed_note) = if only_hex(&first_user_id)
                 && first_user_id.len() == 128
             {
@@ -69,7 +71,6 @@ pub async fn command(args: Args) -> Result<()> {
                 note: "".to_string(),
                 pubkey_only: Some(true),
                 primary_user_id,
-                hashed_note,
                 uuid: None,
             };
 

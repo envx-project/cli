@@ -16,6 +16,7 @@ pub async fn command(args: Args) -> Result<()> {
     let remote_projects = SDK::list_projects(&key.fingerprint)
         .await
         .context("Failed to get projects from server".red())?;
+
     let remote_projects = remote_projects
         .iter()
         .filter(|p| {

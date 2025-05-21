@@ -1,20 +1,16 @@
 // TODO: add uuid to config after uploading
 
 use super::*;
+use crate::constants::MINIMUM_PASSWORD_LENGTH;
 use crate::sdk::SDK;
 use crate::utils::config::{self};
 use crate::utils::key::Key;
 use crate::utils::keyring::set_password;
-// use crate::utils::prompt::prompt_password;
-use crate::constants::MINIMUM_PASSWORD_LENGTH;
-use crate::utils::prompt::{prompt_email, prompt_password, prompt_text};
-use crate::utils::rpgp::{
-    generate_hashed_primary_user_id, generate_key_pair, get_vault_location,
-    user_id,
-};
+use crate::utils::prompt::{prompt_password, prompt_text};
+use crate::utils::rpgp::{generate_key_pair, get_vault_location, user_id};
 use crate::utils::vecu8::ToHex;
 use anyhow::Context;
-use pgp::types::KeyTrait;
+use pgp::types::PublicKeyTrait;
 use pgp::ArmorOptions;
 use std::fs;
 use std::str;
@@ -30,9 +26,9 @@ pub struct Args {
     #[clap(short, long)]
     interactive: bool,
 
-    /// Nickname for the key. Do NOT use your real name.
+    /// Username for the key. Do NOT use your real name, or anything that could be used to identify you.
     #[clap(short, long)]
-    nickname: Option<String>,
+    username: Option<String>,
 
     /// Passphrase to encrypt the key with
     #[clap(short, long)]
@@ -71,8 +67,8 @@ pub async fn command(args: Args) -> Result<()> {
     let mut config = config::Config::get().context("Failed to get config")?;
     let settings = config.get_settings()?;
 
-    let nickname = args
-        .nickname
+    let username = args
+        .username
         .unwrap_or_else(|| prompt_text("Set a nickname for the key").unwrap());
 
     let passphrase = args
@@ -87,7 +83,7 @@ pub async fn command(args: Args) -> Result<()> {
         eprintln!("You can disable this warning with `envx config --no-warn-on-short-passwords`");
     }
 
-    let key_pair = generate_key_pair(&nickname, passphrase.to_owned())
+    let key_pair = generate_key_pair(&username, passphrase.to_owned())
         .expect("Failed to generate key pair");
 
     let priv_key = key_pair
@@ -100,7 +96,7 @@ pub async fn command(args: Args) -> Result<()> {
         .to_armored_string(ArmorOptions::default())
         .expect("Failed to convert public key to armored ASCII string");
 
-    let fingerprint = key_pair.secret_key.fingerprint().to_hex();
+    let fingerprint = key_pair.secret_key.fingerprint().as_bytes().to_hex();
 
     let result =
         set_password(&fingerprint, &passphrase, settings.get_keyring_expiry());
@@ -154,13 +150,13 @@ pub async fn command(args: Args) -> Result<()> {
     let mut key_to_insert: Key = Key {
         fingerprint: fingerprint.clone(),
         note: "".to_string(),
-        primary_user_id: user_id(&nickname),
+        primary_user_id: user_id(&username),
         pubkey_only: None,
         uuid: None,
     };
 
     if config.online {
-        match SDK::new_user(&nickname, &pub_key).await {
+        match SDK::new_user(&username, &pub_key).await {
             Ok(id) => {
                 println!("User ID: {}", id);
                 key_to_insert.uuid = Some(id);

@@ -1,10 +1,11 @@
 use std::cmp::Ordering;
+use std::process::Stdio;
 
 use crate::utils::{compare_semver, config::Config};
 
 use super::*;
 
-/// If your key is not in the database, use this command to upload it
+/// Update the envx CLI
 #[derive(Parser)]
 pub struct Args {}
 
@@ -12,6 +13,7 @@ pub async fn command(_args: Args) -> Result<()> {
     let mut config = Config::get()?;
     let result = config.check_update(true).await?;
     config.write()?;
+
     let latest_version = if let Some(latest_version) = result {
         latest_version
     } else {
@@ -29,18 +31,19 @@ pub async fn command(_args: Args) -> Result<()> {
             env!("CARGO_PKG_VERSION").yellow(),
             latest_version.bright_yellow(),
         );
-        // println!(
-        //     "Run `{}` to update\n",
-        //     "curl -fsSL https://get.envx.sh | sh".green()
-        // );
+    } else {
+        println!("You are already on or ahead of the latest version");
+        println!("Current version: {}", env!("CARGO_PKG_VERSION"));
+        println!("Latest version: {}", latest_version);
+        return Ok(());
     }
 
     let mut output = tokio::process::Command::new("sh")
         .arg("-c")
         .arg("curl -fsSL https://get.envx.sh | sh")
-        .stdout(std::process::Stdio::inherit())
-        .stderr(std::process::Stdio::inherit())
-        .stdin(std::process::Stdio::inherit())
+        .stdout(Stdio::inherit())
+        .stderr(Stdio::inherit())
+        .stdin(Stdio::inherit())
         .spawn()?;
 
     let status = output.wait().await?;

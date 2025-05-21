@@ -7,3 +7,9 @@ impl ToHex for Vec<u8> {
         hex::encode(self)
     }
 }
+
+impl ToHex for [u8] {
+    fn to_hex(&self) -> String {
+        hex::encode(self)
+    }
+}

@@ -3,6 +3,7 @@ use anyhow::{anyhow, Context};
 use chrono::Utc;
 use pgp::composed::message::Message;
 use pgp::{crypto, ArmorOptions, Deserializable, SignedSecretKey};
+use rand::rngs::OsRng;
 use serde::{Deserialize, Serialize};
 
 use super::keyring::try_get_password;
@@ -27,7 +28,9 @@ pub async fn get_token(
     let passphrase = try_get_password(fingerprint, &config)?;
     let pw = || passphrase;
 
-    let signature = msg.sign(&key, pw, crypto::hash::HashAlgorithm::SHA3_512);
+    let rng = OsRng;
+    let signature =
+        msg.sign(rng, &key, pw, crypto::hash::HashAlgorithm::SHA3_512);
 
     let signature = match signature {
         Ok(s) => s,

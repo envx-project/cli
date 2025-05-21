@@ -1,6 +1,6 @@
 use super::config::Config;
 use super::keyring::try_get_password;
-use anyhow::{anyhow, Context, Ok, Result};
+use anyhow::{anyhow, bail, Context, Ok, Result};
 use colored::Colorize;
 use crypto_hash::{hex_digest, Algorithm};
 use hex::ToHex;
@@ -12,6 +12,7 @@ use pgp::{
     Deserializable,
 };
 use rand::prelude::*;
+use rand::rngs::OsRng;
 use rayon::iter::{IntoParallelRefIterator, ParallelIterator};
 use smallvec::*;
 use std::{fs, io::Cursor, path::Path};
@@ -57,18 +58,18 @@ pub fn generate_key_pair(nickname: &str, password: String) -> Result<KeyPair> {
         .context("Failed to create secret key params.")?;
 
     let secret_key = secret_key_params
-        .generate()
+        .generate(OsRng)
         .context("Failed to generate a plain key.")?;
 
     let passwd_fn = || password.clone();
 
     let signed_secret_key = secret_key
-        .sign(passwd_fn)
+        .sign(OsRng, passwd_fn)
         .context("Failed to sign secret key.")?;
 
     let public_key = signed_secret_key.public_key();
     let signed_public_key = public_key
-        .sign(&signed_secret_key, passwd_fn)
+        .sign(OsRng, &signed_secret_key, passwd_fn)
         .context("Failed to sign public key.")?;
 
     let key_pair = KeyPair {
@@ -85,7 +86,7 @@ pub fn encrypt(msg: &str, pubkey_str: &str) -> Result<String> {
     let msg = composed::message::Message::new_literal("none", msg);
 
     let mut rng = StdRng::from_entropy();
-    let new_msg = msg.encrypt_to_keys(
+    let new_msg = msg.encrypt_to_keys_seipdv1(
         &mut rng,
         crypto::sym::SymmetricKeyAlgorithm::AES128,
         &[&pubkey],
@@ -102,7 +103,7 @@ pub fn encrypt_multi(msg: &str, pubkeys: &[SignedPublicKey]) -> Result<String> {
 
     let msg = composed::message::Message::new_literal("none", msg);
 
-    let new_msg = msg.encrypt_to_keys(
+    let new_msg = msg.encrypt_to_keys_seipdv1(
         &mut rng,
         crypto::sym::SymmetricKeyAlgorithm::AES128,
         &borrowed_keys,
@@ -111,15 +112,33 @@ pub fn encrypt_multi(msg: &str, pubkeys: &[SignedPublicKey]) -> Result<String> {
     Ok(new_msg.to_armored_string(ArmorOptions::default())?)
 }
 
+trait GetRecipients {
+    fn get_recipients(&self) -> Vec<&pgp::types::KeyId>;
+}
+
+impl GetRecipients for composed::message::Message {
+    fn get_recipients(&self) -> Vec<&pgp::types::KeyId> {
+        match self {
+            Message::Encrypted { esk, .. } => esk
+                .iter()
+                .filter_map(|e| match e {
+                    pgp::Esk::PublicKeyEncryptedSessionKey(k) => k.id().ok(),
+                    _ => None,
+                })
+                .collect::<Vec<&pgp::types::KeyId>>(),
+            _ => todo!(),
+        }
+    }
+}
+
 pub fn decrypt(
     armored: &str,
     seckey: &SignedSecretKey,
     password: String,
 ) -> Result<String> {
-    let buf = Cursor::new(armored);
-    let (msg, _) = composed::message::Message::from_armor_single(buf)
+    let (msg, _) = composed::message::Message::from_string(armored)
         .context("Failed to convert &str to armored message")?;
-    let (dec, _) = msg
+    let (dec, k) = msg
         .decrypt(|| password, &[seckey])
         .context("Decrypting the message")?;
 
@@ -148,9 +167,8 @@ pub fn generate_hashed_primary_user_id(name: String, email: String) -> String {
 }
 
 pub fn decrypt_full(message: String, config: &Config) -> Result<String> {
-    let buf = Cursor::new(message.clone());
-    let (msg, _) = composed::message::Message::from_armor_single(buf)
-        .context("Failed to convert &str to armored message")?;
+    let (msg, _) = composed::message::Message::from_string(&message)
+        .context("Failed to parse message")?;
 
     let recipients: Vec<String> = msg
         .get_recipients()
@@ -209,7 +227,8 @@ pub fn decrypt_full_many(
         return Ok(vec![]);
     };
 
-    let msg = Message::from_string(first.as_str())?.0;
+    let (msg, headers) = Message::from_string(first.as_str())?;
+    dbg!(&headers);
 
     let recipients: Vec<String> = msg
         .get_recipients()
