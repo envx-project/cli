@@ -1,5 +1,23 @@
 # Changelog
 
+## [2.3.0](https://github.com/envx-project/cli/compare/v2.2.1...v2.3.0) (2025-05-21)
+
+
+### Features
+
+* automatically set primary key to the correct value in config file ([ff4ae89](https://github.com/envx-project/cli/commit/ff4ae89bce8ebdf143c8982d050428c1cf7bbb2d))
+* options to not set primary key and not upload key ([3085d0f](https://github.com/envx-project/cli/commit/3085d0f1a1a3abc35f44d669445486b760223207))
+* single primary key ([510e415](https://github.com/envx-project/cli/commit/510e415f4398e28852afc54b06f4f187d8c3c1c0))
+
+
+### Bug Fixes
+
+* compare semver with different length ([a1943d7](https://github.com/envx-project/cli/commit/a1943d7f8165a668e9234bf89f83efbe0e1c7d16))
+* fmt ([510e415](https://github.com/envx-project/cli/commit/510e415f4398e28852afc54b06f4f187d8c3c1c0))
+* remove deprecated `get_config` function ([d0bc0e3](https://github.com/envx-project/cli/commit/d0bc0e3521a890b668232b124559fa87be6a777e))
+* remove username, name, email, switch to nickname ([7778d9f](https://github.com/envx-project/cli/commit/7778d9f0eaeba48f83679c0bef76b0cb43d0be8f))
+* warnings ([8c01a23](https://github.com/envx-project/cli/commit/8c01a235557f3666d2f2f0ce078a7682e6508da9))
+
 ## [2.2.1](https://github.com/envx-project/cli/compare/v2.2.0...v2.2.1) (2025-02-20)
 
 
