@@ -19,11 +19,9 @@ pub struct Config {
     /// TODO: rethink Salting hashes
     pub salt: String,
     /// The fingerprint of the primary signing key
-    pub primary_key: String,
+    pub primary_key: Option<Key>,
     /// A vector of fingerprints of all usable public keys
     pub keys: Vec<Key>,
-    /// Use the SDK or not
-    pub online: bool,
     /// Custom URL for the SDK
     pub sdk_url: Option<String>,
     /// Settings that apply to all environments
@@ -49,9 +47,8 @@ impl Default for Config {
         let salt = hex::encode(rand::random::<[u8; 32]>());
         Self {
             salt,
-            primary_key: "".into(),
+            primary_key: None,
             keys: vec![],
-            online: true,
             sdk_url: Some("https://api.envx.sh".into()),
             settings: None,
             projects: vec![],
@@ -152,7 +149,7 @@ impl Config {
     }
 
     pub fn primary_key(&self) -> Result<Key> {
-        self.get_key(&self.primary_key)
+        self.primary_key.clone().context("No primary key set")
     }
 
     /// Set the primary key
@@ -160,9 +157,8 @@ impl Config {
     /// - Returns an error if the key doesn't exist
     ///
     /// Does not write to disk. Call `config.write()` to write to disk
-    pub fn set_primary_key(&mut self, fingerprint: &str) -> Result<()> {
-        let key = self.get_key(fingerprint)?;
-        self.primary_key = key.fingerprint.clone();
+    pub fn set_primary_key(&mut self, key: Key) -> Result<()> {
+        self.primary_key = Some(key);
         Ok(())
     }
 
@@ -199,10 +195,11 @@ impl Config {
     ) -> Result<Key> {
         let partial_fingerprint = match partial_fingerprint {
             Some(p) => p,
-            None => self.primary_key.clone(),
+            None => return self.primary_key(),
         };
+
         if partial_fingerprint.is_empty() {
-            return Err(anyhow::anyhow!("No key provided"));
+            return self.primary_key().context("Partial fingerprint is empty");
         }
 
         let key = self

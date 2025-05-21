@@ -21,10 +21,6 @@ pub struct Args {
     #[clap(trailing_var_arg = true)]
     kvpairs: Vec<String>,
 
-    /// Key to use for encryption
-    #[clap(short, long)]
-    key: Option<String>,
-
     /// Project ID
     #[clap(short, long)]
     project_id: Option<String>,
@@ -40,11 +36,7 @@ pub async fn command(args: Args) -> Result<()> {
     }
 
     let config = Config::get()?;
-    let key = match &args.key {
-        Some(k) => k,
-        None => &config.primary_key,
-    };
-    let key = config.get_key(key)?;
+    let key = config.primary_key()?;
 
     let project_id =
         Choice::try_project(args.project_id, &key.fingerprint).await?;

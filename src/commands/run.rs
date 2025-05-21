@@ -10,9 +10,6 @@ pub struct Args {
     #[clap(short, long)]
     project_id: Option<String>,
 
-    /// Key to use for signing
-    #[clap(short, long)]
-    key: Option<String>,
     /// Args to pass to the command
     #[clap(trailing_var_arg = true)]
     args: Vec<String>,
@@ -20,11 +17,7 @@ pub struct Args {
 
 pub async fn command(args: Args) -> Result<()> {
     let config = Config::get()?;
-    let key = match args.key {
-        Some(k) => k.to_owned(),
-        None => config.primary_key.clone(),
-    };
-    let key = config.get_key(&key)?;
+    let key = config.primary_key()?;
 
     let project_id =
         Choice::try_project(args.project_id, &key.fingerprint).await?;

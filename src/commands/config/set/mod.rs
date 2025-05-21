@@ -8,7 +8,6 @@ use crate::commands_enum;
 use clap::Subcommand;
 
 pub mod keyring_expiry;
-pub mod primary_key;
 pub mod unsafe_password;
 
 /// Delete a resource. (project, key)
@@ -18,7 +17,7 @@ pub struct Args {
     command: Commands,
 }
 
-commands_enum!(primary_key, unsafe_password, keyring_expiry);
+commands_enum!(unsafe_password, keyring_expiry);
 
 pub async fn command(args: Args) -> Result<()> {
     Commands::exec(args).await?;

@@ -9,7 +9,7 @@ use crate::utils::keyring::set_password;
 use crate::utils::prompt::{prompt_password, prompt_text};
 use crate::utils::rpgp::{generate_key_pair, get_vault_location, user_id};
 use crate::utils::vecu8::ToHex;
-use anyhow::Context;
+use anyhow::{bail, Context};
 use pgp::types::PublicKeyTrait;
 use pgp::ArmorOptions;
 use std::fs;
@@ -37,10 +37,6 @@ pub struct Args {
     #[clap(long = "force", short = 'f')]
     force_overwrite: bool,
 
-    /// Generate another key
-    #[clap(long = "new-key")]
-    force_generate_new_key: bool,
-
     #[clap(long)]
     export: bool,
 }
@@ -49,9 +45,19 @@ pub async fn command(args: Args) -> Result<()> {
     let mut config = config::Config::get().context("Failed to get config")?;
     let settings = config.get_settings()?;
 
+    if config.primary_key.is_some() {
+        if !args.force_overwrite {
+            bail!("A primary key already exists. Use --force to overwrite it.");
+        } else {
+            println!("Overwriting primary key...");
+        }
+    }
+
+    println!("For your username, do not use your real name, or anything that could be used to identify you.");
+    println!("Don't even reuse your username from other services.");
     let username = args
         .username
-        .unwrap_or_else(|| prompt_text("Set a nickname for the key").unwrap());
+        .unwrap_or_else(|| prompt_text("Set a username for the key").unwrap());
 
     let passphrase = args
         .passphrase
@@ -100,7 +106,7 @@ pub async fn command(args: Args) -> Result<()> {
                 );
                 eprintln!("Keys: {:?}", c);
                 eprintln!(
-                    "Please submit a bug report at https://github.com/env-cli/rusty-cli/issues/new"
+                    "Please submit a bug report at https://github.com/envx-project/cli/issues/new"
                 );
                 eprintln!("Continuing with generation...");
             }
@@ -129,34 +135,31 @@ pub async fn command(args: Args) -> Result<()> {
     fs::write(key_dir.join("public.key"), &pub_key)
         .expect("Failed to write public key to file");
 
-    let mut key_to_insert: Key = Key {
-        fingerprint: fingerprint.clone(),
-        note: "".to_string(),
-        primary_user_id: user_id(&username),
-        pubkey_only: None,
-        uuid: None,
+    let uuid = match SDK::new_user(&username, &pub_key).await {
+        Ok(id) => {
+            println!("User ID: {}", id);
+            Some(id)
+        }
+        Err(_) => {
+            eprintln!("Failed to create user on API");
+            eprintln!("Continuing with generation...");
+            eprintln!("You can create a user later with `envx upload`");
+            None
+        }
     };
 
-    if config.online {
-        match SDK::new_user(&username, &pub_key).await {
-            Ok(id) => {
-                println!("User ID: {}", id);
-                key_to_insert.uuid = Some(id);
-            }
-            Err(_) => {
-                eprintln!("Failed to create user on API");
-                eprintln!("Continuing with generation...");
-                eprintln!("You can create a user later with `envx upload`");
-            }
-        };
-    }
+    println!("Setting primary key to {}...", &fingerprint);
 
-    config.keys.push(key_to_insert);
+    let key: Key = Key {
+        fingerprint,
+        note: "Primary Key".to_string(),
+        primary_user_id: user_id(&username),
+        pubkey_only: Some(false),
+        uuid,
+    };
 
-    if config.primary_key.is_empty() {
-        println!("Setting primary key to {}...", &fingerprint);
-        config.primary_key = fingerprint;
-    }
+    config.keys.push(key.clone());
+    config.primary_key = Some(key);
 
     config.write().context("Failed to write config")?;
 

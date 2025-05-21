@@ -45,14 +45,13 @@ pub fn set_password(
     keyring.set_password(password)
 }
 
+// TODO: remove fingerprint
 pub fn get_password(fingerprint: &str) -> anyhow::Result<String> {
     let config = Config::get()?;
     let settings = config.get_settings()?;
 
-    if fingerprint == config.primary_key {
-        if let Some(password) = config.primary_key_password {
-            return Ok(password);
-        }
+    if let Some(password) = config.primary_key_password {
+        return Ok(password);
     }
 
     match settings.get_keyring_expiry() {

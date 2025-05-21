@@ -55,7 +55,10 @@ pub async fn command(args: Args) -> Result<()> {
         })
         .collect::<Vec<_>>();
 
-    if selected.contains(primary_key) {
+    if primary_key
+        .as_ref()
+        .is_some_and(|p| selected.contains(&p.fingerprint))
+    {
         println!("You have selected your primary key for deletion.");
         println!(
             "You will not be able to use envx until you set a new primary key."

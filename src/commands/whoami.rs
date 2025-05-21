@@ -7,7 +7,7 @@ pub struct Args {}
 
 pub async fn command(_args: Args) -> Result<()> {
     let config = Config::get().context("Failed to get config")?;
-    let primary_key = config.get_key(&config.primary_key)?;
+    let primary_key = config.primary_key()?;
     println!(
         "{} - {}",
         &primary_key.fingerprint[..8],
