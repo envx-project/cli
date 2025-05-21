@@ -1,10 +1,14 @@
-use std::{cmp::Ordering, io::IsTerminal};
+use std::{cmp::Ordering, fs::File, io::IsTerminal};
 
 use anyhow::Result;
 use clap::{error::ErrorKind, Parser, Subcommand};
 use commands::*;
 use home::home_dir;
-use utils::{compare_semver, config::Config};
+use serde_json::{to_writer_pretty, Value};
+use utils::{
+    compare_semver,
+    config::{get_config_path, Config},
+};
 
 mod commands;
 mod constants;
@@ -89,6 +93,28 @@ async fn main() -> Result<()> {
             eprintln!("If you have already migrated, please delete the old config file at {}", config_path.to_str().unwrap_or("INVALID PATH"));
             return Ok(());
         }
+    }
+
+    let config_path = get_config_path()?;
+    let file = File::open(&config_path)?;
+    let mut config_data: Value = serde_json::from_reader(file)?;
+    match config_data.clone().get("primary_key") {
+        Some(Value::String(primary_key)) => {
+            config_data["primary_key"] = Value::Null;
+            let file = File::create(&config_path)?;
+            to_writer_pretty(file, &config_data)?;
+
+            let mut config = Config::get()?;
+            config
+                .set_primary_key(
+                    config
+                        .get_key(primary_key)
+                        .context("Primary key not found")?,
+                )
+                .context("Failed to set primary key. Check the config file for malformed data. ~/.config/envx/config.json")?;
+            config.write()?;
+        }
+        _ => {}
     }
 
     let check_updates_handle = if std::io::stdout().is_terminal() {
