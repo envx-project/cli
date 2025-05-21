@@ -2,7 +2,7 @@ use super::*;
 use crate::utils::choice::Choice;
 use crate::utils::config::Config;
 
-/// Get all environment variables for a project
+/// Link a project to the current directory
 #[derive(Parser)]
 pub struct Args {
     /// Project ID

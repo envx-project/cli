@@ -1,7 +1,7 @@
 use super::*;
 use crate::utils::config::Config;
 
-/// Unset the current project
+/// Unlink the current project
 #[derive(Parser)]
 pub struct Args {}
 

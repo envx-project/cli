@@ -5,10 +5,21 @@ use crate::utils::{compare_semver, config::Config};
 
 use super::*;
 
-/// Update the envx CLI
+/// Attempt to self-update envx using the installation script. Fails on Windows.
 #[derive(Parser)]
 pub struct Args {}
 
+#[cfg(target_os = "windows")]
+pub async fn command(_args: Args) -> Result<()> {
+    use anyhow::bail;
+
+    eprintln!("Self-update is not supported on Windows");
+    eprintln!("Read the installation instructions at https://github.com/envx-project/cli/blob/main/windows-installation.md");
+
+    Ok(())
+}
+
+#[cfg(not(target_os = "windows"))]
 pub async fn command(_args: Args) -> Result<()> {
     let mut config = Config::get()?;
     let result = config.check_update(true).await?;
