@@ -1,5 +1,13 @@
 # Changelog
 
+## [2.3.1](https://github.com/envx-project/cli/compare/v2.3.0...v2.3.1) (2025-05-21)
+
+
+### Bug Fixes
+
+* help messages ([d7c0db4](https://github.com/envx-project/cli/commit/d7c0db454e3a609d15a935c303a8991ac5d1e749))
+* move delete project to project module ([a68137c](https://github.com/envx-project/cli/commit/a68137c858d19a84e80d802220085b9f7e0043e3))
+
 ## [2.3.0](https://github.com/envx-project/cli/compare/v2.2.1...v2.3.0) (2025-05-21)
 
 
