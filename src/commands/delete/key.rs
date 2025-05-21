@@ -68,15 +68,15 @@ pub async fn command(args: Args) -> Result<()> {
             println!("Continuing because of --force");
         } else {
             let confirmation =
-                prompt_confirm("Are you sure you want to continue?")?;
+                prompt_confirm("Are you sure you want to continue? This will delete your primary key, making envx unusable until you set a new primary key.")?;
 
             if !confirmation {
                 println!("Aborting...");
                 return Ok(());
             }
-
-            println!("Set a new primary key with `envx change primary-key`");
         }
+
+        config.primary_key = None;
     }
 
     println!("Deleting keys: {:?}", selected);
