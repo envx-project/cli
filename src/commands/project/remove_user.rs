@@ -15,7 +15,7 @@ use crate::{
         choice::Choice,
         config::Config,
         prompt::prompt_multi_options,
-        rpgp::encrypt_multi,
+        rpgp::encrypt,
         variable::{EncryptedVariable, ToKVPair},
     },
 };
@@ -87,7 +87,7 @@ pub async fn command(args: Args) -> anyhow::Result<()> {
 
     let messages = kvpairs
         .par_iter()
-        .map(|k| encrypt_multi(&k.to_json()?, &pubkeys))
+        .map(|k| encrypt(&k.to_json()?, &pubkeys))
         .collect::<Result<Vec<String>>>()?;
 
     let encrypted: Vec<EncryptedVariable> = messages

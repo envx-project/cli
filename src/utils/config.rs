@@ -2,7 +2,6 @@
 
 use super::compare_semver;
 use super::key::Key;
-use super::rpgp::get_vault_location;
 use super::settings::Settings;
 use anyhow::anyhow;
 use anyhow::{Context, Result};
@@ -152,17 +151,8 @@ impl Config {
         Ok(())
     }
 
-    #[allow(dead_code)]
-    pub fn primary_key(&self) -> Result<String> {
-        let primary_key = &self.primary_key;
-        let primary_key_location = get_vault_location()?
-            .join(primary_key.clone())
-            .join("public.key");
-
-        let primary_public_key = fs::read_to_string(primary_key_location)
-            .context("Failed to read primary public key")?;
-
-        Ok(primary_public_key)
+    pub fn primary_key(&self) -> Result<Key> {
+        self.get_key(&self.primary_key)
     }
 
     /// Set the primary key

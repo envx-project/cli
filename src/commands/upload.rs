@@ -26,7 +26,7 @@ pub async fn command(args: Args) -> Result<()> {
         None => prompt_text("Username: ")?,
     };
 
-    let id = SDK::new_user(&username, &key.public_key()?).await?;
+    let id = SDK::new_user(&username, &key.public_key_str()?).await?;
     println!("UUID: {}", &id);
 
     config.set_uuid(&key.fingerprint, &id)?;

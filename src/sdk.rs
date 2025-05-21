@@ -6,7 +6,7 @@ use crate::{
         auth::get_token,
         config::Config,
         kvpair::KVPair,
-        rpgp::{decrypt_full_many, encrypt_multi},
+        rpgp::{decrypt_full_many, encrypt},
         variable::{DecryptedVariable, EncryptedVariable, ToKVPair},
     },
 };
@@ -127,7 +127,7 @@ impl SDK {
 
         let messages = kvpairs
             .par_iter()
-            .map(|k| encrypt_multi(&k.to_json()?, &pubkeys))
+            .map(|k| encrypt(&k.to_json()?, &pubkeys))
             .collect::<Result<Vec<String>>>()?;
 
         let body = json!({

@@ -19,7 +19,7 @@ pub async fn get_token(
         .find(|k| k.fingerprint.contains(fingerprint))
         .ok_or_else(|| anyhow!("Key not found"))?;
 
-    let key = key.secret_key().context("Failed to get secret key")?;
+    let key = key.secret_key_str().context("Failed to get secret key")?;
     let (key, _) = SignedSecretKey::from_string(&key)
         .context("Failed to parse secret key")?;
 

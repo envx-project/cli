@@ -13,7 +13,6 @@ use anyhow::Context;
 use pgp::types::PublicKeyTrait;
 use pgp::ArmorOptions;
 use std::fs;
-use std::str;
 
 extern crate keyring;
 use keyring::Error as KeyringError;
@@ -44,23 +43,6 @@ pub struct Args {
 
     #[clap(long)]
     export: bool,
-}
-
-fn email_validator(email: &str) -> anyhow::Result<(), anyhow::Error> {
-    let regex =
-        regex::Regex::new(r"^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$")
-            .context("Failed to create regex for email validation")?;
-
-    match regex.is_match(email) {
-        true => Ok(()),
-        false => Err(anyhow::Error::msg("Please enter a valid email address")),
-    }
-
-    // if regex.is_match(email) {
-    //     Ok(())
-    // } else {
-    //     Err(anyhow::Error::msg("Please enter a valid email address"))
-    // }
 }
 
 pub async fn command(args: Args) -> Result<()> {

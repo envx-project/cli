@@ -38,9 +38,9 @@ pub async fn command(args: Args) -> Result<()> {
         .context("Failed to find key".red())?;
 
     let key = if args.secret_key {
-        key.secret_key()?
+        key.secret_key_str()?
     } else {
-        key.public_key()?
+        key.public_key_str()?
     };
 
     println!("{}", key);

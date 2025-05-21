@@ -1,5 +1,6 @@
 use super::rpgp::get_vault_location;
 use anyhow::{Context, Result};
+use pgp::Deserializable;
 use serde::{Deserialize, Serialize};
 use std::{fmt::Display, fs};
 
@@ -12,8 +13,9 @@ pub struct Key {
     pub uuid: Option<String>,
 }
 
+#[allow(dead_code)]
 impl Key {
-    pub fn public_key(&self) -> Result<String> {
+    pub fn public_key_str(&self) -> Result<String> {
         let key_location = get_vault_location()?
             .join(self.fingerprint.clone())
             .join("public.key");
@@ -24,7 +26,15 @@ impl Key {
         Ok(key)
     }
 
-    pub fn secret_key(&self) -> Result<String> {
+    pub fn signed_public_key(&self) -> Result<pgp::SignedPublicKey> {
+        let key = self.public_key_str()?;
+        let (pubkey, _) = pgp::SignedPublicKey::from_string(key.as_str())
+            .context("Failed to convert public key to string")?;
+
+        Ok(pubkey)
+    }
+
+    pub fn secret_key_str(&self) -> Result<String> {
         let key_location = get_vault_location()?
             .join(self.fingerprint.clone())
             .join("private.key");
@@ -33,6 +43,14 @@ impl Key {
             .context("Failed to read secret key")?;
 
         Ok(key)
+    }
+
+    pub fn signed_secret_key(&self) -> Result<pgp::SignedSecretKey> {
+        let key = self.secret_key_str()?;
+        let (seckey, _) = pgp::SignedSecretKey::from_string(key.as_str())
+            .context("Failed to convert private key to string")?;
+
+        Ok(seckey)
     }
 }
 
