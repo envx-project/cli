@@ -7,7 +7,6 @@ pub mod config;
 pub mod delete;
 pub mod get;
 pub mod keyring;
-pub mod new;
 pub mod project;
 
 // No subcommands

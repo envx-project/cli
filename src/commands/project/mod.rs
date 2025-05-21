@@ -7,7 +7,9 @@ pub(super) use colored::Colorize;
 pub mod add_user;
 pub mod id;
 pub mod list_users;
+pub mod new;
 pub mod remove_user;
+pub mod rename;
 
 use crate::commands_enum;
 use clap::Subcommand;
@@ -22,7 +24,7 @@ pub struct Args {
     json: bool,
 }
 
-commands_enum!(add_user, remove_user, list_users, id);
+commands_enum!(add_user, id, list_users, new, remove_user, rename);
 
 pub async fn command(args: Args) -> Result<()> {
     Commands::exec(args).await?;

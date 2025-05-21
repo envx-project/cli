@@ -215,7 +215,6 @@ impl Config {
         Ok(key.clone())
     }
 
-    #[allow(dead_code)]
     pub fn init_project(
         &mut self,
         project_id: &str,

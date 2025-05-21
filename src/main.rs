@@ -31,9 +31,9 @@ pub struct Args {
 // Specify the modules you want to include in the commands_enum! macro
 commands_enum!(
     auth, export, gen, import, link, list_keys, run, set, shell, unlink, unset,
-    update, upload, variables, version,
+    update, upload, variables, version, whoami,
     // commands with subcommands
-    config, delete, get, keyring, new, project, whoami
+    config, delete, get, keyring, project
 );
 
 fn spawn_update_task(
