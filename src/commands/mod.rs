@@ -26,3 +26,4 @@ pub mod update;
 pub mod upload;
 pub mod variables;
 pub mod version;
+pub mod whoami;

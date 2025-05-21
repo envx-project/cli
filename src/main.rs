@@ -33,7 +33,7 @@ commands_enum!(
     auth, export, gen, import, link, list_keys, run, set, shell, unlink, unset,
     update, upload, variables, version,
     // commands with subcommands
-    config, delete, get, keyring, new, project
+    config, delete, get, keyring, new, project, whoami
 );
 
 fn spawn_update_task(
