@@ -21,10 +21,6 @@ use keyring::Error as KeyringError;
 /// Saves the key to ~/.config/envx/keys/<fingerprint>
 #[derive(Parser)]
 pub struct Args {
-    /// Interactive mode
-    #[clap(short, long)]
-    interactive: bool,
-
     /// Username for the key. Do NOT use your real name, or anything that could be used to identify you.
     #[clap(short, long)]
     username: Option<String>,
@@ -35,10 +31,18 @@ pub struct Args {
 
     /// force overwrite of existing key
     #[clap(long = "force", short = 'f')]
-    force_overwrite: bool,
+    force: bool,
 
     #[clap(long)]
     export: bool,
+
+    /// Don't set the primary key
+    #[clap(long = "no-set-primary")]
+    no_set_primary: bool,
+
+    /// Don't upload the key to the API
+    #[clap(long = "no-upload")]
+    no_upload: bool,
 }
 
 pub async fn command(args: Args) -> Result<()> {
@@ -46,7 +50,7 @@ pub async fn command(args: Args) -> Result<()> {
     let settings = config.get_settings()?;
 
     if config.primary_key.is_some() {
-        if !args.force_overwrite {
+        if !args.force {
             bail!("A primary key already exists. Use --force to overwrite it.");
         } else {
             println!("Overwriting primary key...");
@@ -135,17 +139,21 @@ pub async fn command(args: Args) -> Result<()> {
     fs::write(key_dir.join("public.key"), &pub_key)
         .expect("Failed to write public key to file");
 
-    let uuid = match SDK::new_user(&username, &pub_key).await {
-        Ok(id) => {
-            println!("User ID: {}", id);
-            Some(id)
+    let uuid = if !args.no_upload {
+        match SDK::new_user(&username, &pub_key).await {
+            Ok(id) => {
+                println!("User ID: {}", id);
+                Some(id)
+            }
+            Err(_) => {
+                eprintln!("Failed to create user on API");
+                eprintln!("Continuing with generation...");
+                eprintln!("You can create a user later with `envx upload`");
+                None
+            }
         }
-        Err(_) => {
-            eprintln!("Failed to create user on API");
-            eprintln!("Continuing with generation...");
-            eprintln!("You can create a user later with `envx upload`");
-            None
-        }
+    } else {
+        None
     };
 
     println!("Setting primary key to {}...", &fingerprint);
@@ -159,7 +167,9 @@ pub async fn command(args: Args) -> Result<()> {
     };
 
     config.keys.push(key.clone());
-    config.primary_key = Some(key);
+    if !args.no_set_primary {
+        config.primary_key = Some(key);
+    }
 
     config.write().context("Failed to write config")?;
 
