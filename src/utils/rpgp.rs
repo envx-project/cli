@@ -179,17 +179,12 @@ pub fn decrypt_full_many(
     }
 
     let primary_key = config.primary_key()?;
+    let ssk: SignedSecretKey = SignedSecretKey::try_from(&primary_key)?;
     let passphrase = try_get_password(&primary_key.fingerprint, config)?;
 
     let decrypted = messages
         .par_iter()
-        .map(|m| {
-            decrypt(
-                m.as_str(),
-                &primary_key.signed_secret_key()?,
-                passphrase.clone(),
-            )
-        })
+        .map(|m| decrypt(m.as_str(), &ssk, passphrase.clone()))
         .collect::<Result<Vec<String>>>()?;
 
     Ok(decrypted)
