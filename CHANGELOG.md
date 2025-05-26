@@ -1,5 +1,17 @@
 # Changelog
 
+## [2.4.0](https://github.com/envx-project/cli/compare/v2.3.1...v2.4.0) (2025-05-26)
+
+
+### Features
+
+* better output for whoami; json output for whoami ([8c307fe](https://github.com/envx-project/cli/commit/8c307fe19166d7130b5231ae42add2295c0ab575))
+
+
+### Bug Fixes
+
+* remove stray dbg! ([72e3a48](https://github.com/envx-project/cli/commit/72e3a4824b91d96e82b6252cb2d9e81eba77933f))
+
 ## [2.3.1](https://github.com/envx-project/cli/compare/v2.3.0...v2.3.1) (2025-05-21)
 
 
