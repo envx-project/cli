@@ -144,7 +144,7 @@ pub fn decrypt_full_many(
         return Ok(vec![]);
     };
 
-    let (msg, headers) = Message::from_string(first.as_str())?;
+    let (msg, _) = Message::from_string(first.as_str())?;
 
     let recipients: Vec<String> = msg
         .get_recipients()
