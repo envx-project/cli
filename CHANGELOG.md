@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.4.1](https://github.com/envx-project/cli/compare/v2.4.0...v2.4.1) (2025-05-26)
+
+
+### Bug Fixes
+
+* bump semver ([d4743d0](https://github.com/envx-project/cli/commit/d4743d03f1b14016ce992f7823f956203f1e0ba3))
+
 ## [2.4.0](https://github.com/envx-project/cli/compare/v2.3.1...v2.4.0) (2025-05-26)
 
 
