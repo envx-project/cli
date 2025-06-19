@@ -7,7 +7,7 @@ use home::home_dir;
 use serde_json::{to_writer_pretty, Value};
 use utils::{
     compare_semver,
-    config::{get_config_path, Config},
+    config::{get_config_file_path, Config},
 };
 
 mod commands;
@@ -95,7 +95,7 @@ async fn main() -> Result<()> {
         }
     }
 
-    let config_path = get_config_path()?;
+    let config_path = get_config_file_path()?;
     let file = File::open(&config_path)?;
     let mut config_data: Value = serde_json::from_reader(file)?;
     match config_data.clone().get("primary_key") {

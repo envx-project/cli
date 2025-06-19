@@ -1,10 +1,7 @@
 use super::*;
-use crate::{
-    sdk::SDK,
-    utils::{
-        btreemap::ToBTreeMap, choice::Choice, config::Config, table::Table,
-        variable::ToKVPair,
-    },
+use crate::utils::{
+    btreemap::ToBTreeMap, choice::Choice, config::Config,
+    magic_variables::get_variables_magic, table::Table,
 };
 /// Get all environment variables for the current configured directory
 #[derive(Parser)]
@@ -36,13 +33,9 @@ pub async fn command(args: Args) -> Result<()> {
     let project_id =
         Choice::try_project(args.project_id, &key.fingerprint).await?;
 
-    let kvpairs = if args.all {
-        SDK::get_variables(&project_id, &key.fingerprint)
-            .await?
-            .to_kvpair()
-    } else {
-        SDK::get_variables_pruned(&project_id, &key.fingerprint).await?
-    };
+    let password = config.primary_key_password()?;
+    let kvpairs =
+        get_variables_magic(&project_id, key, &password, args.all).await?;
 
     match mode {
         Mode::KV => {

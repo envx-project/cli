@@ -1,7 +1,10 @@
 use anyhow::{Context, Result};
+use pgp::{Deserializable, Message};
 use serde::{Deserialize, Serialize};
 use std::fmt;
 use std::str::FromStr;
+
+use super::key::Key;
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct KVPair {
@@ -21,6 +24,25 @@ impl KVPair {
     pub fn to_json(&self) -> Result<String> {
         serde_json::to_string(&self).context("Failed to serialize KVPair")
     }
+}
+
+pub fn read_kvpairs_from_file(
+    file_name: &str,
+    key: &Key,
+    password: &str,
+) -> Result<Vec<KVPair>> {
+    let file = std::fs::File::open(file_name)?;
+    let (msg, _) = Message::from_reader_single(file)?;
+    let (dec, _) = msg
+        .decrypt(|| password.into(), &[&key.try_into()?])
+        .context("Failed to decrypt local .envx keys")?;
+    dec.get_literal()
+        .ok_or(anyhow::anyhow!("Failed to find message"))?
+        .to_string()
+        .context("Failed to convert literal to string")?
+        .split("\n")
+        .map(|s| KVPair::from_str(s))
+        .collect::<Result<Vec<KVPair>>>()
 }
 
 impl fmt::Display for KVPair {

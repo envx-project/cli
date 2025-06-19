@@ -1,5 +1,4 @@
 use super::config::Config;
-use super::keyring::try_get_password;
 use anyhow::{anyhow, Context, Ok, Result};
 use colored::Colorize;
 use hex::ToHex;
@@ -79,6 +78,14 @@ pub fn generate_key_pair(nickname: &str, password: String) -> Result<KeyPair> {
 }
 
 pub fn encrypt(msg: &str, pubkeys: &[SignedPublicKey]) -> Result<String> {
+    Ok(encrypt_to_msg(msg, pubkeys)?
+        .to_armored_string(ArmorOptions::default())?)
+}
+
+pub fn encrypt_to_msg(
+    msg: &str,
+    pubkeys: &[SignedPublicKey],
+) -> Result<Message> {
     let mut rng = StdRng::from_entropy();
 
     let borrowed_keys =
@@ -92,7 +99,7 @@ pub fn encrypt(msg: &str, pubkeys: &[SignedPublicKey]) -> Result<String> {
         &borrowed_keys,
     )?;
 
-    Ok(new_msg.to_armored_string(ArmorOptions::default())?)
+    Ok(new_msg)
 }
 
 trait GetRecipients {
@@ -179,7 +186,7 @@ pub fn decrypt_full_many(
 
     let primary_key = config.primary_key()?;
     let ssk: SignedSecretKey = SignedSecretKey::try_from(&primary_key)?;
-    let passphrase = try_get_password(&primary_key.fingerprint, config)?;
+    let passphrase = config.primary_key_password()?;
 
     let decrypted = messages
         .par_iter()

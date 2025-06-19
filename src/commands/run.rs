@@ -1,5 +1,7 @@
 use super::*;
-use crate::utils::{choice::Choice, config::Config};
+use crate::utils::{
+    choice::Choice, config::Config, magic_variables::get_variables_magic,
+};
 use anyhow::bail;
 use std::collections::BTreeMap;
 
@@ -29,9 +31,9 @@ pub async fn command(args: Args) -> Result<()> {
     let mut all_variables = BTreeMap::<String, String>::new();
     all_variables.insert("IN_ENVX_SHELL".to_owned(), "true".to_owned());
 
+    let password = config.primary_key_password()?;
     let variables =
-        crate::sdk::SDK::get_variables_pruned(&project_id, &key.fingerprint)
-            .await?;
+        get_variables_magic(&project_id, key, &password, false).await?;
 
     for variable in variables {
         all_variables.insert(variable.key, variable.value);

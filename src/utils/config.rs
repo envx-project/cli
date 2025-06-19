@@ -1,5 +1,8 @@
 // configuration path = ~/.config/envx/config.json
 
+use crate::utils::keyring::{get_password, set_password};
+use crate::utils::prompt::prompt_password;
+
 use super::compare_semver;
 use super::key::Key;
 use super::settings::Settings;
@@ -70,7 +73,8 @@ struct GithubApiRelease {
 
 impl Config {
     pub fn get() -> Result<Self> {
-        let path = get_config_path().context("Failed to get config path")?;
+        let path =
+            get_config_file_path().context("Failed to get config path")?;
         let contents =
             fs::read_to_string(path).context("Failed to read config file")?;
         serde_json::from_str::<Self>(&contents)
@@ -135,7 +139,8 @@ impl Config {
     where
         T: ?Sized + Serialize,
     {
-        let path = get_config_path().context("Failed to get config path")?;
+        let path =
+            get_config_file_path().context("Failed to get config path")?;
         let file =
             File::create(path).context("Failed to create config file")?;
         let mut writer = BufWriter::new(file);
@@ -294,10 +299,32 @@ impl Config {
 
         Ok(())
     }
+
+    pub fn primary_key_password(&self) -> Result<String> {
+        let key = self.primary_key()?;
+
+        let password = get_password(&self);
+        match password {
+            Ok(p) => Ok(p),
+            Err(e) => {
+                eprintln!("Failed to get password: {}", e);
+                println!("Enter password for key {}", key);
+                let password = prompt_password("Password: ")?;
+                let expiry = self.get_settings()?.get_keyring_expiry();
+                if let Err(e) =
+                    set_password(&key.fingerprint, &password, expiry)
+                {
+                    eprintln!("Failed to set password: {}", e);
+                }
+
+                Ok(password)
+            }
+        }
+    }
 }
 
 /// Get the configuration path ~/.config/envx/config.json
-pub fn get_config_path() -> Result<PathBuf> {
+pub fn get_config_file_path() -> Result<PathBuf> {
     let mut path = home_dir().context("Failed to get home directory")?;
     path.push(".config/envx/config.json");
     // if it doesn't exist, create it

@@ -1,8 +1,5 @@
-use super::{config::Config, prompt::prompt_password};
+use super::config::Config;
 use crate::utils::settings::KeyringExpiry;
-use crate::{
-    constants::MINIMUM_PASSWORD_LENGTH, utils::prompt::prompt_confirm,
-};
 use anyhow::bail;
 use keyring::{Entry as Keyring, Result as KeyringResult};
 use std::{
@@ -45,13 +42,13 @@ pub fn set_password(
     keyring.set_password(password)
 }
 
-// TODO: remove fingerprint
-pub fn get_password(fingerprint: &str) -> anyhow::Result<String> {
-    let config = Config::get()?;
+pub fn get_password(config: &Config) -> anyhow::Result<String> {
     let settings = config.get_settings()?;
 
-    if let Some(password) = config.primary_key_password {
-        return Ok(password);
+    let fingerprint = &config.primary_key()?.fingerprint;
+
+    if let Some(password) = &config.primary_key_password {
+        return Ok(password.clone());
     }
 
     match settings.get_keyring_expiry() {
@@ -85,42 +82,4 @@ pub fn get_password(fingerprint: &str) -> anyhow::Result<String> {
 pub fn clear_password(fingerprint: &str) -> KeyringResult<()> {
     let keyring = Keyring::new(SERVICE, fingerprint)?;
     keyring.delete_credential()
-}
-
-pub fn try_get_password(
-    fingerprint: &str,
-    config: &Config,
-) -> anyhow::Result<String> {
-    let password = get_password(fingerprint);
-
-    match password {
-        Ok(p) => Ok(p),
-        Err(e) => {
-            let settings = config.get_settings()?;
-
-            eprintln!("Failed to get password: {}", e);
-            let key = config.get_key(fingerprint)?;
-            println!("Enter password for key {}", key);
-            let password = prompt_password("Password: ")?;
-            if settings.warn_on_short_passwords
-                && password.len() < MINIMUM_PASSWORD_LENGTH
-            {
-                eprintln!(
-                    "This password is shorter than 8 characters. Are you sure you want to proceed?"
-                );
-                let confirm = prompt_confirm("Continue?")?;
-                if !confirm {
-                    bail!("Aborted")
-                }
-            }
-
-            let expiry = settings.get_keyring_expiry();
-
-            if let Err(e) = set_password(fingerprint, &password, expiry) {
-                eprintln!("Failed to set password: {}", e);
-            }
-
-            Ok(password)
-        }
-    }
 }

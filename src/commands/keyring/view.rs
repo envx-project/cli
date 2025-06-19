@@ -1,7 +1,5 @@
 use crate::utils::{
-    config::Config,
-    keyring::get_password,
-    prompt::{prompt_confirm_with_default, prompt_select},
+    config::Config, keyring::get_password, prompt::prompt_confirm_with_default,
 };
 
 use super::*;
@@ -11,10 +9,6 @@ use super::*;
 /// This command is interactive
 #[derive(Parser)]
 pub struct Args {
-    /// Partial fingerprint of the key to set
-    #[clap(short, long)]
-    key: Option<String>,
-
     /// Don't prompt for confirmation
     #[clap(short, long)]
     yes: bool,
@@ -22,16 +16,7 @@ pub struct Args {
 
 pub async fn command(args: Args) -> Result<()> {
     let config = Config::get()?;
-
-    let fingerprint = match args.key {
-        Some(key) => config.get_key(&key)?.fingerprint,
-        None => {
-            prompt_select("Select key to view password", config.keys)?
-                .fingerprint
-        }
-    };
-
-    let password = get_password(&fingerprint)?;
+    let password = get_password(&config)?;
 
     if args.yes {
         println!("{}", password);

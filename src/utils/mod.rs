@@ -7,6 +7,7 @@ pub mod config;
 pub mod key;
 pub mod keyring;
 pub mod kvpair;
+pub mod magic_variables;
 pub mod prompt;
 pub mod rpgp;
 pub mod settings;

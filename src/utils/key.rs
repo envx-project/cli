@@ -85,6 +85,22 @@ impl Key {
     }
 }
 
+impl TryInto<pgp::SignedSecretKey> for Key {
+    type Error = KeyError;
+
+    fn try_into(self) -> Result<pgp::SignedSecretKey, Self::Error> {
+        self.signed_secret_key()
+    }
+}
+
+impl TryInto<pgp::SignedPublicKey> for Key {
+    type Error = KeyError;
+
+    fn try_into(self) -> Result<pgp::SignedPublicKey, Self::Error> {
+        self.signed_public_key()
+    }
+}
+
 impl TryFrom<&Key> for pgp::SignedSecretKey {
     type Error = KeyError;
 

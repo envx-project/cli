@@ -6,8 +6,6 @@ use pgp::{crypto, ArmorOptions, Deserializable, SignedSecretKey};
 use rand::rngs::OsRng;
 use serde::{Deserialize, Serialize};
 
-use super::keyring::try_get_password;
-
 pub async fn get_token(
     fingerprint: &str,
     token: &str,
@@ -25,7 +23,7 @@ pub async fn get_token(
 
     let msg = Message::new_literal("none", &Utc::now().to_string());
 
-    let passphrase = try_get_password(fingerprint, &config)?;
+    let passphrase = config.primary_key_password()?;
     let pw = || passphrase;
 
     let rng = OsRng;

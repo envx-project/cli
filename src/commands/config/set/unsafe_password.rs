@@ -1,6 +1,6 @@
 use super::*;
 use crate::utils::{
-    config::{get_config_path, Config},
+    config::{get_config_file_path, Config},
     prompt::{prompt_confirm, prompt_password},
 };
 
@@ -36,7 +36,7 @@ pub async fn command(args: Args) -> Result<()> {
 
     println!(
         "The config file is located at {}",
-        get_config_path()?.to_str().unwrap_or("INVALID PATH")
+        get_config_file_path()?.to_str().unwrap_or("INVALID PATH")
     );
 
     config.write()?;
