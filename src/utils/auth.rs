@@ -66,8 +66,9 @@ impl AuthToken {
     pub fn new(token: String, signature: String) -> Self {
         Self { token, signature }
     }
+
     pub fn bearer(&self) -> String {
-        format!("Bearer {}", self.token)
+        format!("Bearer {}", self)
     }
 }
 

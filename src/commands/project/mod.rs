@@ -7,6 +7,7 @@ pub(super) use colored::Colorize;
 pub mod add_user;
 pub mod delete;
 pub mod id;
+pub mod info;
 pub mod list_users;
 pub mod new;
 pub mod remove_user;
@@ -25,7 +26,16 @@ pub struct Args {
     json: bool,
 }
 
-commands_enum!(add_user, delete, id, list_users, new, remove_user, rename);
+commands_enum!(
+    add_user,
+    delete,
+    id,
+    list_users,
+    new,
+    remove_user,
+    rename,
+    info
+);
 
 pub async fn command(args: Args) -> Result<()> {
     Commands::exec(args).await?;
