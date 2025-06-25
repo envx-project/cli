@@ -1,5 +1,18 @@
 # Changelog
 
+## [2.5.0](https://github.com/envx-project/cli/compare/v2.4.1...v2.5.0) (2025-06-25)
+
+
+### Features
+
+* add project info command ([2c22f77](https://github.com/envx-project/cli/commit/2c22f7772d316cdec1d98a04334a268f278f8ccc))
+* rename project ([99a4656](https://github.com/envx-project/cli/commit/99a46564f981dbec1663874def8c240515ca2449))
+
+
+### Bug Fixes
+
+* add project name to choice ([9ce04f2](https://github.com/envx-project/cli/commit/9ce04f2727c416f96a76466439386851edcf5fa4))
+
 ## [2.4.1](https://github.com/envx-project/cli/compare/v2.4.0...v2.4.1) (2025-05-26)
 
 
