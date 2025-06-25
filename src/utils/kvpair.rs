@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 use std::fmt;
 use std::str::FromStr;
 
-use super::key::Key;
+use super::key::{Key, UnlockedKey};
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct KVPair {
@@ -28,13 +28,12 @@ impl KVPair {
 
 pub fn read_kvpairs_from_file(
     file_name: &str,
-    key: &Key,
-    password: &str,
+    key: &UnlockedKey,
 ) -> Result<Vec<KVPair>> {
     let file = std::fs::File::open(file_name)?;
     let (msg, _) = Message::from_reader_single(file)?;
     let (dec, _) = msg
-        .decrypt(|| password.into(), &[&key.try_into()?])
+        .decrypt(|| key.password.clone(), &[&key.key.clone().try_into()?])
         .context("Failed to decrypt local .envx keys")?;
     dec.get_literal()
         .ok_or(anyhow::anyhow!("Failed to find message"))?

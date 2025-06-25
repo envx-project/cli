@@ -27,10 +27,10 @@ pub struct Args {
 pub async fn command(args: Args) -> Result<()> {
     let config = Config::get()?;
     let key = config.get_key_or_default(args.key)?;
-    let project_id =
-        Choice::try_project(args.project_id, &key.fingerprint).await?;
-    let project_info =
-        SDK::get_project_info(&project_id, &key.fingerprint).await?;
+    let password = config.primary_key_password()?;
+    let key = key.unlock(&password);
+    let project_id = Choice::try_project(args.project_id, &key).await?;
+    let project_info = SDK::get_project_info(&project_id, &key).await?;
 
     if args.json && args.all {
         println!("{}", serde_json::to_string(&project_info.users)?);

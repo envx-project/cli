@@ -22,6 +22,8 @@ pub struct Args {
 pub async fn command(args: Args) -> Result<()> {
     let config = Config::get()?;
     let key = config.primary_key()?;
+    let password = config.primary_key_password()?;
+    let key = key.unlock(&password);
 
     let name = if args.noname {
         "".to_string()
@@ -31,7 +33,7 @@ pub async fn command(args: Args) -> Result<()> {
         })
     };
 
-    let new_project_id = SDK::new_project(&key.fingerprint, &name).await?;
+    let new_project_id = SDK::new_project(&key, &name).await?;
     println!("Created new project with ID: {}", new_project_id);
 
     // early return if nolink flag is set, we are done already

@@ -7,8 +7,6 @@ pub(super) use colored::Colorize;
 use crate::commands_enum;
 use clap::Subcommand;
 
-pub mod key;
-
 /// Delete a resource. (project, key)
 #[derive(Parser)]
 pub struct Args {
@@ -16,7 +14,7 @@ pub struct Args {
     command: Commands,
 }
 
-commands_enum!(key);
+commands_enum!();
 
 pub async fn command(args: Args) -> Result<()> {
     Commands::exec(args).await?;

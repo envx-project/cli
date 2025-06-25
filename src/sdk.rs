@@ -1,10 +1,9 @@
 use super::*;
 use crate::{
-    types::ListProjects,
-    types::ProjectInfo,
+    types::{ListProjects, ProjectInfo},
     utils::{
-        auth::get_token,
         config::Config,
+        key::UnlockedKey,
         kvpair::KVPair,
         rpgp::{decrypt_full_many, encrypt},
         variable::{DecryptedVariable, EncryptedVariable, ToKVPair},
@@ -49,16 +48,6 @@ pub fn api_url() -> Url {
 #[allow(clippy::upper_case_acronyms)]
 pub(crate) struct SDK {}
 impl SDK {
-    async fn auth_header(partial_fingerprint: &str) -> Result<String> {
-        let config = Config::get()?;
-        let key = config.get_key(partial_fingerprint)?;
-        let Some(uuid) = key.uuid else {
-            bail!("No UUID for key {}\nTry envx upload", partial_fingerprint)
-        };
-        let auth_token = get_token(&key.fingerprint, &uuid).await?;
-        Ok(format!("Bearer {}", auth_token))
-    }
-
     // TODO: remove username entirely
     pub async fn new_user(username: &str, public_key: &str) -> Result<String> {
         let client = reqwest::Client::new();
@@ -81,7 +70,7 @@ impl SDK {
 
     pub async fn get_project_info(
         project_id: &str,
-        partial_fingerprint: &str,
+        key: &UnlockedKey,
     ) -> Result<ProjectInfo> {
         // GET /v2/project/:id
         let client = reqwest::Client::new();
@@ -90,10 +79,7 @@ impl SDK {
 
         let project_info = client
             .get(url)
-            .header(
-                header::AUTHORIZATION,
-                Self::auth_header(partial_fingerprint).await?,
-            )
+            .header(header::AUTHORIZATION, key.auth_token()?.bearer())
             .send()
             .await
             .context("Failed to get project info")?
@@ -106,13 +92,12 @@ impl SDK {
 
     pub async fn set_many(
         kvpairs: Vec<KVPair>,
-        partial_fingerprint: &str,
         project_id: &str,
+        key: &UnlockedKey,
     ) -> Result<Vec<String>> {
         let client = reqwest::Client::new();
 
-        let project_info =
-            Self::get_project_info(project_id, partial_fingerprint).await?;
+        let project_info = Self::get_project_info(project_id, key).await?;
 
         let recipients = project_info
             .users
@@ -144,10 +129,7 @@ impl SDK {
 
         let res = client
             .post(url)
-            .header(
-                header::AUTHORIZATION,
-                Self::auth_header(partial_fingerprint).await?,
-            )
+            .header(header::AUTHORIZATION, key.auth_token()?.bearer())
             .json(&body)
             .send()
             .await?;
@@ -164,27 +146,22 @@ impl SDK {
     }
 
     pub async fn get_all_variables(
-        partial_fingerprint: &str,
-        // ) -> Result<(Vec<KVPair>, Vec<DecryptedVariable>)> {
+        key: &UnlockedKey,
     ) -> Result<Vec<DecryptedVariable>> {
-        // GET /user/:id/variables
-        let config = Config::get()?;
-        let key = config.get_key(partial_fingerprint)?;
-
         let client = reqwest::Client::new();
 
         let mut url = api_url();
         url.set_path(&format!(
             "/user/{}/variables",
-            key.uuid.context("No UUID for key, try `envx upload`")?
+            key.key
+                .uuid
+                .clone()
+                .context("No UUID for key, try `envx upload`")?
         ));
 
         let encrypted = client
             .get(url)
-            .header(
-                header::AUTHORIZATION,
-                Self::auth_header(partial_fingerprint).await?,
-            )
+            .header(header::AUTHORIZATION, key.auth_token()?.bearer())
             .send()
             .await
             .context("Failed to get variables")?
@@ -217,14 +194,12 @@ impl SDK {
             .collect::<Vec<DecryptedVariable>>();
 
         Ok(parsed)
-
-        // Ok((kvpairs, parsed))
     }
 
     /// You're probably looking for `get_variables_pruned` instead
     pub async fn get_variables(
         project_id: &str,
-        partial_fingerprint: &str,
+        key: &UnlockedKey,
     ) -> Result<Vec<DecryptedVariable>> {
         // url : /project/:id/variables
         let client = reqwest::Client::new();
@@ -234,10 +209,7 @@ impl SDK {
 
         let encrypted = client
             .get(url)
-            .header(
-                header::AUTHORIZATION,
-                Self::auth_header(partial_fingerprint).await?,
-            )
+            .header(header::AUTHORIZATION, key.auth_token()?.bearer())
             .send()
             .await
             .context("Failed to get variables")?
@@ -277,9 +249,9 @@ impl SDK {
     /// Sorted, and pruned of duplicates (by created_at date)
     pub async fn get_variables_pruned(
         project_id: &str,
-        partial_fingerprint: &str,
+        key: &UnlockedKey,
     ) -> Result<Vec<KVPair>> {
-        let variables = Self::get_variables(project_id, partial_fingerprint)
+        let variables = Self::get_variables(project_id, &key)
             .await
             .context("Failed to get variables")?;
 
@@ -288,7 +260,7 @@ impl SDK {
     }
 
     pub async fn get_user(
-        partial_fingerprint: &str,
+        key: &UnlockedKey,
         user_to_get: &str,
     ) -> Result<(String, String)> {
         // url: /user/:id
@@ -304,10 +276,7 @@ impl SDK {
 
         let user = client
             .get(url)
-            .header(
-                header::AUTHORIZATION,
-                Self::auth_header(partial_fingerprint).await?,
-            )
+            .header(header::AUTHORIZATION, key.auth_token()?.bearer())
             .send()
             .await?
             .json::<StrippedUser>()
@@ -317,7 +286,7 @@ impl SDK {
     }
 
     pub async fn add_user_to_project(
-        partial_fingerprint: &str,
+        key: &UnlockedKey,
         user_to_add: &str,
         project_id: &str,
     ) -> Result<()> {
@@ -333,10 +302,7 @@ impl SDK {
 
         let res = client
             .post(url.join(&format!("/project/{}/add-user", project_id))?)
-            .header(
-                header::AUTHORIZATION,
-                Self::auth_header(partial_fingerprint).await?,
-            )
+            .header(header::AUTHORIZATION, key.auth_token()?.bearer())
             .json(&body)
             .send()
             .await?;
@@ -351,7 +317,7 @@ impl SDK {
     }
 
     pub async fn remove_users_from_project(
-        partial_fingerprint: &str,
+        key: &UnlockedKey,
         users_to_remove: Vec<String>,
         project_id: &str,
     ) -> Result<()> {
@@ -367,10 +333,7 @@ impl SDK {
 
         let res = client
             .post(url)
-            .header(
-                header::AUTHORIZATION,
-                Self::auth_header(partial_fingerprint).await?,
-            )
+            .header(header::AUTHORIZATION, key.auth_token()?.bearer())
             .json(&body)
             .send()
             .await?;
@@ -385,7 +348,7 @@ impl SDK {
     }
 
     pub async fn delete_project(
-        partial_fingerprint: &str,
+        key: &UnlockedKey,
         project_id: &str,
     ) -> Result<()> {
         // url: /project/:id
@@ -395,10 +358,7 @@ impl SDK {
 
         let res = client
             .delete(url)
-            .header(
-                header::AUTHORIZATION,
-                Self::auth_header(partial_fingerprint).await?,
-            )
+            .header(header::AUTHORIZATION, key.auth_token()?.bearer())
             .send()
             .await?;
 
@@ -413,7 +373,7 @@ impl SDK {
 
     pub async fn delete_variable(
         variable_id: &str,
-        partial_fingerprint: &str,
+        key: &UnlockedKey,
     ) -> Result<()> {
         // url: DELETE /variables/:id
         let client = reqwest::Client::new();
@@ -422,19 +382,14 @@ impl SDK {
 
         client
             .delete(url)
-            .header(
-                header::AUTHORIZATION,
-                Self::auth_header(partial_fingerprint).await?,
-            )
+            .header(header::AUTHORIZATION, key.auth_token()?.bearer())
             .send()
             .await?;
 
         Ok(())
     }
 
-    pub async fn list_projects(
-        partial_fingerprint: &str,
-    ) -> Result<Vec<ListProjects>> {
+    pub async fn list_projects(key: &UnlockedKey) -> Result<Vec<ListProjects>> {
         // GET /v2/projects
         let client = reqwest::Client::new();
 
@@ -442,10 +397,7 @@ impl SDK {
 
         let res = client
             .get(url)
-            .header(
-                header::AUTHORIZATION,
-                Self::auth_header(partial_fingerprint).await?,
-            )
+            .header(header::AUTHORIZATION, key.auth_token()?.bearer())
             .send()
             .await
             .context("Failed to get projects")?;
@@ -467,7 +419,7 @@ impl SDK {
     }
 
     pub async fn new_project(
-        partial_fingerprint: &str,
+        key: &UnlockedKey,
         project_name: &str,
     ) -> Result<String> {
         // POST /v2/projects/new
@@ -479,10 +431,7 @@ impl SDK {
 
         let res = client
             .post(api_url().join("v2/projects/new")?)
-            .header(
-                header::AUTHORIZATION,
-                Self::auth_header(partial_fingerprint).await?,
-            )
+            .header(header::AUTHORIZATION, key.auth_token()?.bearer())
             .json(&body)
             .send()
             .await?
@@ -491,28 +440,52 @@ impl SDK {
 
         Ok(res)
     }
-    pub async fn delete_key(partial_fingerprint: &str) -> Result<()> {
+    pub async fn delete_key(key: &UnlockedKey) -> Result<()> {
         // DELETE /user/:id
         let client = reqwest::Client::new();
 
-        let config = Config::get()?;
-        let key = config.get_key(partial_fingerprint)?;
-
-        let uuid = key.uuid.context("No UUID for key, try `envx upload`")?;
-
-        let url = api_url().join("user/")?.join(&uuid)?;
+        let url = api_url()
+            .join("user/")?
+            .join(&key.key.uuid.clone().unwrap())?;
 
         client
             .delete(url)
-            .header(
-                header::AUTHORIZATION,
-                Self::auth_header(partial_fingerprint).await?,
-            )
+            .header(header::AUTHORIZATION, key.auth_token()?.bearer())
             .send()
             .await?
             .text()
             .await?;
 
         Ok(())
+    }
+
+    pub async fn rename_project(
+        project_id: &str,
+        new_name: &str,
+        key: &UnlockedKey,
+    ) -> Result<()> {
+        // PUT /v2/projects/:id { project_name: new_name }
+        let client = reqwest::Client::new();
+
+        let body = json!({
+            "project_name": new_name
+        });
+
+        let url = api_url().join(&format!("/v2/projects/{}", project_id))?;
+
+        let res = client
+            .put(url)
+            .json(&body)
+            .header(header::AUTHORIZATION, key.auth_token()?.bearer())
+            .send()
+            .await?;
+
+        let status = res.status();
+
+        if status.is_success() {
+            Ok(())
+        } else {
+            bail!("Failed to rename project: {}", res.text().await?)
+        }
     }
 }

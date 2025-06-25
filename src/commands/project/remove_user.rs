@@ -11,7 +11,6 @@ use crate::{
     sdk::{api_url, SDK},
     types::User,
     utils::{
-        auth::get_token,
         choice::Choice,
         config::Config,
         prompt::prompt_multi_options,
@@ -39,15 +38,11 @@ pub struct Args {
 pub async fn command(args: Args) -> anyhow::Result<()> {
     let config = Config::get()?;
     let key = config.get_key_or_default(args.key)?;
+    let password = config.primary_key_password()?;
+    let key = key.unlock(&password);
 
-    let uuid = key
-        .uuid
-        .context("Key does not have a UUID, try `envx upload`")?;
-
-    let project_id =
-        Choice::try_project(args.project_id, &key.fingerprint).await?;
-    let project_info =
-        SDK::get_project_info(&project_id, &key.fingerprint).await?;
+    let project_id = Choice::try_project(args.project_id, &key).await?;
+    let project_info = SDK::get_project_info(&project_id, &key).await?;
 
     let users_to_remove = match args.user_id {
         Some(u) => vec![u],
@@ -60,7 +55,7 @@ pub async fn command(args: Args) -> anyhow::Result<()> {
         }
     };
 
-    let variables = SDK::get_variables(&project_id, &key.fingerprint).await?;
+    let variables = SDK::get_variables(&project_id, &key).await?;
     let kvpairs = variables.to_kvpair();
 
     let users_without_users_to_remove = project_info
@@ -106,7 +101,7 @@ pub async fn command(args: Args) -> anyhow::Result<()> {
     });
 
     let client = reqwest::Client::new();
-    let auth_token = get_token(&key.fingerprint, &uuid).await?;
+    let auth_token = key.auth_token()?.bearer();
 
     let url = api_url().join("/variables/update-many")?;
 
@@ -123,7 +118,7 @@ pub async fn command(args: Args) -> anyhow::Result<()> {
     println!("IDs: {:?}", res);
 
     SDK::remove_users_from_project(
-        &key.fingerprint,
+        &key,
         users_to_remove.clone(),
         &project_info.project_id,
     )

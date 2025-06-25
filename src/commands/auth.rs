@@ -1,18 +1,11 @@
 use super::*;
-use crate::{
-    sdk::api_url,
-    utils::{auth::get_token, config::Config},
-};
+use crate::{sdk::api_url, utils::config::Config};
 use anyhow::bail;
 use reqwest::header;
 
 /// Test authentication with the server
 #[derive(Parser)]
 pub struct Args {
-    /// Key to sign with
-    #[clap(short, long)]
-    key: Option<String>,
-
     /// Debug output
     #[clap(short, long)]
     debug: bool,
@@ -20,17 +13,17 @@ pub struct Args {
 
 pub async fn command(args: Args) -> anyhow::Result<()> {
     let config = Config::get()?;
-    let key = config.get_key_or_default(args.key)?;
+    let key = config.primary_key()?;
+    let password = config.primary_key_password()?;
+
+    if key.uuid.is_none() {
+        bail!("Key does not have a UUID, try `envx upload`");
+    }
+
+    let key = key.unlock(&password);
 
     let client = reqwest::Client::new();
-
-    let uuid = key
-        .uuid
-        .clone()
-        .context("Key does not have a UUID, try `envx upload`")?;
-    let auth_token = get_token(&key.fingerprint, &uuid)
-        .await
-        .context("Failed to get token")?;
+    let auth_token = key.auth_token()?;
 
     println!("auth token:\n{}", auth_token.signature);
 

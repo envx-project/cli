@@ -37,9 +37,9 @@ pub async fn command(args: Args) -> Result<()> {
 
     let config = Config::get()?;
     let key = config.primary_key()?;
+    let key = key.unlock(&config.primary_key_password()?);
 
-    let project_id =
-        Choice::try_project(args.project_id, &key.fingerprint).await?;
+    let project_id = Choice::try_project(args.project_id, &key).await?;
 
     if project_id.is_empty() {
         return Err(anyhow::anyhow!("No project ID provided"));
@@ -64,7 +64,7 @@ pub async fn command(args: Args) -> Result<()> {
         return Err(anyhow::anyhow!("No valid KV pairs provided"));
     }
 
-    let variables = SDK::get_variables(&project_id, &key.fingerprint).await?;
+    let variables = SDK::get_variables(&project_id, &key).await?;
 
     let existing_keys = variables
         .iter()
@@ -97,11 +97,11 @@ pub async fn command(args: Args) -> Result<()> {
         println!("Overwriting existing variables...");
         for k in existing_keys {
             let id = k.id.clone();
-            SDK::delete_variable(&id, &key.fingerprint).await?;
+            SDK::delete_variable(&id, &key).await?;
         }
     }
 
-    let ids = SDK::set_many(kvpairs, &key.fingerprint, &project_id).await?;
+    let ids = SDK::set_many(kvpairs, &project_id, &key).await?;
 
     println!("Uploaded {} variables", ids.len());
     println!("IDs: {:?}", ids);

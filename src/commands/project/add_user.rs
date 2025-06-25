@@ -2,7 +2,6 @@ use super::*;
 use crate::{
     sdk::{api_url, SDK},
     utils::{
-        auth::get_token,
         choice::Choice,
         config::Config,
         prompt::prompt_text,
@@ -41,41 +40,27 @@ pub async fn command(args: Args) -> Result<()> {
 
     let config = Config::get()?;
     let key = config.get_key_or_default(args.key)?;
+    let password = config.primary_key_password()?;
+    let key = key.unlock(&password);
 
-    let uuid = key
-        .uuid
-        .context("Key does not have a UUID, try `envx upload`")?;
-    let (_, public_key) = SDK::get_user(&key.fingerprint, &user_id)
-        .await
-        .context("Failed to get user, is the user ID correct?")?;
+    let project_id = Choice::try_project(args.project_id, &key).await?;
 
-    let project_id =
-        Choice::try_project(args.project_id, &key.fingerprint).await?;
+    let project_info = SDK::get_project_info(&project_id, &key).await?;
 
-    let project_info =
-        SDK::get_project_info(&project_id, &key.fingerprint).await?;
-
-    let variables = SDK::get_variables(&project_id, &key.fingerprint).await?;
+    let variables = SDK::get_variables(&project_id, &key).await?;
     let kvpairs = variables.to_kvpair();
 
-    let mut recipients = project_info
+    let recipients = project_info
         .users
         .iter()
         .map(|e| e.public_key.clone())
-        .collect::<Vec<String>>();
+        .collect::<HashSet<String>>();
 
-    recipients.push(public_key);
-
-    let recipients = recipients
-        .into_iter()
-        .collect::<HashSet<String>>()
-        .into_iter()
-        .collect::<Vec<String>>();
-
-    let pubkeys = recipients
+    let mut pubkeys = recipients
         .iter()
         .map(|k| Ok(SignedPublicKey::from_string(k)?.0))
         .collect::<Result<Vec<SignedPublicKey>>>()?;
+    pubkeys.push(pgp::SignedPublicKey::try_from(&key.key)?);
 
     let messages = kvpairs
         .par_iter()
@@ -98,7 +83,7 @@ pub async fn command(args: Args) -> Result<()> {
     });
 
     let client = reqwest::Client::new();
-    let auth_token = get_token(&key.fingerprint, &uuid).await?;
+    let auth_token = key.auth_token()?.bearer();
 
     let url = api_url().join("/variables/update-many")?;
 
@@ -114,7 +99,7 @@ pub async fn command(args: Args) -> Result<()> {
     println!("Updated {} variables", res.len());
     println!("IDs: {:?}", res);
 
-    SDK::add_user_to_project(&key.fingerprint, &user_id, &project_id).await?;
+    SDK::add_user_to_project(&key, &user_id, &project_id).await?;
 
     Ok(())
 }

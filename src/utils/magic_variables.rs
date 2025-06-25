@@ -7,26 +7,29 @@ use crate::{
     utils::{kvpair::read_kvpairs_from_file, variable::ToKVPair},
 };
 
-use super::{key::Key, kvpair::KVPair, rpgp::encrypt_to_msg};
+use super::{
+    key::{Key, UnlockedKey},
+    kvpair::KVPair,
+    rpgp::encrypt_to_msg,
+};
 
 /// Magically get variables from the API or default to ~/.envx/<fingerprint>.envx file
 pub async fn get_variables_magic(
     project_id: &str,
-    key: Key,
-    password: &str,
+    key: &UnlockedKey,
     all: bool,
 ) -> anyhow::Result<Vec<KVPair>> {
     let kvpairs = if all {
-        SDK::get_variables(&project_id, &key.fingerprint)
+        SDK::get_variables(&project_id, &key)
             .await
             .map(|v| v.to_kvpair())
     } else {
-        SDK::get_variables_pruned(&project_id, &key.fingerprint).await
+        SDK::get_variables_pruned(&project_id, &key).await
     };
 
     match kvpairs {
         Ok(variables) => {
-            write_variables_magic(project_id, &key, &variables).await?;
+            write_variables_magic(project_id, &key.key, &variables).await?;
             Ok(variables)
         }
         Err(e) => {
@@ -35,12 +38,12 @@ pub async fn get_variables_magic(
             let config_dir = home_dir.join(".config/envx");
 
             let envx_file =
-                config_dir.join(format!("{}.envx", &key.fingerprint));
+                config_dir.join(format!("{}.envx", &key.key.fingerprint));
             let envx_file = envx_file
                 .to_str()
                 .ok_or(anyhow::anyhow!("Failed to convert path to string"))?;
 
-            match read_kvpairs_from_file(envx_file, &key, &password) {
+            match read_kvpairs_from_file(envx_file, &key) {
                 Ok(kvpairs) => Ok(kvpairs),
                 Err(err) => {
                     eprintln!(

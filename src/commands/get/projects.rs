@@ -11,9 +11,11 @@ pub struct Args {
 pub async fn command(args: Args) -> Result<()> {
     let config = Config::get()?;
     let key = config.get_key_or_default(None)?;
+    let password = config.primary_key_password()?;
+    let key = key.unlock(&password);
 
     let local_projects = config.projects.clone();
-    let remote_projects = SDK::list_projects(&key.fingerprint)
+    let remote_projects = SDK::list_projects(&key)
         .await
         .context("Failed to get projects from server".red())?;
 

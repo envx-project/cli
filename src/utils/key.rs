@@ -1,6 +1,6 @@
-use super::rpgp::get_vault_location;
-use anyhow::Result;
-use pgp::Deserializable;
+use super::{auth::AuthToken, rpgp::get_vault_location};
+use anyhow::{bail, Context, Result};
+use pgp::{crypto, ArmorOptions, Deserializable, Message};
 use serde::{Deserialize, Serialize};
 use std::{fmt::Display, fs};
 use thiserror::Error;
@@ -12,6 +12,65 @@ pub struct Key {
     pub primary_user_id: String,
     pub pubkey_only: Option<bool>,
     pub uuid: Option<String>,
+}
+
+pub struct UnlockedKey {
+    pub password: String,
+    pub key: Key,
+}
+
+impl UnlockedKey {
+    pub fn new(password: String, key: Key) -> Self {
+        Self { password, key }
+    }
+
+    pub fn auth_token(&self) -> Result<crate::utils::auth::AuthToken> {
+        let key = self
+            .key
+            .signed_secret_key()
+            .context("Failed to get secret key")?;
+
+        let msg = Message::new_literal("none", &chrono::Utc::now().to_string());
+
+        let pw = || self.password.to_string();
+
+        let rng = rand::rngs::OsRng;
+        let signature =
+            msg.sign(rng, &key, pw, crypto::hash::HashAlgorithm::SHA3_512);
+
+        let signature = match signature {
+            Ok(s) => s,
+            Err(e) => {
+                eprintln!("Failed to sign API authentication challenge: {}", e);
+                if let pgp::errors::Error::Incomplete(_) = e {
+                    eprintln!("This is most likely due to a missing or incorrect passphrase.");
+                    println!(
+                    "You can view the saved passphrase with 'envx keyring view [fingerprint]'"
+                );
+                    println!("This command is interactive");
+                    // println!("Or you can check against the saved passphrase with 'envx keyring check -k <fingerprint> -p <passphrase>'");
+                    // println!("Both of these commands are interactive")
+                }
+
+                bail!("Failed to sign API authentication challenge");
+            }
+        };
+
+        let signature = signature
+            .to_armored_string(ArmorOptions::default())
+            .context("Failed to convert signature to armored string")?;
+
+        let auth_token =
+            AuthToken::new(self.key.uuid.clone().unwrap().into(), signature);
+
+        Ok(auth_token)
+    }
+}
+
+impl Into<Key> for UnlockedKey {
+    fn into(self) -> Key {
+        self.key
+    }
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -46,6 +105,12 @@ impl From<anyhow::Error> for KeyError {
 }
 
 impl Key {
+    pub fn unlock(self, password: &str) -> UnlockedKey {
+        UnlockedKey {
+            password: password.to_string(),
+            key: self,
+        }
+    }
     pub fn public_key_str(&self) -> Result<String, KeyError> {
         let key_location = get_vault_location()?
             .join(self.fingerprint.clone())

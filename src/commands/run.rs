@@ -20,9 +20,9 @@ pub struct Args {
 pub async fn command(args: Args) -> Result<()> {
     let config = Config::get()?;
     let key = config.primary_key()?;
+    let key = key.unlock(&config.primary_key_password()?);
 
-    let project_id =
-        Choice::try_project(args.project_id, &key.fingerprint).await?;
+    let project_id = Choice::try_project(args.project_id, &key).await?;
 
     if project_id.is_empty() {
         return Err(anyhow::anyhow!("No project ID provided"));
@@ -31,9 +31,7 @@ pub async fn command(args: Args) -> Result<()> {
     let mut all_variables = BTreeMap::<String, String>::new();
     all_variables.insert("IN_ENVX_SHELL".to_owned(), "true".to_owned());
 
-    let password = config.primary_key_password()?;
-    let variables =
-        get_variables_magic(&project_id, key, &password, false).await?;
+    let variables = get_variables_magic(&project_id, &key, false).await?;
 
     for variable in variables {
         all_variables.insert(variable.key, variable.value);

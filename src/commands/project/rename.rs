@@ -11,9 +11,8 @@ pub struct Args {
 }
 
 pub async fn command(args: Args) -> Result<()> {
-    todo!()
-    // let config = Config::get()?;
-    // let key = config.get_key_or_default(args.key)?;
-    //
-    // Ok(())
+    let config = Config::get()?;
+    let key = config.primary_key()?;
+
+    Ok(())
 }

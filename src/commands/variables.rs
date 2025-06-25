@@ -30,12 +30,10 @@ pub async fn command(args: Args) -> Result<()> {
 
     let config = Config::get()?;
     let key = config.get_key_or_default(args.key)?;
-    let project_id =
-        Choice::try_project(args.project_id, &key.fingerprint).await?;
+    let key = key.unlock(&config.primary_key_password()?);
+    let project_id = Choice::try_project(args.project_id, &key).await?;
 
-    let password = config.primary_key_password()?;
-    let kvpairs =
-        get_variables_magic(&project_id, key, &password, args.all).await?;
+    let kvpairs = get_variables_magic(&project_id, &key, args.all).await?;
 
     match mode {
         Mode::KV => {

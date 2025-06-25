@@ -3,7 +3,10 @@ use std::{collections::HashMap, fmt};
 
 use crate::sdk::SDK;
 
-use super::{config::Config, key::Key};
+use super::{
+    config::{Config, Project},
+    key::{Key, UnlockedKey},
+};
 
 #[derive(Debug)]
 struct DisplayProject<'a> {
@@ -30,17 +33,18 @@ impl Choice {
         Ok((key, config))
     }
 
-    pub async fn choose_project(partial_fingerprint: &str) -> Result<String> {
-        let (key, config) = Self::get_key(partial_fingerprint)?;
-        let all_projects = SDK::list_projects(&key.fingerprint).await?;
+    pub async fn choose_project(
+        projects: &Vec<Project>,
+        key: &UnlockedKey,
+    ) -> Result<String> {
+        let all_projects = SDK::list_projects(key).await?;
 
         let project_name_map: HashMap<_, _> = all_projects
             .iter()
             .map(|p| (&p.project_id, &p.project_name))
             .collect();
 
-        let mut options = config
-            .projects
+        let mut options = projects
             .iter()
             .map(|p| {
                 let pname = project_name_map.get(&p.project_id);
@@ -75,7 +79,7 @@ impl Choice {
 
     pub async fn try_project(
         project_id: Option<String>,
-        partial_fingerprint: &str,
+        key: &UnlockedKey,
     ) -> Result<String> {
         match project_id {
             Some(p) => Ok(p),
@@ -85,7 +89,7 @@ impl Choice {
 
                 match project {
                     Ok(p) => Ok(p.project_id.clone()),
-                    Err(_) => Self::choose_project(partial_fingerprint).await,
+                    Err(_) => Self::choose_project(&config.projects, key).await,
                 }
             }
         }

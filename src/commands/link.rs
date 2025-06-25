@@ -41,10 +41,12 @@ pub async fn command(args: Args) -> Result<()> {
     }
 
     let key = config.primary_key()?;
+    let password = config.primary_key_password()?;
+    let key = key.unlock(&password);
 
     let project_id = match args.project_id {
         Some(p) => p,
-        None => Choice::choose_project(&key.fingerprint).await?,
+        None => Choice::choose_project(&config.projects, &key).await?,
     };
 
     config.link_project(&project_id)?;

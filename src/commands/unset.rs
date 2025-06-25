@@ -24,27 +24,26 @@ pub struct Args {
 pub async fn command(args: Args) -> Result<()> {
     let config = Config::get()?;
     let key = config.get_key_or_default(args.key)?;
+    let key = key.unlock(&config.primary_key_password()?);
     let project_id = match args.all {
         true => None,
-        false => {
-            Some(Choice::try_project(args.project_id, &key.fingerprint).await?)
-        }
+        false => Some(Choice::try_project(args.project_id, &key).await?),
     };
 
     let variable = match args.variable {
         Some(v) => v,
         None => {
             let variables = if let Some(project_id) = project_id {
-                SDK::get_variables(&project_id, &key.fingerprint).await?
+                SDK::get_variables(&project_id, &key).await?
             } else {
-                SDK::get_all_variables(&key.fingerprint).await?
+                SDK::get_all_variables(&key).await?
             };
 
             prompt::prompt_options("Select variables to delete", variables)?.id
         }
     };
 
-    SDK::delete_variable(&variable, &key.fingerprint).await?;
+    SDK::delete_variable(&variable, &key).await?;
 
     Ok(())
 }
