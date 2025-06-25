@@ -1,8 +1,26 @@
 use anyhow::{Context, Result};
+use std::{collections::HashMap, fmt};
 
 use crate::sdk::SDK;
 
 use super::{config::Config, key::Key};
+
+#[derive(Debug)]
+struct DisplayProject<'a> {
+    project_id: &'a str,
+    project_name: &'a str,
+    path: &'a str,
+}
+
+impl fmt::Display for DisplayProject<'_> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(
+            f,
+            "{} - {} - {}",
+            self.project_id, self.project_name, self.path
+        )
+    }
+}
 
 pub struct Choice {}
 impl Choice {
@@ -11,50 +29,48 @@ impl Choice {
         let key = config.get_key(partial_fingerprint)?;
         Ok((key, config))
     }
+
     pub async fn choose_project(partial_fingerprint: &str) -> Result<String> {
         let (key, config) = Self::get_key(partial_fingerprint)?;
         let all_projects = SDK::list_projects(&key.fingerprint).await?;
 
-        let local_projects = config.projects.clone();
-
-        let all_projects = all_projects
+        let project_name_map: HashMap<_, _> = all_projects
             .iter()
-            .filter(|p| {
-                !local_projects
-                    .iter()
-                    .any(|lp| lp.project_id == p.project_id)
+            .map(|p| (&p.project_id, &p.project_name))
+            .collect();
+
+        let mut options = config
+            .projects
+            .iter()
+            .map(|p| {
+                let pname = project_name_map.get(&p.project_id);
+                DisplayProject {
+                    project_id: &p.project_id,
+                    project_name: match pname {
+                        Some(n) => n,
+                        None => "<unnamed>",
+                    },
+                    path: p.path.to_str().unwrap(),
+                }
             })
             .collect::<Vec<_>>();
 
-        let mut options = local_projects
-            .iter()
-            .map(|p| format!("{} - {}", p.project_id, p.path.to_str().unwrap()))
-            .collect::<Vec<_>>();
-
         all_projects.iter().for_each(|p| {
-            let pname = if p.project_name.trim().is_empty() {
-                "<unnamed>"
-            } else {
-                &p.project_name
+            let pname = match p.project_name.trim().is_empty() {
+                true => "<unnamed>",
+                false => &p.project_name,
             };
-            options
-                .push(format!("{} - {} - {}", p.project_id, pname, "Remote"));
+            options.push(DisplayProject {
+                project_id: &p.project_id,
+                project_name: pname,
+                path: "Remote",
+            });
         });
 
         let selected =
             crate::utils::prompt::prompt_options("Select project", options)?;
 
-        if selected.is_empty() {
-            return Err(anyhow::anyhow!("No project selected"));
-        }
-
-        let selected = selected
-            .split(" - ")
-            .map(|s| s.to_string())
-            .collect::<Vec<String>>()[0]
-            .clone();
-
-        Ok(selected)
+        Ok(selected.project_id.to_string())
     }
 
     pub async fn try_project(
