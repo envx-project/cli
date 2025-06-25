@@ -36,9 +36,7 @@ pub async fn get_variables_magic(
             let home_dir =
                 home_dir().context("Failed to get home directory")?;
             let config_dir = home_dir.join(".config/envx");
-
-            let envx_file =
-                config_dir.join(format!("{}.envx", &key.key.fingerprint));
+            let envx_file = config_dir.join(format!("{}.envx", &project_id));
             let envx_file = envx_file
                 .to_str()
                 .ok_or(anyhow::anyhow!("Failed to convert path to string"))?;
@@ -68,7 +66,15 @@ async fn write_variables_magic(
         .collect::<Vec<String>>()
         .join("\n");
     let msg = encrypt_to_msg(&stringified_kvpairs, &[key.try_into()?])?;
-    let mut file = std::fs::File::create(format!("{}.envx", &project_id))?;
+
+    let home_dir = home_dir().context("Failed to get home directory")?;
+    let config_dir = home_dir.join(".config/envx");
+    let envx_file = config_dir.join(format!("{}.envx", &project_id));
+    let envx_file = envx_file
+        .to_str()
+        .ok_or(anyhow::anyhow!("Failed to convert path to string"))?;
+
+    let mut file = std::fs::File::create(envx_file)?;
     msg.to_writer(&mut file)?;
 
     Ok(())
