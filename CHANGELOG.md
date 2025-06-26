@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.5.1](https://github.com/envx-project/cli/compare/v2.5.0...v2.5.1) (2025-06-25)
+
+
+### Bug Fixes
+
+* read and write envx files to correct location ([3308ee7](https://github.com/envx-project/cli/commit/3308ee7db0abb9d7e06fc99ad550fefdb4bb492e))
+
 ## [2.5.0](https://github.com/envx-project/cli/compare/v2.4.1...v2.5.0) (2025-06-25)
 
 
