@@ -79,44 +79,6 @@ async fn handle_update_task(
 
 #[tokio::main]
 async fn main() -> Result<()> {
-    // check if config file exists at ~/.config/envcli/config.json
-    let mut config_path = home_dir().unwrap();
-    config_path.push(".config/envcli/config.json");
-
-    if config_path.exists() {
-        let args = std::env::args().collect::<Vec<String>>();
-
-        if !(args.iter().any(|a| a == "config")
-            && args.iter().any(|a| a == "migrate"))
-        {
-            eprintln!("The version 1 config file has been detected. Please run `{}` to migrate your config file to the new format.", "envx config migrate".green());
-            eprintln!("If you have already migrated, please delete the old config file at {}", config_path.to_str().unwrap_or("INVALID PATH"));
-            return Ok(());
-        }
-    }
-
-    let config_path = get_config_file_path()?;
-    let file = File::open(&config_path)?;
-    let mut config_data: Value = serde_json::from_reader(file)?;
-    match config_data.clone().get("primary_key") {
-        Some(Value::String(primary_key)) => {
-            config_data["primary_key"] = Value::Null;
-            let file = File::create(&config_path)?;
-            to_writer_pretty(file, &config_data)?;
-
-            let mut config = Config::get()?;
-            config
-                .set_primary_key(
-                    config
-                        .get_key(primary_key)
-                        .context("Primary key not found")?,
-                )
-                .context("Failed to set primary key. Check the config file for malformed data. ~/.config/envx/config.json")?;
-            config.write()?;
-        }
-        _ => {}
-    }
-
     let check_updates_handle = if std::io::stdout().is_terminal() {
         let mut config = Config::get()?;
 

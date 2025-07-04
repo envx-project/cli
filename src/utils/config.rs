@@ -13,7 +13,7 @@ use colored::Colorize;
 use home::home_dir;
 use serde::{Deserialize, Serialize};
 use std::cmp::Ordering;
-use std::fs::{self, File};
+use std::fs::{self, File, OpenOptions};
 use std::io::{BufWriter, IsTerminal, Write};
 use std::path::PathBuf;
 
@@ -141,15 +141,38 @@ impl Config {
     {
         let path =
             get_config_file_path().context("Failed to get config path")?;
-        let file =
-            File::create(path).context("Failed to create config file")?;
-        let mut writer = BufWriter::new(file);
 
+        // Use the same directory for the temp file, so the rename is atomic
+        let mut temp_path = path.clone();
+        temp_path.set_extension("tmp");
+
+        // Serialize to JSON
         let contents = serde_json::to_string_pretty(value)
             .context("Failed to serialize config to JSON string")?;
+
+        // Write to the temp file
+        let file = OpenOptions::new()
+            .write(true)
+            .create(true)
+            .truncate(true)
+            .open(&temp_path)
+            .context("Failed to create temp config file")?;
+        let mut writer = BufWriter::new(file);
+
         writer
             .write_all(contents.as_bytes())
-            .context("Failed to write config to file")?;
+            .context("Failed to write config to temp file")?;
+        writer.flush().context("Failed to flush writer")?;
+
+        // Ensure data is physically written to disk
+        writer
+            .get_ref()
+            .sync_all()
+            .context("Failed to sync temp file to disk")?;
+
+        // Atomically replace the old file
+        fs::rename(&temp_path, &path)
+            .context("Failed to atomically rename temp file")?;
 
         Ok(())
     }
