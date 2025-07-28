@@ -40,14 +40,14 @@ Commands:
   export     Export a public or secret key
   gen        Generate a key using GPG Saves the key to ~/.config/envx/keys/<fingerprint>
   import     Import ascii armored keys from a file
-  link       Get all environment variables for a project
+  link       Link a project to the current directory
   list-keys  List all keys in the config
   run        Run a local command using variables from the active environment
   set        Set a variable (Interactive)
   shell      Open a subshell with envx variables available
-  unlink     Unset the current project
+  unlink     Unlink the current project
   unset      Unset (delete) an environment variable
-  update     Update the envx CLI
+  update     Attempt to self-update envx using the installation script. Fails on Windows
   upload     If your key is not in the database, use this command to upload it
   variables  Get all environment variables for the current configured directory
   version    Fancy, pretty-printed version information
