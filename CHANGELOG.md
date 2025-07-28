@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.6.0](https://github.com/envx-project/cli/compare/v2.5.1...v2.6.0) (2025-07-28)
+
+
+### Features
+
+* real atomic writes + global config file ([cc02d25](https://github.com/envx-project/cli/commit/cc02d25547abd6b1ba52620d6c5a0202e61706de))
+
 ## [2.5.1](https://github.com/envx-project/cli/compare/v2.5.0...v2.5.1) (2025-06-25)
 
 
