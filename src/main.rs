@@ -35,19 +35,18 @@ commands_enum!(
     config, delete, get, keyring, project
 );
 
-fn spawn_update_task(
-    mut config: Config,
-) -> tokio::task::JoinHandle<Result<(), anyhow::Error>> {
+fn spawn_update_task() -> tokio::task::JoinHandle<Result<(), anyhow::Error>> {
     tokio::spawn(async move {
         if !std::io::stdout().is_terminal() {
             return Ok::<(), anyhow::Error>(());
         }
-
+        let config = Config::get().await;
         let result = config.check_update(false).await;
+        let mut config = Config::get_mut().await;
+        config.last_update_check = Some(chrono::Utc::now());
         if let Ok(Some(latest_version)) = result {
             config.new_version_available = Some(latest_version);
         }
-        config.write()?;
         Ok::<(), anyhow::Error>(())
     })
 }
@@ -74,9 +73,8 @@ async fn handle_update_task(
 
 #[tokio::main]
 async fn main() -> Result<()> {
+    let config = Config::get().await;
     let check_updates_handle = if std::io::stdout().is_terminal() {
-        let mut config = Config::get()?;
-
         if let Some(new_version) = &config.new_version_available {
             if matches!(
                 compare_semver(env!("CARGO_PKG_VERSION"), &new_version),
@@ -96,12 +94,12 @@ async fn main() -> Result<()> {
                 );
             } else {
                 // TODO: rewrite this to use .config/envx/version instead of the config file
+                let mut config = Config::get_mut().await;
                 config.new_version_available = None;
-                config.write()?;
             }
         }
 
-        Some(spawn_update_task(config))
+        Some(spawn_update_task())
     } else {
         None
     };
@@ -137,11 +135,13 @@ async fn main() -> Result<()> {
         {
             println!("{}", e);
             handle_update_task(check_updates_handle).await;
+            config.write().unwrap();
             std::process::exit(0); // Exit 0 (because of error kind)
         }
         Err(e) => {
             eprintln!("{}", e);
             handle_update_task(check_updates_handle).await;
+            config.write().unwrap();
             std::process::exit(2); // Exit 2 (default)
         }
     };
@@ -161,10 +161,11 @@ async fn main() -> Result<()> {
 
         eprintln!("{:?}", e);
         handle_update_task(check_updates_handle).await;
+        config.write().unwrap();
         std::process::exit(1);
     }
 
     handle_update_task(check_updates_handle).await;
-
+    config.write().unwrap();
     Ok(())
 }

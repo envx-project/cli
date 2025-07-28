@@ -31,8 +31,9 @@ pub fn api_url() -> Url {
         if dev_mode {
             return Ok(Url::parse("http://localhost:3000")?);
         }
-        let url = Config::get()?
+        let url = Config::try_get()?
             .sdk_url
+            .clone()
             .unwrap_or("https://api.envx.sh".into());
         let url = Url::parse(&url)?;
         Ok(url)
@@ -174,7 +175,7 @@ impl SDK {
                 .iter()
                 .map(|e| e.value.clone())
                 .collect::<Vec<String>>(),
-            &Config::get()?,
+            &*Config::get().await,
         )?;
 
         let kvpairs = decrypted
@@ -222,7 +223,7 @@ impl SDK {
                 .iter()
                 .map(|e| e.value.clone())
                 .collect::<Vec<String>>(),
-            &Config::get()?,
+            &*Config::get().await,
         )?;
 
         let kvpairs = decrypted

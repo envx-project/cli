@@ -10,7 +10,7 @@ pub struct Args {
 }
 
 pub async fn command(_args: Args) -> Result<()> {
-    let config = Config::get().context("Failed to get config")?;
+    let config = Config::get().await;
 
     println!("Keys:");
     for key in config.keys.iter() {

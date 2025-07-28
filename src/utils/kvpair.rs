@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 use std::fmt;
 use std::str::FromStr;
 
-use super::key::{Key, UnlockedKey};
+use super::key::UnlockedKey;
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct KVPair {

@@ -1,4 +1,4 @@
-use anyhow::{Context, Result};
+use anyhow::Result;
 use std::{collections::HashMap, fmt};
 
 use crate::sdk::SDK;
@@ -78,7 +78,7 @@ impl Choice {
         match project_id {
             Some(p) => Ok(p),
             None => {
-                let config = Config::get().context("Failed to get config")?;
+                let config = Config::get().await;
                 let project = config.get_project();
 
                 match project {

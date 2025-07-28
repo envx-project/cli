@@ -5,7 +5,7 @@ use crate::utils::config::Config;
 pub struct Args {}
 
 pub async fn command(_args: Args) -> Result<()> {
-    let config = Config::get()?;
+    let config = Config::get().await;
     let project = config.get_project();
     match project {
         Ok(p) => println!("Project ID:\n\t{}", p.project_id),

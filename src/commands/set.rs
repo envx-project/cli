@@ -35,7 +35,7 @@ pub async fn command(args: Args) -> Result<()> {
         );
     }
 
-    let config = Config::get()?;
+    let config = Config::get().await;
     let key = config.primary_key()?;
     let key = key.unlock(&config.primary_key_password()?);
 

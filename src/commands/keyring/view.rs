@@ -15,7 +15,7 @@ pub struct Args {
 }
 
 pub async fn command(args: Args) -> Result<()> {
-    let config = Config::get()?;
+    let config = Config::get().await;
     let password = get_password(&config)?;
 
     if args.yes {

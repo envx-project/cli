@@ -20,10 +20,9 @@ pub struct Args {
 
 // TODO: Pretty print project info (in a table?)
 pub async fn command(args: Args) -> Result<()> {
-    let config = Config::get()?;
-    let key = config.get_key_or_default(args.key)?;
-    let password = config.primary_key_password()?;
-    let key = key.unlock(&password);
+    let config = Config::get().await;
+    let key = config.primary_key()?;
+    let key = key.unlock(&config.primary_key_password()?);
     let project_id = Choice::try_project(args.project_id, &key).await?;
     let project_info = SDK::get_project_info(&project_id, &key).await?;
     println!("{:?}", project_info);

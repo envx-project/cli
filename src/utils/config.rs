@@ -71,30 +71,54 @@ struct GithubApiRelease {
     tag_name: String,
 }
 
-impl Config {
-    pub fn get() -> Result<Self> {
-        let path =
-            get_config_file_path().context("Failed to get config path")?;
-        let contents =
-            fs::read_to_string(path).context("Failed to read config file")?;
+use once_cell::sync::Lazy;
+use tokio::sync::{RwLock, RwLockReadGuard, RwLockWriteGuard};
+static CONFIG: Lazy<RwLock<Config>> =
+    Lazy::new(|| RwLock::new(priv_get().unwrap()));
 
-        let out = serde_json::from_str::<Self>(&contents)
-            .context("Failed to parse config file");
+fn priv_get() -> Result<Config> {
+    let path = get_config_file_path().context("Failed to get config path")?;
+    let contents =
+        fs::read_to_string(path).context("Failed to read config file")?;
 
-        match out {
-            Ok(c) => Ok(c),
-            Err(e) => {
-                if std::env::var("ENVX_DEBUG").is_ok() {
-                    println!("Failed to parse config file: {}", e);
-                    println!("Contents: {}", contents);
-                };
-                Err(e)
-            }
+    let out = serde_json::from_str::<Config>(&contents)
+        .context("Failed to parse config file");
+
+    match out {
+        Ok(c) => Ok(c),
+        Err(e) => {
+            if std::env::var("ENVX_DEBUG").is_ok() {
+                println!("Failed to parse config file: {}", e);
+                println!("Contents: {}", contents);
+            };
+            Err(e)
         }
     }
+}
 
+impl Config {
+    pub fn try_get() -> Result<RwLockReadGuard<'static, Self>> {
+        CONFIG.try_read().context("Failed to get config")
+    }
+
+    // allowed in case we need to synchronously write to the config
+    #[allow(dead_code)]
+    pub fn try_get_mut() -> Result<RwLockWriteGuard<'static, Self>> {
+        CONFIG.try_write().context("Failed to get config")
+    }
+
+    pub async fn get() -> RwLockReadGuard<'static, Self> {
+        CONFIG.read().await
+    }
+
+    pub async fn get_mut() -> RwLockWriteGuard<'static, Self> {
+        CONFIG.write().await
+    }
+
+    // takes 700ms for some reason
     pub async fn check_update(
-        &mut self,
+        &self,
+        // &mut self,
         force: bool,
     ) -> anyhow::Result<Option<String>> {
         // outputting would break json output on CI
@@ -117,10 +141,6 @@ impl Config {
             .send()
             .await?;
 
-        self.last_update_check = Some(Utc::now());
-        self.write()
-            .context("Failed to save time since last update check")?;
-
         let response = response.json::<GithubApiRelease>().await?;
         let latest_version = response.tag_name.trim_start_matches('v');
 
@@ -130,8 +150,7 @@ impl Config {
         }
     }
 
-    /// Vulnerable to fs race conditions
-    /// should rewrite using file locks
+    // NEVER call this function EVER
     pub fn write(&self) -> Result<()> {
         Config::priv_write(self)
     }
@@ -145,7 +164,9 @@ impl Config {
 
         // Use the same directory for the temp file, so the rename is atomic
         let mut temp_path = path.clone();
-        temp_path.set_extension("tmp");
+        let nanos = Utc::now().timestamp_nanos_opt().unwrap();
+        let pid = std::process::id();
+        temp_path.set_extension(format!("tmp.{}-{}.json", pid, nanos));
 
         // Serialize to JSON
         let contents = serde_json::to_string_pretty(value)
@@ -154,7 +175,8 @@ impl Config {
         // Write to the temp file
         let file = OpenOptions::new()
             .write(true)
-            .create(true)
+            // atomically create tmp file, panic if it already exists (should never happen)
+            .create_new(true)
             .truncate(true)
             .open(&temp_path)
             .context("Failed to create temp config file")?;
@@ -189,58 +211,6 @@ impl Config {
         } else {
             Settings::default()
         }
-    }
-
-    /// Get a key from the config
-    pub fn get_key(&self, partial_fingerprint: &str) -> Result<Key> {
-        let key = self
-            .keys
-            .iter()
-            .find(|k| k.fingerprint.contains(partial_fingerprint))
-            .context("Failed to find key (get_key)")?;
-
-        Ok(key.clone())
-    }
-
-    pub fn get_key_or_default(
-        &self,
-        partial_fingerprint: Option<String>,
-    ) -> Result<Key> {
-        let partial_fingerprint = match partial_fingerprint {
-            Some(p) => p,
-            None => return self.primary_key(),
-        };
-
-        if partial_fingerprint.is_empty() {
-            return self.primary_key().context("Partial fingerprint is empty");
-        }
-
-        let key = self
-            .keys
-            .iter()
-            .find(|k| {
-                k.fingerprint
-                    .to_lowercase()
-                    .contains(&partial_fingerprint.to_lowercase())
-            })
-            .context("Failed to find key (get_key_or_default)")?;
-
-        Ok(key.clone())
-    }
-
-    pub fn init_project(
-        &mut self,
-        project_id: &str,
-        path: PathBuf,
-    ) -> Result<()> {
-        let project = Project {
-            project_id: project_id.to_string(),
-            path,
-        };
-
-        self.projects.push(project);
-
-        Ok(())
     }
 
     pub fn get_project(&self) -> Result<&Project> {

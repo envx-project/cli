@@ -7,19 +7,15 @@ use crate::{
 /// If your key is not in the database, use this command to upload it
 #[derive(Parser)]
 pub struct Args {
-    /// Key to sign with
-    #[clap(short, long)]
-    key: String,
-
     /// Username to add to project
     #[clap(short, long)]
     username: Option<String>,
 }
 
+// TODO: probably irrelevant and should be removed
 pub async fn command(args: Args) -> Result<()> {
-    let mut config = Config::get()?;
-
-    let key = config.get_key(&args.key)?;
+    let config = Config::get().await;
+    let key = config.primary_key()?;
 
     let username = match args.username {
         Some(u) => u,
@@ -29,9 +25,8 @@ pub async fn command(args: Args) -> Result<()> {
     let id = SDK::new_user(&username, &key.public_key_str()?).await?;
     println!("UUID: {}", &id);
 
+    let mut config = Config::get_mut().await;
     config.set_uuid(&key.fingerprint, &id)?;
-
-    config.write()?;
 
     Ok(())
 }

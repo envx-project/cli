@@ -16,10 +16,10 @@ pub struct Args {
 }
 
 pub async fn command(args: Args) -> Result<()> {
-    let config = Config::get()?;
+    let config = Config::get().await;
 
     if args.json {
-        let json = serde_json::to_string_pretty(&config)
+        let json = serde_json::to_string_pretty(&*config)
             .context("Failed to serialize")?;
         println!("{}", json);
         return Ok(());

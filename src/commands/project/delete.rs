@@ -12,7 +12,7 @@ pub struct Args {
 }
 
 pub async fn command(args: Args) -> Result<()> {
-    let mut config = Config::get()?;
+    let config = Config::get().await;
     let key = config.primary_key()?;
     let password = config.primary_key_password()?;
 
@@ -21,7 +21,12 @@ pub async fn command(args: Args) -> Result<()> {
     let project_id = Choice::try_project(args.project, &key).await?;
 
     SDK::delete_project(&key, &project_id).await?;
-    config.delete_project(&project_id)?;
+
+    {
+        let mut config = Config::get_mut().await;
+        config.delete_project(&project_id)?;
+    }
+
     println!("Project {} deleted", &project_id);
 
     Ok(())

@@ -9,7 +9,7 @@ pub struct Args {
 }
 
 pub async fn command(args: Args) -> Result<()> {
-    let config = Config::get().context("Failed to get config")?;
+    let config = Config::get().await;
     let primary_key = config.primary_key()?;
     if args.json {
         println!("{}", serde_json::to_string(&primary_key)?);

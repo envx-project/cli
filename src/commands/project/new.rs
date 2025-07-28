@@ -20,7 +20,7 @@ pub struct Args {
 }
 
 pub async fn command(args: Args) -> Result<()> {
-    let config = Config::get()?;
+    let config = Config::get().await;
     let key = config.primary_key()?;
     let password = config.primary_key_password()?;
     let key = key.unlock(&password);
@@ -60,7 +60,7 @@ pub async fn command(args: Args) -> Result<()> {
 
     println!("Linking project...");
 
-    let mut config = config;
+    let mut config = Config::get_mut().await;
     match config.unlink_project() {
         Ok(unlinked) => {
             println!("Unlinked project(s):");
@@ -68,10 +68,9 @@ pub async fn command(args: Args) -> Result<()> {
                 println!("  {}", project);
             }
         }
-        Err(_) => {}
+        Err(_) => {} // do nothing, we don't need to unlink
     }
     config.link_project(&new_project_id)?;
-    config.write()?;
 
     Ok(())
 }

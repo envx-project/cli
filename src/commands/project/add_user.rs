@@ -38,8 +38,8 @@ pub async fn command(args: Args) -> Result<()> {
     };
     let user_id = user_id.trim().to_string();
 
-    let config = Config::get()?;
-    let key = config.get_key_or_default(args.key)?;
+    let config = Config::get().await;
+    let key = config.primary_key()?;
     let password = config.primary_key_password()?;
     let key = key.unlock(&password);
 

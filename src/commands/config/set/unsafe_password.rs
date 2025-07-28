@@ -19,27 +19,26 @@ pub async fn command(args: Args) -> Result<()> {
     println!("This command is VERY insecure. It will store your password in PLAIN TEXT in the config file.");
     prompt_confirm("Are you sure you want to continue?")?;
 
-    let mut config = Config::get()?;
-
     let password = match args.password {
         Some(k) => k,
         None => prompt_password("Enter the password to set")?,
     };
 
-    if password.is_empty() {
-        config.primary_key_password = None;
-        println!("Primary key password removed");
-    } else {
-        config.primary_key_password = Some(password);
-        println!("Primary key password set");
+    {
+        let mut config = Config::get_mut().await;
+        if password.is_empty() {
+            config.primary_key_password = None;
+            println!("Primary key password removed");
+        } else {
+            config.primary_key_password = Some(password);
+            println!("Primary key password set");
+        }
     }
 
     println!(
         "The config file is located at {}",
         get_config_file_path()?.to_str().unwrap_or("INVALID PATH")
     );
-
-    config.write()?;
 
     Ok(())
 }

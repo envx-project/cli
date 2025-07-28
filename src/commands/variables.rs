@@ -7,9 +7,6 @@ use crate::utils::{
 #[derive(Parser)]
 pub struct Args {
     #[clap(short, long)]
-    key: Option<String>,
-
-    #[clap(short, long)]
     project_id: Option<String>,
 
     /// Output as JSON - JSON has the highest precedence and will override other output formats
@@ -28,8 +25,8 @@ pub struct Args {
 pub async fn command(args: Args) -> Result<()> {
     let mode = Mode::from_args(&args);
 
-    let config = Config::get()?;
-    let key = config.get_key_or_default(args.key)?;
+    let config = Config::get().await;
+    let key = config.primary_key()?;
     let key = key.unlock(&config.primary_key_password()?);
     let project_id = Choice::try_project(args.project_id, &key).await?;
 

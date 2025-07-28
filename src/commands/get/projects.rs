@@ -9,8 +9,8 @@ pub struct Args {
 }
 
 pub async fn command(args: Args) -> Result<()> {
-    let config = Config::get()?;
-    let key = config.get_key_or_default(None)?;
+    let config = Config::get().await;
+    let key = config.primary_key()?;
     let password = config.primary_key_password()?;
     let key = key.unlock(&password);
 

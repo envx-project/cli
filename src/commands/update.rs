@@ -21,9 +21,8 @@ pub async fn command(_args: Args) -> Result<()> {
 
 #[cfg(not(target_os = "windows"))]
 pub async fn command(_args: Args) -> Result<()> {
-    let mut config = Config::get()?;
+    let config = Config::get().await;
     let result = config.check_update(true).await?;
-    config.write()?;
 
     let latest_version = if let Some(latest_version) = result {
         latest_version

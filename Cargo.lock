@@ -947,6 +947,7 @@ dependencies = [
  "indoc",
  "inquire",
  "keyring",
+ "once_cell",
  "paste",
  "pgp",
  "rand",

@@ -14,7 +14,7 @@ pub struct Args {
 }
 
 pub async fn command(args: Args) -> Result<()> {
-    let config = Config::get().context("Failed to get config")?;
+    let config = Config::get().await;
 
     let keys: Vec<&str> = config.keys.all_fingerprints();
 

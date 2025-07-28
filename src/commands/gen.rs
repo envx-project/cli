@@ -36,17 +36,13 @@ pub struct Args {
     #[clap(long)]
     export: bool,
 
-    /// Don't set the primary key
-    #[clap(long = "no-set-primary")]
-    no_set_primary: bool,
-
     /// Don't upload the key to the API
     #[clap(long = "no-upload")]
     no_upload: bool,
 }
 
 pub async fn command(args: Args) -> Result<()> {
-    let mut config = config::Config::get().context("Failed to get config")?;
+    let config = config::Config::get().await;
     let settings = config.get_settings();
 
     if config.primary_key.is_some() {
@@ -166,12 +162,8 @@ pub async fn command(args: Args) -> Result<()> {
         uuid,
     };
 
-    config.keys.push(key.clone());
-    if !args.no_set_primary {
-        config.primary_key = Some(key);
-    }
-
-    config.write().context("Failed to write config")?;
+    let mut config = config::Config::get_mut().await;
+    config.primary_key = Some(key);
 
     Ok(())
 }

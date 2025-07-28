@@ -15,7 +15,7 @@ pub struct Args {
 }
 
 pub async fn command(args: Args) -> Result<()> {
-    let mut config = Config::get()?;
+    let config = Config::get().await;
 
     let projects = &config.projects;
     let cwd = std::env::current_dir()?;
@@ -24,13 +24,15 @@ pub async fn command(args: Args) -> Result<()> {
         if args.force {
             println!("Forced new project");
             println!("Unlinking current project...");
-            let old = config.unlink_project()?;
-            config.write()?;
-            println!(
-                "{} {}",
-                "Unset project(s):".green(),
-                serde_json::to_string(&old)?
-            );
+            {
+                let mut config = config.clone();
+                let old = config.unlink_project()?;
+                println!(
+                    "{} {}",
+                    "Unset project(s):".green(),
+                    serde_json::to_string(&old)?
+                );
+            }
         } else {
             println!("A project is already linked to this directory");
             println!("  Use `envx unlink` to unlink the current project");
@@ -49,8 +51,10 @@ pub async fn command(args: Args) -> Result<()> {
         None => Choice::choose_project(&config.projects, &key).await?,
     };
 
-    config.link_project(&project_id)?;
-    config.write()?;
+    {
+        let mut config = config.clone();
+        config.link_project(&project_id)?;
+    }
 
     Ok(())
 }
