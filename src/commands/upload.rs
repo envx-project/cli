@@ -25,6 +25,7 @@ pub async fn command(args: Args) -> Result<()> {
     let id = SDK::new_user(&username, &key.public_key_str()?).await?;
     println!("UUID: {}", &id);
 
+    drop(config);
     let mut config = Config::get_mut().await;
     config.set_uuid(&key.fingerprint, &id)?;
 

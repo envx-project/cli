@@ -112,6 +112,12 @@ impl Config {
     }
 
     pub async fn get_mut() -> RwLockWriteGuard<'static, Self> {
+        // Note to future confused self: You may use the following code to panic at the exact place
+        // where the config gets deadlocked. FML.
+        // CONFIG
+        //     .try_write()
+        //     .context("Another Read (or Write) lock of config is held")
+        //     .unwrap()
         CONFIG.write().await
     }
 

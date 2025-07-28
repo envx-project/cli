@@ -22,10 +22,9 @@ pub async fn command(args: Args) -> Result<()> {
 
     SDK::delete_project(&key, &project_id).await?;
 
-    {
-        let mut config = Config::get_mut().await;
-        config.delete_project(&project_id)?;
-    }
+    drop(config);
+    let mut config = Config::get_mut().await;
+    config.delete_project(&project_id)?;
 
     println!("Project {} deleted", &project_id);
 

@@ -60,6 +60,7 @@ pub async fn command(args: Args) -> Result<()> {
 
     println!("Linking project...");
 
+    drop(config);
     let mut config = Config::get_mut().await;
     match config.unlink_project() {
         Ok(unlinked) => {

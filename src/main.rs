@@ -42,10 +42,13 @@ fn spawn_update_task() -> tokio::task::JoinHandle<Result<(), anyhow::Error>> {
         }
         let config = Config::get().await;
         let result = config.check_update(false).await;
+        // need to drop the config because rust drops the RwLock **after** the get_mut() call
+        // finishes
+        drop(config);
         let mut config = Config::get_mut().await;
         config.last_update_check = Some(chrono::Utc::now());
-        if let Ok(Some(latest_version)) = result {
-            config.new_version_available = Some(latest_version);
+        if let Ok(latest_version) = result {
+            config.new_version_available = latest_version;
         }
         Ok::<(), anyhow::Error>(())
     })
@@ -73,9 +76,12 @@ async fn handle_update_task(
 
 #[tokio::main]
 async fn main() -> Result<()> {
-    let config = Config::get().await;
     let check_updates_handle = if std::io::stdout().is_terminal() {
-        if let Some(new_version) = &config.new_version_available {
+        let config = Config::get().await;
+        let new_version_available = config.new_version_available.clone();
+        drop(config);
+
+        if let Some(new_version) = new_version_available {
             if matches!(
                 compare_semver(env!("CARGO_PKG_VERSION"), &new_version),
                 Ordering::Less
@@ -92,11 +98,10 @@ async fn main() -> Result<()> {
                     "info!".bold(),
                     "curl -fsSL https://get.envx.sh | sh".green()
                 );
-            } else {
-                // TODO: rewrite this to use .config/envx/version instead of the config file
-                let mut config = Config::get_mut().await;
-                config.new_version_available = None;
             }
+            // TODO: rewrite this to use .config/envx/version instead of the config file
+            let mut config = Config::get_mut().await;
+            config.new_version_available = None;
         }
 
         Some(spawn_update_task())
@@ -135,12 +140,14 @@ async fn main() -> Result<()> {
         {
             println!("{}", e);
             handle_update_task(check_updates_handle).await;
+            let config = Config::get().await;
             config.write().unwrap();
             std::process::exit(0); // Exit 0 (because of error kind)
         }
         Err(e) => {
             eprintln!("{}", e);
             handle_update_task(check_updates_handle).await;
+            let config = Config::get().await;
             config.write().unwrap();
             std::process::exit(2); // Exit 2 (default)
         }
@@ -161,11 +168,13 @@ async fn main() -> Result<()> {
 
         eprintln!("{:?}", e);
         handle_update_task(check_updates_handle).await;
+        let config = Config::get().await;
         config.write().unwrap();
         std::process::exit(1);
     }
 
     handle_update_task(check_updates_handle).await;
+    let config = Config::get().await;
     config.write().unwrap();
     Ok(())
 }
