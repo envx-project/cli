@@ -1,14 +1,9 @@
-use std::{cmp::Ordering, fs::File, io::IsTerminal};
+use std::{cmp::Ordering, io::IsTerminal};
 
 use anyhow::Result;
 use clap::{error::ErrorKind, Parser, Subcommand};
 use commands::*;
-use home::home_dir;
-use serde_json::{to_writer_pretty, Value};
-use utils::{
-    compare_semver,
-    config::{get_config_file_path, Config},
-};
+use utils::{compare_semver, config::Config};
 
 mod commands;
 mod constants;
@@ -100,6 +95,7 @@ async fn main() -> Result<()> {
                     "curl -fsSL https://get.envx.sh | sh".green()
                 );
             } else {
+                // TODO: rewrite this to use .config/envx/version instead of the config file
                 config.new_version_available = None;
                 config.write()?;
             }

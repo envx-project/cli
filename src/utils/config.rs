@@ -77,9 +77,22 @@ impl Config {
             get_config_file_path().context("Failed to get config path")?;
         let contents =
             fs::read_to_string(path).context("Failed to read config file")?;
-        serde_json::from_str::<Self>(&contents)
-            .context("Failed to parse config file")
+
+        let out = serde_json::from_str::<Self>(&contents)
+            .context("Failed to parse config file");
+
+        match out {
+            Ok(c) => Ok(c),
+            Err(e) => {
+                if std::env::var("ENVX_DEBUG").is_ok() {
+                    println!("Failed to parse config file: {}", e);
+                    println!("Contents: {}", contents);
+                };
+                Err(e)
+            }
+        }
     }
+
     pub async fn check_update(
         &mut self,
         force: bool,
@@ -120,19 +133,7 @@ impl Config {
     /// Vulnerable to fs race conditions
     /// should rewrite using file locks
     pub fn write(&self) -> Result<()> {
-        let is_terminal = std::io::stdout().is_terminal();
-        if !is_terminal
-            || self.sdk_url != Some("https://api.env-cli.com".into())
-        {
-            Config::priv_write(self)
-        } else {
-            let mut clone = self.clone();
-            println!("Just to let you know, your configuration file still has our old api url (https://api.env-cli.com).");
-            println!("We have switched our url to https://api.envx.sh, and this change will be reflected in your config.");
-
-            clone.sdk_url = Some("https://api.envx.sh".into());
-            Config::priv_write(&clone)
-        }
+        Config::priv_write(self)
     }
 
     fn priv_write<T>(value: &T) -> Result<()>
@@ -181,29 +182,12 @@ impl Config {
         self.primary_key.clone().context("No primary key set")
     }
 
-    /// Set the primary key
-    ///
-    /// - Returns an error if the key doesn't exist
-    ///
-    /// Does not write to disk. Call `config.write()` to write to disk
-    pub fn set_primary_key(&mut self, key: Key) -> Result<()> {
-        self.primary_key = Some(key);
-        Ok(())
-    }
-
-    // TODO: write an implementation to add key to config
-    /// Add a key to the config and write it to disk
-    #[allow(dead_code)]
-    pub fn add_key(&self, _key: Key) -> Result<Config> {
-        unimplemented!()
-    }
-
-    pub fn get_settings(&self) -> Result<Settings> {
+    pub fn get_settings(&self) -> Settings {
         let settings = self.settings.clone();
         if let Some(settings) = settings {
-            Ok(settings)
+            settings
         } else {
-            Ok(Settings::default())
+            Settings::default()
         }
     }
 
@@ -333,7 +317,7 @@ impl Config {
                 eprintln!("Failed to get password: {}", e);
                 println!("Enter password for key {}", key);
                 let password = prompt_password("Password: ")?;
-                let expiry = self.get_settings()?.get_keyring_expiry();
+                let expiry = self.get_settings().get_keyring_expiry();
                 if let Err(e) =
                     set_password(&key.fingerprint, &password, expiry)
                 {

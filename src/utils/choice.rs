@@ -5,7 +5,7 @@ use crate::sdk::SDK;
 
 use super::{
     config::{Config, Project},
-    key::{Key, UnlockedKey},
+    key::UnlockedKey,
 };
 
 #[derive(Debug)]
@@ -27,12 +27,6 @@ impl fmt::Display for DisplayProject<'_> {
 
 pub struct Choice {}
 impl Choice {
-    pub fn get_key(partial_fingerprint: &str) -> Result<(Key, Config)> {
-        let config = Config::get().context("Failed to get config")?;
-        let key = config.get_key(partial_fingerprint)?;
-        Ok((key, config))
-    }
-
     pub async fn choose_project(
         projects: &Vec<Project>,
         key: &UnlockedKey,

@@ -43,7 +43,7 @@ pub fn set_password(
 }
 
 pub fn get_password(config: &Config) -> anyhow::Result<String> {
-    let settings = config.get_settings()?;
+    let settings = config.get_settings();
 
     let fingerprint = &config.primary_key()?.fingerprint;
 

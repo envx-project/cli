@@ -47,7 +47,7 @@ pub struct Args {
 
 pub async fn command(args: Args) -> Result<()> {
     let mut config = config::Config::get().context("Failed to get config")?;
-    let settings = config.get_settings()?;
+    let settings = config.get_settings();
 
     if config.primary_key.is_some() {
         if !args.force {

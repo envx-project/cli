@@ -19,7 +19,7 @@ pub async fn command(args: Args) -> Result<()> {
         println!("Setting keyring expiry to {} days", args.days);
     }
     let mut config = Config::get()?;
-    let mut settings = config.get_settings()?;
+    let mut settings = config.get_settings();
 
     if args.days == 0 {
         settings.set_keyring_expiry_never();
