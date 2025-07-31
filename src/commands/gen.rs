@@ -3,7 +3,7 @@
 use super::*;
 use crate::constants::MINIMUM_PASSWORD_LENGTH;
 use crate::sdk::SDK;
-use crate::utils::config::{self};
+use crate::utils::config::Config;
 use crate::utils::key::Key;
 use crate::utils::keyring::set_password;
 use crate::utils::prompt::{prompt_password, prompt_text};
@@ -41,8 +41,7 @@ pub struct Args {
     no_upload: bool,
 }
 
-pub async fn command(args: Args) -> Result<()> {
-    let config = config::Config::get().await;
+pub async fn command(args: Args, config: Config) -> Result<()> {
     let settings = config.get_settings();
 
     if config.primary_key.is_some() {
@@ -162,7 +161,7 @@ pub async fn command(args: Args) -> Result<()> {
         uuid,
     };
 
-    let mut config = config::Config::get_mut().await;
+    let mut config = config;
     config.primary_key = Some(key);
 
     Ok(())

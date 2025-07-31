@@ -3,18 +3,16 @@
 use crate::utils::keyring::{get_password, set_password};
 use crate::utils::prompt::prompt_password;
 
-use super::compare_semver;
 use super::key::Key;
 use super::settings::Settings;
 use anyhow::anyhow;
 use anyhow::{Context, Result};
-use chrono::{DateTime, Utc};
+use chrono::Utc;
 use colored::Colorize;
 use home::home_dir;
 use serde::{Deserialize, Serialize};
-use std::cmp::Ordering;
 use std::fs::{self, File, OpenOptions};
-use std::io::{BufWriter, IsTerminal, Write};
+use std::io::{BufWriter, Write};
 use std::path::PathBuf;
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -33,10 +31,12 @@ pub struct Config {
     pub projects: Vec<Project>,
     /// Password for the primary key
     pub primary_key_password: Option<String>,
-    /// Last time the config was updated
-    pub last_update_check: Option<DateTime<Utc>>,
-    /// New version available
-    pub new_version_available: Option<String>,
+}
+
+impl Drop for Config {
+    fn drop(&mut self) {
+        self.write().unwrap();
+    }
 }
 
 // TODO: add project name
@@ -57,8 +57,6 @@ impl Default for Config {
             settings: None,
             projects: vec![],
             primary_key_password: None,
-            last_update_check: None,
-            new_version_available: None,
         }
     }
 }
@@ -71,91 +69,31 @@ struct GithubApiRelease {
     tag_name: String,
 }
 
-use once_cell::sync::Lazy;
-use tokio::sync::{RwLock, RwLockReadGuard, RwLockWriteGuard};
-static CONFIG: Lazy<RwLock<Config>> =
-    Lazy::new(|| RwLock::new(priv_get().unwrap()));
-
-fn priv_get() -> Result<Config> {
-    let path = get_config_file_path().context("Failed to get config path")?;
-    let contents =
-        fs::read_to_string(path).context("Failed to read config file")?;
-
-    let out = serde_json::from_str::<Config>(&contents)
-        .context("Failed to parse config file");
-
-    match out {
-        Ok(c) => Ok(c),
-        Err(e) => {
-            if std::env::var("ENVX_DEBUG").is_ok() {
-                println!("Failed to parse config file: {}", e);
-                println!("Contents: {}", contents);
-            };
-            Err(e)
-        }
-    }
-}
-
 impl Config {
-    pub fn try_get() -> Result<RwLockReadGuard<'static, Self>> {
-        CONFIG.try_read().context("Failed to get config")
+    pub fn get() -> Self {
+        Config::priv_get().unwrap()
     }
 
-    // allowed in case we need to synchronously write to the config
-    #[allow(dead_code)]
-    pub fn try_get_mut() -> Result<RwLockWriteGuard<'static, Self>> {
-        CONFIG.try_write().context("Failed to get config")
-    }
+    fn priv_get() -> Result<Self> {
+        let path =
+            get_config_file_path().context("Failed to get config path")?;
+        let contents =
+            fs::read_to_string(path).context("Failed to read config file")?;
 
-    pub async fn get() -> RwLockReadGuard<'static, Self> {
-        CONFIG.read().await
-    }
+        let out = serde_json::from_str::<Config>(&contents)
+            .context("Failed to parse config file");
 
-    pub async fn get_mut() -> RwLockWriteGuard<'static, Self> {
-        // Note to future confused self: You may use the following code to panic at the exact place
-        // where the config gets deadlocked. FML.
-        // CONFIG
-        //     .try_write()
-        //     .context("Another Read (or Write) lock of config is held")
-        //     .unwrap()
-        CONFIG.write().await
-    }
-
-    // takes 700ms for some reason
-    pub async fn check_update(
-        &self,
-        // &mut self,
-        force: bool,
-    ) -> anyhow::Result<Option<String>> {
-        // outputting would break json output on CI
-        if !std::io::stdout().is_terminal() && !force {
-            return Ok(None);
-        }
-
-        if let Some(last_update_check) = self.last_update_check {
-            if Utc::now().date_naive() == last_update_check.date_naive()
-                && !force
-            {
-                return Ok(None);
+        match out {
+            Ok(c) => Ok(c),
+            Err(e) => {
+                if std::env::var("ENVX_DEBUG").is_ok() {
+                    println!("Failed to parse config file: {}", e);
+                    println!("Contents: {}", contents);
+                };
+                Err(e)
             }
         }
-
-        let client = reqwest::Client::new();
-        let response = client
-            .get(GITHUB_API_RELEASE_URL)
-            .header("User-Agent", "envx")
-            .send()
-            .await?;
-
-        let response = response.json::<GithubApiRelease>().await?;
-        let latest_version = response.tag_name.trim_start_matches('v');
-
-        match compare_semver(env!("CARGO_PKG_VERSION"), &latest_version) {
-            Ordering::Less => Ok(Some(latest_version.to_owned())),
-            _ => Ok(None),
-        }
     }
-
     // NEVER call this function EVER
     pub fn write(&self) -> Result<()> {
         Config::priv_write(self)

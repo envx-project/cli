@@ -8,9 +8,7 @@ use super::*;
 #[derive(Parser)]
 pub struct Args {}
 
-pub async fn command(_args: Args) -> Result<()> {
-    let config = Config::get().await;
-
+pub async fn command(_args: Args, config: Config) -> Result<()> {
     let fingerprint = config.primary_key()?.fingerprint;
     clear_password(&fingerprint)?;
 

@@ -21,8 +21,7 @@ pub struct Args {
     all: bool,
 }
 
-pub async fn command(args: Args) -> Result<()> {
-    let config = Config::get().await;
+pub async fn command(args: Args, config: Config) -> Result<()> {
     let key = config.primary_key()?;
     let key = key.unlock(&config.primary_key_password()?);
     let project_id = match args.all {
@@ -34,9 +33,9 @@ pub async fn command(args: Args) -> Result<()> {
         Some(v) => v,
         None => {
             let variables = if let Some(project_id) = project_id {
-                SDK::get_variables(&project_id, &key).await?
+                SDK::get_variables(&project_id, &key, &config).await?
             } else {
-                SDK::get_all_variables(&key).await?
+                SDK::get_all_variables(&key, &config).await?
             };
 
             prompt::prompt_options("Select variables to delete", variables)?.id

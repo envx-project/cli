@@ -1,10 +1,12 @@
+use crate::utils::config::Config;
+
 use super::*;
 
 /// Fancy, pretty-printed version information.
 #[derive(Parser)]
 pub struct Args {}
 
-pub async fn command(_args: Args) -> Result<()> {
+pub async fn command(_args: Args, _config: Config) -> Result<()> {
     println!(
         "{} {} {} {}",
         "envx".cyan(),

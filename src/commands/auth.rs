@@ -11,8 +11,7 @@ pub struct Args {
     debug: bool,
 }
 
-pub async fn command(args: Args) -> anyhow::Result<()> {
-    let config = Config::get().await;
+pub async fn command(args: Args, config: Config) -> anyhow::Result<()> {
     let key = config.primary_key()?;
     let password = config.primary_key_password()?;
 

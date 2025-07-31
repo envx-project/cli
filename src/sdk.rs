@@ -31,7 +31,7 @@ pub fn api_url() -> Url {
         if dev_mode {
             return Ok(Url::parse("http://localhost:3000")?);
         }
-        let url = Config::try_get()?
+        let url = Config::get()
             .sdk_url
             .clone()
             .unwrap_or("https://api.envx.sh".into());
@@ -148,6 +148,7 @@ impl SDK {
 
     pub async fn get_all_variables(
         key: &UnlockedKey,
+        config: &Config,
     ) -> Result<Vec<DecryptedVariable>> {
         let client = reqwest::Client::new();
 
@@ -175,7 +176,7 @@ impl SDK {
                 .iter()
                 .map(|e| e.value.clone())
                 .collect::<Vec<String>>(),
-            &*Config::get().await,
+            &config,
         )?;
 
         let kvpairs = decrypted
@@ -201,6 +202,7 @@ impl SDK {
     pub async fn get_variables(
         project_id: &str,
         key: &UnlockedKey,
+        config: &Config,
     ) -> Result<Vec<DecryptedVariable>> {
         // url : /project/:id/variables
         let client = reqwest::Client::new();
@@ -223,7 +225,7 @@ impl SDK {
                 .iter()
                 .map(|e| e.value.clone())
                 .collect::<Vec<String>>(),
-            &*Config::get().await,
+            &config,
         )?;
 
         let kvpairs = decrypted
@@ -251,8 +253,9 @@ impl SDK {
     pub async fn get_variables_pruned(
         project_id: &str,
         key: &UnlockedKey,
+        config: &crate::utils::config::Config,
     ) -> Result<Vec<KVPair>> {
-        let variables = Self::get_variables(project_id, &key)
+        let variables = Self::get_variables(project_id, &key, &config)
             .await
             .context("Failed to get variables")?;
 

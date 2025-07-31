@@ -22,15 +22,15 @@ pub struct Args {
     all: bool,
 }
 
-pub async fn command(args: Args) -> Result<()> {
+pub async fn command(args: Args, config: Config) -> Result<()> {
     let mode = Mode::from_args(&args);
 
-    let config = Config::get().await;
     let key = config.primary_key()?;
     let key = key.unlock(&config.primary_key_password()?);
     let project_id = Choice::try_project(args.project_id, &key).await?;
 
-    let kvpairs = get_variables_magic(&project_id, &key, args.all).await?;
+    let kvpairs =
+        get_variables_magic(&project_id, &key, args.all, &config).await?;
 
     match mode {
         Mode::KV => {

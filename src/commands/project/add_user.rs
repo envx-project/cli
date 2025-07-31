@@ -31,14 +31,13 @@ pub struct Args {
     user_id: Option<String>,
 }
 
-pub async fn command(args: Args) -> Result<()> {
+pub async fn command(args: Args, config: Config) -> Result<()> {
     let user_id = match args.user_id {
         Some(u) => u,
         None => prompt_text("User ID: ")?,
     };
     let user_id = user_id.trim().to_string();
 
-    let config = Config::get().await;
     let key = config.primary_key()?;
     let password = config.primary_key_password()?;
     let key = key.unlock(&password);
@@ -47,7 +46,7 @@ pub async fn command(args: Args) -> Result<()> {
 
     let project_info = SDK::get_project_info(&project_id, &key).await?;
 
-    let variables = SDK::get_variables(&project_id, &key).await?;
+    let variables = SDK::get_variables(&project_id, &key, &config).await?;
     let kvpairs = variables.to_kvpair();
 
     let recipients = project_info

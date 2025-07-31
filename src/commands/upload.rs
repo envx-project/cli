@@ -13,8 +13,7 @@ pub struct Args {
 }
 
 // TODO: probably irrelevant and should be removed
-pub async fn command(args: Args) -> Result<()> {
-    let config = Config::get().await;
+pub async fn command(args: Args, config: Config) -> Result<()> {
     let key = config.primary_key()?;
 
     let username = match args.username {
@@ -25,8 +24,7 @@ pub async fn command(args: Args) -> Result<()> {
     let id = SDK::new_user(&username, &key.public_key_str()?).await?;
     println!("UUID: {}", &id);
 
-    drop(config);
-    let mut config = Config::get_mut().await;
+    let mut config = config;
     config.set_uuid(&key.fingerprint, &id)?;
 
     Ok(())

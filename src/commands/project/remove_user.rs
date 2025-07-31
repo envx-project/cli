@@ -35,8 +35,7 @@ pub struct Args {
     user_id: Option<String>,
 }
 
-pub async fn command(args: Args) -> anyhow::Result<()> {
-    let config = Config::get().await;
+pub async fn command(args: Args, config: Config) -> anyhow::Result<()> {
     let key = config.primary_key()?;
     let password = config.primary_key_password()?;
     let key = key.unlock(&password);
@@ -55,7 +54,7 @@ pub async fn command(args: Args) -> anyhow::Result<()> {
         }
     };
 
-    let variables = SDK::get_variables(&project_id, &key).await?;
+    let variables = SDK::get_variables(&project_id, &key, &config).await?;
     let kvpairs = variables.to_kvpair();
 
     let users_without_users_to_remove = project_info

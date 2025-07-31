@@ -9,9 +9,7 @@ pub struct Args {
     full: bool,
 }
 
-pub async fn command(_args: Args) -> Result<()> {
-    let config = Config::get().await;
-
+pub async fn command(_args: Args, config: Config) -> Result<()> {
     println!("Keys:");
     for key in config.keys.iter() {
         let fingerprint = match _args.full {

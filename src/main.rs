@@ -1,8 +1,9 @@
 use std::{cmp::Ordering, io::IsTerminal};
 
-use anyhow::Result;
+use anyhow::{bail, Result};
 use clap::{error::ErrorKind, Parser, Subcommand};
 use commands::*;
+use home::home_dir;
 use utils::{compare_semver, config::Config};
 
 mod commands;
@@ -35,27 +36,20 @@ commands_enum!(
     config, delete, get, keyring, project
 );
 
-fn spawn_update_task() -> tokio::task::JoinHandle<Result<(), anyhow::Error>> {
+fn spawn_update_task() -> tokio::task::JoinHandle<anyhow::Result<String>> {
     tokio::spawn(async move {
+        // outputtng would break json output on CI
         if !std::io::stdout().is_terminal() {
-            return Ok::<(), anyhow::Error>(());
+            bail!("Stdout is not a terminal");
         }
-        let config = Config::get().await;
-        let result = config.check_update(false).await;
-        // need to drop the config because rust drops the RwLock **after** the get_mut() call
-        // finishes
-        drop(config);
-        let mut config = Config::get_mut().await;
-        config.last_update_check = Some(chrono::Utc::now());
-        if let Ok(latest_version) = result {
-            config.new_version_available = latest_version;
-        }
-        Ok::<(), anyhow::Error>(())
+        let latest_version = update::check_update().await?;
+
+        Ok(latest_version)
     })
 }
 
 async fn handle_update_task(
-    handle: Option<tokio::task::JoinHandle<Result<(), anyhow::Error>>>,
+    handle: Option<tokio::task::JoinHandle<anyhow::Result<String>>>,
 ) {
     if let Some(handle) = handle {
         match handle.await {
@@ -67,7 +61,7 @@ async fn handle_update_task(
                 }
             }
             Err(e) => {
-                eprintln!("Check Updates: Task panicked or failed to execute.");
+                eprintln!("Check Updates: Task failed to execute.");
                 eprintln!("{}", e);
             }
         }
@@ -77,13 +71,20 @@ async fn handle_update_task(
 #[tokio::main]
 async fn main() -> Result<()> {
     let check_updates_handle = if std::io::stdout().is_terminal() {
-        let config = Config::get().await;
-        let new_version_available = config.new_version_available.clone();
-        drop(config);
+        let home = home_dir().context("Failed to get home directory")?;
+        let path = home.join(".config/envx/version.json");
+        let update = if !path.exists() {
+            update::UpdateCheck::default()
+        } else {
+            let contents = std::fs::read_to_string(&path)
+                .context("Failed to read update check file")?;
+            serde_json::from_str::<update::UpdateCheck>(&contents)
+                .context("Failed to parse update check file")?
+        };
 
-        if let Some(new_version) = new_version_available {
+        if let Some(latest_version) = update.latest_version {
             if matches!(
-                compare_semver(env!("CARGO_PKG_VERSION"), &new_version),
+                compare_semver(env!("CARGO_PKG_VERSION"), &latest_version),
                 Ordering::Less
             ) {
                 println!(
@@ -91,7 +92,7 @@ async fn main() -> Result<()> {
                     "info!".bold(),
                     "Update available".green().bold(),
                     env!("CARGO_PKG_VERSION").yellow(),
-                    new_version.bright_yellow(),
+                    latest_version.bright_yellow(),
                 );
                 println!(
                     "{} Run `{}` to update\n",
@@ -99,9 +100,17 @@ async fn main() -> Result<()> {
                     "curl -fsSL https://get.envx.sh | sh".green()
                 );
             }
-            // TODO: rewrite this to use .config/envx/version instead of the config file
-            let mut config = Config::get_mut().await;
-            config.new_version_available = None;
+            let nanos = chrono::Utc::now().timestamp_nanos_opt().unwrap();
+            let pid = std::process::id();
+            let path =
+                path.with_extension(format!("tmp.{}-{}.json", pid, nanos));
+            let update = update::UpdateCheck {
+                last_update_check: Some(chrono::Utc::now()),
+                latest_version: None,
+            };
+            let contents = serde_json::to_string_pretty(&update)?;
+            std::fs::write(&path, contents)?;
+            std::fs::rename(&path, &path.with_extension("json"))?;
         }
 
         Some(spawn_update_task())
@@ -140,20 +149,17 @@ async fn main() -> Result<()> {
         {
             println!("{}", e);
             handle_update_task(check_updates_handle).await;
-            let config = Config::get().await;
-            config.write().unwrap();
             std::process::exit(0); // Exit 0 (because of error kind)
         }
         Err(e) => {
             eprintln!("{}", e);
             handle_update_task(check_updates_handle).await;
-            let config = Config::get().await;
-            config.write().unwrap();
             std::process::exit(2); // Exit 2 (default)
         }
     };
 
-    let exec_result = Commands::exec(cli).await;
+    let config = Config::get();
+    let exec_result = Commands::exec(cli, config).await;
 
     if let Err(e) = exec_result {
         if matches!(
@@ -168,13 +174,9 @@ async fn main() -> Result<()> {
 
         eprintln!("{:?}", e);
         handle_update_task(check_updates_handle).await;
-        let config = Config::get().await;
-        config.write().unwrap();
         std::process::exit(1);
     }
 
     handle_update_task(check_updates_handle).await;
-    let config = Config::get().await;
-    config.write().unwrap();
     Ok(())
 }

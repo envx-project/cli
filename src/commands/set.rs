@@ -26,7 +26,7 @@ pub struct Args {
     project_id: Option<String>,
 }
 
-pub async fn command(args: Args) -> Result<()> {
+pub async fn command(args: Args, config: Config) -> Result<()> {
     if args.kvpairs.is_empty() {
         bail!(
             "{}\n{}",
@@ -35,7 +35,6 @@ pub async fn command(args: Args) -> Result<()> {
         );
     }
 
-    let config = Config::get().await;
     let key = config.primary_key()?;
     let key = key.unlock(&config.primary_key_password()?);
 
@@ -64,7 +63,7 @@ pub async fn command(args: Args) -> Result<()> {
         return Err(anyhow::anyhow!("No valid KV pairs provided"));
     }
 
-    let variables = SDK::get_variables(&project_id, &key).await?;
+    let variables = SDK::get_variables(&project_id, &key, &config).await?;
 
     let existing_keys = variables
         .iter()

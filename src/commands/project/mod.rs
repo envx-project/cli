@@ -13,7 +13,7 @@ pub mod new;
 pub mod remove_user;
 pub mod rename;
 
-use crate::commands_enum;
+use crate::{commands_enum, utils::config::Config};
 use clap::Subcommand;
 
 /// Command group for project related commands
@@ -37,7 +37,7 @@ commands_enum!(
     info
 );
 
-pub async fn command(args: Args) -> Result<()> {
-    Commands::exec(args).await?;
+pub async fn command(args: Args, config: Config) -> Result<()> {
+    Commands::exec(args, config).await?;
     Ok(())
 }

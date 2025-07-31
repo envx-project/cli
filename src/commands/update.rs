@@ -1,7 +1,11 @@
 use std::cmp::Ordering;
 use std::process::Stdio;
 
-use crate::utils::{compare_semver, config::Config};
+use anyhow::bail;
+use home::home_dir;
+
+use crate::utils::compare_semver;
+use crate::utils::config::Config;
 
 use super::*;
 
@@ -10,7 +14,7 @@ use super::*;
 pub struct Args {}
 
 #[cfg(target_os = "windows")]
-pub async fn command(_args: Args) -> Result<()> {
+pub async fn command(_args: Args, _config: Config) -> Result<()> {
     use anyhow::bail;
 
     eprintln!("Self-update is not supported on Windows");
@@ -19,17 +23,78 @@ pub async fn command(_args: Args) -> Result<()> {
     Ok(())
 }
 
-#[cfg(not(target_os = "windows"))]
-pub async fn command(_args: Args) -> Result<()> {
-    let config = Config::get().await;
-    let result = config.check_update(true).await?;
+#[derive(serde::Serialize, serde::Deserialize)]
+pub struct UpdateCheck {
+    pub last_update_check: Option<chrono::DateTime<chrono::Utc>>,
+    pub latest_version: Option<String>,
+}
+impl Default for UpdateCheck {
+    fn default() -> Self {
+        Self {
+            last_update_check: None,
+            latest_version: None,
+        }
+    }
+}
+#[derive(serde::Deserialize)]
+struct GithubApiRelease {
+    tag_name: String,
+}
 
-    let latest_version = if let Some(latest_version) = result {
-        latest_version
+pub async fn check_update() -> anyhow::Result<String> {
+    let home = home_dir().context("Failed to get home directory")?;
+    let path = home.join(".config/envx/version.json");
+    let update = if !path.exists() {
+        UpdateCheck::default()
     } else {
-        println!("No updates available");
-        return Ok(());
+        let contents = std::fs::read_to_string(&path)
+            .context("Failed to read update check file")?;
+        serde_json::from_str::<UpdateCheck>(&contents)
+            .context("Failed to parse update check file")?
     };
+
+    if let Some(last_update_check) = update.last_update_check {
+        if chrono::Utc::now().date_naive() == last_update_check.date_naive() {
+            bail!("Update check already ran today");
+        }
+    }
+
+    let client = reqwest::Client::new();
+    let response = client
+        .get("https://api.github.com/repos/envx-project/cli/releases/latest")
+        .header("User-Agent", "envx")
+        .send()
+        .await?;
+    let response = response.json::<GithubApiRelease>().await?;
+    let latest_version = response.tag_name.trim_start_matches('v');
+
+    match crate::utils::compare_semver(
+        env!("CARGO_PKG_VERSION"),
+        &latest_version,
+    ) {
+        Ordering::Less => {
+            let nanos = chrono::Utc::now().timestamp_nanos_opt().unwrap();
+            let pid = std::process::id();
+            let tmp_path =
+                path.with_extension(format!("tmp.{}-{}.json", pid, nanos));
+            let update = UpdateCheck {
+                last_update_check: Some(chrono::Utc::now()),
+                latest_version: Some(latest_version.to_owned()),
+            };
+            let contents = serde_json::to_string_pretty(&update)?;
+            // need to use tokio fs so the function actually waits for the file to be written
+            tokio::fs::write(&tmp_path, contents).await?;
+            tokio::fs::rename(&tmp_path, &path).await?;
+        }
+        _ => {}
+    }
+
+    Ok(latest_version.to_string())
+}
+
+#[cfg(not(target_os = "windows"))]
+pub async fn command(_args: Args, _config: Config) -> Result<()> {
+    let latest_version = check_update().await?;
 
     if matches!(
         compare_semver(env!("CARGO_PKG_VERSION"), &latest_version),

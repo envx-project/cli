@@ -78,7 +78,7 @@ impl Choice {
         match project_id {
             Some(p) => Ok(p),
             None => {
-                let config = Config::get().await;
+                let config = Config::get();
                 let project = config.get_project();
 
                 match project {

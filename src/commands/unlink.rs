@@ -5,10 +5,9 @@ use crate::utils::config::Config;
 #[derive(Parser)]
 pub struct Args {}
 
-pub async fn command(_args: Args) -> Result<()> {
-    let mut config = Config::get_mut().await;
+pub async fn command(_args: Args, config: Config) -> Result<()> {
+    let mut config = config;
     let unset = config.unlink_project()?;
-    drop(config);
 
     // There should only ever be one project unset
     // but the unset command unsets all projects that match the current directory

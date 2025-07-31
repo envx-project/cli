@@ -12,13 +12,13 @@ pub struct Args {
     days: u32,
 }
 
-pub async fn command(args: Args) -> Result<()> {
+pub async fn command(args: Args, config: Config) -> Result<()> {
     if args.days == 0 {
         println!("Keyring will not expire. This is not recommended.");
     } else {
         println!("Setting keyring expiry to {} days", args.days);
     }
-    let mut settings = Config::get().await.get_settings();
+    let mut settings = config.get_settings();
 
     if args.days == 0 {
         settings.set_keyring_expiry_never();
@@ -27,7 +27,7 @@ pub async fn command(args: Args) -> Result<()> {
     }
 
     {
-        let mut config = Config::get_mut().await;
+        let mut config = config;
         config.settings = Some(settings);
     }
     Ok(())

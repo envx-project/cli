@@ -19,7 +19,10 @@ pub struct Args {
 
 commands_enum!(set, migrate);
 
-pub async fn command(args: Args) -> Result<()> {
-    Commands::exec(args).await?;
+pub async fn command(
+    args: Args,
+    config: crate::utils::config::Config,
+) -> Result<()> {
+    Commands::exec(args, config).await?;
     Ok(())
 }

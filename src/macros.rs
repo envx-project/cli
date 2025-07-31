@@ -1,25 +1,25 @@
 #[macro_export]
 macro_rules! commands_enum {
     ($($module:ident),*) => (
-      paste::paste! {
-        #[derive(Subcommand)]
-        enum Commands {
-            $(
-              [<$module:camel>]($module::Args),
-            )*
-        }
-
-        impl Commands {
-            async fn exec(cli: Args) -> Result<()> {
-              match cli.command {
+        paste::paste! {
+            #[derive(Subcommand)]
+            enum Commands {
                 $(
-                  Commands::[<$module:camel>](args) => $module::command(args).await?,
+                    [<$module:camel>]($module::Args),
                 )*
-              }
-              Ok(())
+            }
+
+            impl Commands {
+                async fn exec(cli: Args, config: crate::utils::config::Config) -> Result<()> {
+                    match cli.command {
+                        $(
+                            Commands::[<$module:camel>](args) => $module::command(args, config).await?,
+                        )*
+                    }
+                    Ok(())
+                }
             }
         }
-      }
     );
 }
 

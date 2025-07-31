@@ -2,6 +2,8 @@ use std::path::PathBuf;
 
 use home::home_dir;
 
+use crate::utils::config::Config;
+
 use super::*;
 
 #[derive(Parser)]
@@ -24,7 +26,7 @@ fn envcli_dir() -> Result<PathBuf> {
     Ok(home_dir)
 }
 
-pub async fn command(args: Args) -> Result<()> {
+pub async fn command(args: Args, _config: Config) -> Result<()> {
     println!("Migrating config file... Please do not interrupt this process.");
 
     let old_config_dir = envcli_dir()?;

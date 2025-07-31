@@ -37,8 +37,7 @@ pub struct Args {
     silent: bool,
 }
 
-pub async fn command(args: Args) -> Result<()> {
-    let config = Config::get().await;
+pub async fn command(args: Args, config: Config) -> Result<()> {
     let key = config.primary_key()?;
     let key = key.unlock(&config.primary_key_password()?);
 
@@ -51,7 +50,8 @@ pub async fn command(args: Args) -> Result<()> {
     let mut all_variables = BTreeMap::<String, String>::new();
     all_variables.insert("IN_ENVX_SHELL".to_owned(), "true".to_owned());
 
-    let variables = get_variables_magic(&project_id, &key, false).await?;
+    let variables =
+        get_variables_magic(&project_id, &key, false, &config).await?;
 
     for variable in variables {
         all_variables.insert(variable.key, variable.value);

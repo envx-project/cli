@@ -13,9 +13,7 @@ pub struct Args {
     secret_key: bool,
 }
 
-pub async fn command(args: Args) -> Result<()> {
-    let config = Config::get().await;
-
+pub async fn command(args: Args, config: Config) -> Result<()> {
     let keys: Vec<&str> = config.keys.all_fingerprints();
 
     let fingerprint = match args.fingerprint {

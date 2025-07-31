@@ -1,4 +1,5 @@
 use super::*;
+use crate::utils::config::Config;
 use crate::utils::key::Key;
 use crate::utils::prompt::prompt_text;
 use crate::utils::rpgp::get_vault_location;
@@ -22,7 +23,7 @@ pub enum Commands {
     Pubkey { path: String },
 }
 
-pub async fn command(args: Args) -> Result<()> {
+pub async fn command(args: Args, _config: Config) -> Result<()> {
     let mut vault_path = get_vault_location()?;
     match args.command {
         Commands::Pubkey { path } => {

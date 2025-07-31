@@ -18,13 +18,14 @@ pub async fn get_variables_magic(
     project_id: &str,
     key: &UnlockedKey,
     all: bool,
+    config: &crate::utils::config::Config,
 ) -> anyhow::Result<Vec<KVPair>> {
     let kvpairs = if all {
-        SDK::get_variables(&project_id, &key)
+        SDK::get_variables(&project_id, &key, &config)
             .await
             .map(|v| v.to_kvpair())
     } else {
-        SDK::get_variables_pruned(&project_id, &key).await
+        SDK::get_variables_pruned(&project_id, &key, &config).await
     };
 
     match kvpairs {

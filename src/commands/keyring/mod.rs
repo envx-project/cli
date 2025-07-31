@@ -4,7 +4,7 @@ pub(super) use clap::Parser;
 #[allow(unused_imports)]
 pub(super) use colored::Colorize;
 
-use crate::commands_enum;
+use crate::{commands_enum, utils::config::Config};
 use clap::Subcommand;
 
 pub mod clear;
@@ -19,7 +19,7 @@ pub struct Args {
 
 commands_enum!(view, clear);
 
-pub async fn command(args: Args) -> Result<()> {
-    Commands::exec(args).await?;
+pub async fn command(args: Args, config: Config) -> Result<()> {
+    Commands::exec(args, config).await?;
     Ok(())
 }
