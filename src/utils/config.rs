@@ -15,7 +15,7 @@ use std::fs::{self, File, OpenOptions};
 use std::io::{BufWriter, Write};
 use std::path::PathBuf;
 
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct Config {
     /// TODO: rethink Salting hashes
     pub salt: String,
@@ -35,6 +35,9 @@ pub struct Config {
 
 impl Drop for Config {
     fn drop(&mut self) {
+        if std::env::var("ENVX_DEBUG").is_ok() {
+            dbg!("writing config");
+        }
         self.write().unwrap();
     }
 }

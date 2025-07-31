@@ -15,6 +15,7 @@ pub struct Args {
 }
 
 pub async fn command(args: Args, config: Config) -> Result<()> {
+    let mut config = config;
     let projects = &config.projects;
     let cwd = std::env::current_dir()?;
 
@@ -23,7 +24,6 @@ pub async fn command(args: Args, config: Config) -> Result<()> {
             println!("Forced new project");
             println!("Unlinking current project...");
             {
-                let mut config = config.clone();
                 let old = config.unlink_project()?;
                 println!(
                     "{} {}",
@@ -49,10 +49,7 @@ pub async fn command(args: Args, config: Config) -> Result<()> {
         None => Choice::choose_project(&config.projects, &key).await?,
     };
 
-    {
-        let mut config = config.clone();
-        config.link_project(&project_id)?;
-    }
+    config.link_project(&project_id)?;
 
     Ok(())
 }
