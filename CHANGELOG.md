@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.6.3](https://github.com/envx-project/cli/compare/v2.6.2...v2.6.3) (2025-07-31)
+
+
+### Bug Fixes
+
+* debugging and config drop behaviour ([501e847](https://github.com/envx-project/cli/commit/501e847f9579dc6c627f94e00c99724813c0010b))
+
 ## [2.6.2](https://github.com/envx-project/cli/compare/v2.6.1...v2.6.2) (2025-07-31)
 
 
