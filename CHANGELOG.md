@@ -1,5 +1,13 @@
 # Changelog
 
+## [2.6.2](https://github.com/envx-project/cli/compare/v2.6.1...v2.6.2) (2025-07-31)
+
+
+### Bug Fixes
+
+* actually good config ([1a037fe](https://github.com/envx-project/cli/commit/1a037fe9755865d8df6587a9a1586e9da85d7a84))
+* lint stuff ([674c291](https://github.com/envx-project/cli/commit/674c291a476ae4d1d90669346b214fe14f906d6f))
+
 ## [2.6.1](https://github.com/envx-project/cli/compare/v2.6.0...v2.6.1) (2025-07-28)
 
 
