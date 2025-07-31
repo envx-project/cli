@@ -929,7 +929,7 @@ dependencies = [
 
 [[package]]
 name = "envx"
-version = "2.6.2"
+version = "2.6.3"
 dependencies = [
  "anyhow",
  "bincode",
