@@ -33,7 +33,7 @@ commands_enum!(
     auth, export, gen, import, link, list_keys, run, set, shell, unlink, unset,
     update, upload, variables, version, whoami,
     // commands with subcommands
-    config, delete, get, keyring, project
+    config, get, keyring, project
 );
 
 fn spawn_update_task() -> tokio::task::JoinHandle<anyhow::Result<String>> {

@@ -61,14 +61,6 @@ impl Default for Config {
     }
 }
 
-const GITHUB_API_RELEASE_URL: &'static str =
-    "https://api.github.com/repos/envx-project/cli/releases/latest";
-
-#[derive(Deserialize)]
-struct GithubApiRelease {
-    tag_name: String,
-}
-
 impl Config {
     pub fn get() -> Self {
         Config::priv_get().unwrap()
