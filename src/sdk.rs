@@ -503,34 +503,4 @@ impl SDK {
 
         Ok(())
     }
-
-    pub async fn rename_project(
-        project_id: &str,
-        new_name: &str,
-        key: &UnlockedKey,
-    ) -> Result<()> {
-        // PUT /v2/projects/:id { project_name: new_name }
-        let client = reqwest::Client::new();
-
-        let body = json!({
-            "project_name": new_name
-        });
-
-        let url = api_url().join(&format!("/v2/projects/{}", project_id))?;
-
-        let res = client
-            .put(url)
-            .json(&body)
-            .header(header::AUTHORIZATION, key.auth_token()?.bearer())
-            .send()
-            .await?;
-
-        let status = res.status();
-
-        if status.is_success() {
-            Ok(())
-        } else {
-            bail!("Failed to rename project: {}", res.text().await?)
-        }
-    }
 }

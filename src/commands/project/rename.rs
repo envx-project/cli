@@ -1,3 +1,5 @@
+use envx_sdk::models::UpdateProjectV2;
+
 use super::*;
 use crate::utils::choice::Choice;
 use crate::utils::prompt::prompt_text;
@@ -24,5 +26,15 @@ pub async fn command(args: Args, config: Config) -> Result<()> {
         prompt_text("New name for project").expect("Failed to prompt")
     });
 
-    SDK::rename_project(&project_id, &new_name, &key).await
+    let sdk_config = config.sdk_configuration(&key)?;
+    envx_sdk::apis::project_api::update(
+        &sdk_config,
+        &project_id,
+        UpdateProjectV2 {
+            project_name: Some(Some(new_name)),
+        },
+    )
+    .await?;
+
+    Ok(())
 }
