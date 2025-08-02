@@ -1,6 +1,5 @@
-use super::config::Config;
-use anyhow::{anyhow, Context, Ok, Result};
-use colored::Colorize;
+use super::key::UnlockedKey;
+use anyhow::{anyhow, bail, Context, Ok, Result};
 use hex::ToHex;
 use pgp::composed::message::Message;
 // use pgp::crypto::ecc_curve::ECCCurve;
@@ -143,7 +142,7 @@ pub fn decrypt(
 
 pub fn decrypt_full_many(
     messages: Vec<String>,
-    config: &Config,
+    key: &UnlockedKey,
 ) -> Result<Vec<String>> {
     let first = if let Some(first) = messages.first() {
         first
@@ -158,35 +157,12 @@ pub fn decrypt_full_many(
         .iter()
         .map(|e| e.encode_hex_upper())
         .collect();
-
-    let keyring: Vec<String> = config
-        .keys
-        .iter()
-        .map(|k| k.fingerprint.clone())
-        .collect::<Vec<String>>();
-
-    let available_keys: Vec<String> = keyring
-        .iter()
-        .filter(|&keyring_key| {
-            recipients.iter().any(|recipient_key| {
-                keyring_key
-                    .to_lowercase()
-                    .contains(&recipient_key.to_lowercase())
-            })
-        })
-        .cloned()
-        .collect();
-
-    if available_keys.is_empty() {
-        return Err(anyhow::anyhow!(
-            "{}",
-            "No keys available to decrypt this message".red()
-        ));
+    if !recipients.contains(&key.key.fingerprint) {
+        bail!("This message was not encrypted for your key.");
     }
 
-    let primary_key = config.primary_key()?;
-    let ssk: SignedSecretKey = SignedSecretKey::try_from(&primary_key)?;
-    let passphrase = config.primary_key_password()?;
+    let ssk: SignedSecretKey = SignedSecretKey::try_from(key)?;
+    let passphrase = &key.password;
 
     let decrypted = messages
         .par_iter()

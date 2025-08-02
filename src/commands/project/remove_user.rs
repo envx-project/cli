@@ -54,7 +54,7 @@ pub async fn command(args: Args, config: Config) -> anyhow::Result<()> {
         }
     };
 
-    let variables = SDK::get_variables(&project_id, &key, &config).await?;
+    let variables = SDK::get_variables(&project_id, &key).await?;
     let kvpairs = variables.to_kvpair();
 
     let users_without_users_to_remove = project_info

@@ -12,7 +12,7 @@ use crate::{
 use anyhow::bail;
 use pgp::{Deserializable, SignedPublicKey};
 use rayon::iter::{IntoParallelRefIterator, ParallelIterator};
-use reqwest::header;
+use reqwest::{header, StatusCode};
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 use url::Url;
@@ -148,7 +148,6 @@ impl SDK {
 
     pub async fn get_all_variables(
         key: &UnlockedKey,
-        config: &Config,
     ) -> Result<Vec<DecryptedVariable>> {
         let client = reqwest::Client::new();
 
@@ -176,7 +175,7 @@ impl SDK {
                 .iter()
                 .map(|e| e.value.clone())
                 .collect::<Vec<String>>(),
-            &config,
+            &key,
         )?;
 
         let kvpairs = decrypted
@@ -202,7 +201,6 @@ impl SDK {
     pub async fn get_variables(
         project_id: &str,
         key: &UnlockedKey,
-        config: &Config,
     ) -> Result<Vec<DecryptedVariable>> {
         // url : /project/:id/variables
         let client = reqwest::Client::new();
@@ -210,12 +208,28 @@ impl SDK {
         let url =
             api_url().join(&format!("/project/{}/variables", project_id))?;
 
-        let encrypted = client
-            .get(url)
-            .header(header::AUTHORIZATION, key.auth_token()?.bearer())
-            .send()
-            .await
-            .context("Failed to get variables")?
+        let response = match client.get(url).send().await {
+            Ok(r) => r,
+            Err(e) => {
+                if let Some(status) = e.status() {
+                    // using a match so that we can expand on the error handling later
+                    match status {
+                        StatusCode::UNAUTHORIZED => {
+                            bail!("You do not have access to the project {}. Please ask the owner to add you to the project.", project_id);
+                        }
+                        StatusCode::INTERNAL_SERVER_ERROR => {
+                            bail!("Server error ocurred: {}", e.to_string());
+                        }
+                        _ => {
+                            bail!("Failed to get variables due to unexpected Error Code: {}\n{}", status, e.to_string());
+                        }
+                    }
+                } else {
+                    bail!("Failed to get variables: {}", e.to_string());
+                }
+            }
+        };
+        let encrypted = response
             .json::<Vec<EncryptedVariable>>()
             .await
             .context("Failed to parse API response into EncryptedVariables")?;
@@ -225,7 +239,7 @@ impl SDK {
                 .iter()
                 .map(|e| e.value.clone())
                 .collect::<Vec<String>>(),
-            &config,
+            &key,
         )?;
 
         let kvpairs = decrypted
@@ -253,9 +267,8 @@ impl SDK {
     pub async fn get_variables_pruned(
         project_id: &str,
         key: &UnlockedKey,
-        config: &crate::utils::config::Config,
     ) -> Result<Vec<KVPair>> {
-        let variables = Self::get_variables(project_id, &key, &config)
+        let variables = Self::get_variables(project_id, &key)
             .await
             .context("Failed to get variables")?;
 

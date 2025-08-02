@@ -33,9 +33,9 @@ pub async fn command(args: Args, config: Config) -> Result<()> {
         Some(v) => v,
         None => {
             let variables = if let Some(project_id) = project_id {
-                SDK::get_variables(&project_id, &key, &config).await?
+                SDK::get_variables(&project_id, &key).await?
             } else {
-                SDK::get_all_variables(&key, &config).await?
+                SDK::get_all_variables(&key).await?
             };
 
             prompt::prompt_options("Select variables to delete", variables)?.id

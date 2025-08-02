@@ -182,6 +182,22 @@ impl TryFrom<&Key> for pgp::SignedPublicKey {
     }
 }
 
+impl TryFrom<&UnlockedKey> for pgp::SignedSecretKey {
+    type Error = KeyError;
+
+    fn try_from(key: &UnlockedKey) -> Result<Self, Self::Error> {
+        key.key.signed_secret_key()
+    }
+}
+
+impl TryFrom<&UnlockedKey> for pgp::SignedPublicKey {
+    type Error = KeyError;
+
+    fn try_from(key: &UnlockedKey) -> Result<Self, Self::Error> {
+        key.key.signed_public_key()
+    }
+}
+
 pub trait VecKeyTrait {
     fn all_fingerprints(&self) -> Vec<&str>;
 }

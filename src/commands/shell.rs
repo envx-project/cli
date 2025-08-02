@@ -50,8 +50,7 @@ pub async fn command(args: Args, config: Config) -> Result<()> {
     let mut all_variables = BTreeMap::<String, String>::new();
     all_variables.insert("IN_ENVX_SHELL".to_owned(), "true".to_owned());
 
-    let variables =
-        get_variables_magic(&project_id, &key, false, &config).await?;
+    let variables = get_variables_magic(&project_id, &key, false).await?;
 
     for variable in variables {
         all_variables.insert(variable.key, variable.value);

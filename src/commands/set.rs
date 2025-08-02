@@ -63,7 +63,7 @@ pub async fn command(args: Args, config: Config) -> Result<()> {
         return Err(anyhow::anyhow!("No valid KV pairs provided"));
     }
 
-    let variables = SDK::get_variables(&project_id, &key, &config).await?;
+    let variables = SDK::get_variables(&project_id, &key).await?;
 
     let existing_keys = variables
         .iter()

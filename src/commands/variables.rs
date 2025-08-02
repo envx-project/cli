@@ -29,8 +29,7 @@ pub async fn command(args: Args, config: Config) -> Result<()> {
     let key = key.unlock(&config.primary_key_password()?);
     let project_id = Choice::try_project(args.project_id, &key).await?;
 
-    let kvpairs =
-        get_variables_magic(&project_id, &key, args.all, &config).await?;
+    let kvpairs = get_variables_magic(&project_id, &key, args.all).await?;
 
     match mode {
         Mode::KV => {

@@ -46,7 +46,7 @@ pub async fn command(args: Args, config: Config) -> Result<()> {
 
     let project_info = SDK::get_project_info(&project_id, &key).await?;
 
-    let variables = SDK::get_variables(&project_id, &key, &config).await?;
+    let variables = SDK::get_variables(&project_id, &key).await?;
     let kvpairs = variables.to_kvpair();
 
     let recipients = project_info
