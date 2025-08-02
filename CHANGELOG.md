@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.7.0](https://github.com/envx-project/cli/compare/v2.6.3...v2.7.0) (2025-08-02)
+
+
+### Features
+
+* add many users ([03bbdb7](https://github.com/envx-project/cli/commit/03bbdb77c409ffaae4add7245561e715b99531a4))
+
 ## [2.6.3](https://github.com/envx-project/cli/compare/v2.6.2...v2.6.3) (2025-07-31)
 
 
