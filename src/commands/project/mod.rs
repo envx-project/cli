@@ -4,7 +4,7 @@ pub(super) use clap::Parser;
 #[allow(unused_imports)]
 pub(super) use colored::Colorize;
 
-pub mod add_user;
+pub mod add_users;
 pub mod delete;
 pub mod id;
 pub mod info;
@@ -27,7 +27,7 @@ pub struct Args {
 }
 
 commands_enum!(
-    add_user,
+    add_users,
     delete,
     id,
     list_users,
