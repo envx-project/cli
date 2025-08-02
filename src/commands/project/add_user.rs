@@ -14,6 +14,7 @@ use rayon::iter::{IntoParallelRefIterator, ParallelIterator};
 use reqwest::header;
 use serde_json::json;
 use std::collections::HashSet;
+use uuid::Uuid;
 
 /// Add a user to a project
 #[derive(Parser)]
@@ -27,39 +28,47 @@ pub struct Args {
     project_id: Option<String>,
 
     /// User ID to add to project
-    #[clap(short, long)]
-    user_id: Option<String>,
+    #[clap(trailing_var_arg = true)]
+    user_ids: Vec<Uuid>,
 }
 
 pub async fn command(args: Args, config: Config) -> Result<()> {
-    let user_id = match args.user_id {
-        Some(u) => u,
-        None => prompt_text("User ID: ")?,
+    let user_ids = if args.user_ids.is_empty() {
+        vec![prompt_text("User ID: ")?.parse::<Uuid>()?]
+    } else {
+        args.user_ids
     };
-    let user_id = user_id.trim().to_string();
-
     let key = config.primary_key()?;
     let password = config.primary_key_password()?;
     let key = key.unlock(&password);
+    let sdk_config = config.sdk_configuration(&key)?;
 
     let project_id = Choice::try_project(args.project_id, &key).await?;
-
-    let project_info = SDK::get_project_info(&project_id, &key).await?;
+    let project_info = envx_sdk::apis::project_api::get_project_info_v2(
+        &sdk_config,
+        &project_id,
+    )
+    .await?;
 
     let variables = SDK::get_variables(&project_id, &key).await?;
     let kvpairs = variables.to_kvpair();
 
-    let recipients = project_info
+    let users =
+        envx_sdk::apis::user_api::get_many_users(&sdk_config, user_ids.clone())
+            .await?;
+
+    let mut recipients = project_info
         .users
         .iter()
         .map(|e| e.public_key.clone())
         .collect::<HashSet<String>>();
+    recipients.extend(users.into_iter().map(|u| u.public_key));
+    recipients.insert(key.key.public_key_str()?);
 
-    let mut pubkeys = recipients
-        .iter()
+    let pubkeys = recipients
+        .par_iter()
         .map(|k| Ok(SignedPublicKey::from_string(k)?.0))
         .collect::<Result<Vec<SignedPublicKey>>>()?;
-    pubkeys.push(pgp::SignedPublicKey::try_from(&key.key)?);
 
     let messages = kvpairs
         .par_iter()
@@ -97,8 +106,8 @@ pub async fn command(args: Args, config: Config) -> Result<()> {
 
     println!("Updated {} variables", res.len());
     println!("IDs: {:?}", res);
-
-    SDK::add_user_to_project(&key, &user_id, &project_id).await?;
+    envx_sdk::apis::project_api::add_user(&sdk_config, &project_id, user_ids)
+        .await?;
 
     Ok(())
 }

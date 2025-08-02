@@ -157,7 +157,19 @@ pub fn decrypt_full_many(
         .iter()
         .map(|e| e.encode_hex_upper())
         .collect();
-    if !recipients.contains(&key.key.fingerprint) {
+
+    let last_16 = key
+        .key
+        .fingerprint
+        .chars()
+        .rev()
+        .take(16)
+        .collect::<Vec<_>>()
+        .into_iter()
+        .rev()
+        .collect::<String>()
+        .to_uppercase();
+    if !recipients.contains(&last_16) {
         bail!("This message was not encrypted for your key.");
     }
 

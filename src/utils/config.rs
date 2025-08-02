@@ -3,17 +3,19 @@
 use crate::utils::keyring::{get_password, set_password};
 use crate::utils::prompt::prompt_password;
 
-use super::key::Key;
+use super::key::{Key, UnlockedKey};
 use super::settings::Settings;
 use anyhow::anyhow;
 use anyhow::{Context, Result};
 use chrono::Utc;
 use colored::Colorize;
+use envx_sdk::apis::configuration::Configuration;
 use home::home_dir;
 use serde::{Deserialize, Serialize};
 use std::fs::{self, File, OpenOptions};
 use std::io::{BufWriter, Write};
 use std::path::PathBuf;
+use url::Url;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Config {
@@ -67,6 +69,33 @@ impl Default for Config {
 impl Config {
     pub fn get() -> Self {
         Config::priv_get().unwrap()
+    }
+
+    pub fn sdk_url(&self) -> Result<Url> {
+        let dev_mode = std::env::var("DEV_MODE").is_ok();
+        if dev_mode {
+            return Ok(Url::parse("http://localhost:3000")?);
+        }
+        let url = Config::get()
+            .sdk_url
+            .clone()
+            .unwrap_or("https://api.envx.sh".into());
+        let url = Url::parse(&url)?;
+        Ok(url)
+    }
+
+    pub fn sdk_configuration(
+        &self,
+        key: &UnlockedKey,
+    ) -> Result<Configuration> {
+        let mut configuration = Configuration::new();
+        configuration.base_path = self
+            .sdk_url()?
+            .to_string()
+            .trim_end_matches('/')
+            .to_string();
+        configuration.bearer_access_token = Some(key.auth_token()?.to_string());
+        Ok(configuration)
     }
 
     fn priv_get() -> Result<Self> {

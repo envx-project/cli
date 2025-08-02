@@ -160,12 +160,34 @@ impl SDK {
                 .context("No UUID for key, try `envx upload`")?
         ));
 
-        let encrypted = client
+        let response = match client
             .get(url)
             .header(header::AUTHORIZATION, key.auth_token()?.bearer())
             .send()
             .await
-            .context("Failed to get variables")?
+        {
+            Ok(r) => r,
+            Err(e) => {
+                if let Some(status) = e.status() {
+                    // using a match so that we can expand on the error handling later
+                    match status {
+                        StatusCode::UNAUTHORIZED => {
+                            bail!("for some reason, you are unauthorized")
+                            // bail!("You do not have access to the project {}. Please ask the owner to add you to the project.", project_id);
+                        }
+                        StatusCode::INTERNAL_SERVER_ERROR => {
+                            bail!("Server error ocurred: {}", e.to_string());
+                        }
+                        _ => {
+                            bail!("Failed to get variables due to unexpected Error Code: {}\n{}", status, e.to_string());
+                        }
+                    }
+                } else {
+                    bail!("Failed to get variables: {}", e.to_string());
+                }
+            }
+        };
+        let encrypted = response
             .json::<Vec<EncryptedVariable>>()
             .await
             .context("Failed to parse API response into EncryptedVariables")?;
@@ -208,7 +230,12 @@ impl SDK {
         let url =
             api_url().join(&format!("/project/{}/variables", project_id))?;
 
-        let response = match client.get(url).send().await {
+        let response = match client
+            .get(url)
+            .header(header::AUTHORIZATION, key.auth_token()?.bearer())
+            .send()
+            .await
+        {
             Ok(r) => r,
             Err(e) => {
                 if let Some(status) = e.status() {
@@ -229,6 +256,7 @@ impl SDK {
                 }
             }
         };
+
         let encrypted = response
             .json::<Vec<EncryptedVariable>>()
             .await
