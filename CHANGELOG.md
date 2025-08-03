@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.8.0](https://github.com/envx-project/cli/compare/v2.7.0...v2.8.0) (2025-08-03)
+
+
+### Features
+
+* add list_projects command ([bf95fdd](https://github.com/envx-project/cli/commit/bf95fddb936756bdc9361a2fbf275c0da27dfef6))
+
 ## [2.7.0](https://github.com/envx-project/cli/compare/v2.6.3...v2.7.0) (2025-08-02)
 
 
