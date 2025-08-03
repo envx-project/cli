@@ -30,10 +30,28 @@ pub struct Args {
 // Generates the commands based on the modules in the commands directory
 // Specify the modules you want to include in the commands_enum! macro
 commands_enum!(
-    auth, export, gen, import, link, list_keys, run, set, shell, unlink, unset,
-    update, upload, variables, version, whoami,
+    auth,
+    export,
+    gen,
+    import,
+    link,
+    list_keys,
+    list_projects,
+    run,
+    set,
+    shell,
+    unlink,
+    unset,
+    update,
+    upload,
+    variables,
+    version,
+    whoami,
     // commands with subcommands
-    config, get, keyring, project
+    config,
+    get,
+    keyring,
+    project
 );
 
 fn spawn_update_task() -> tokio::task::JoinHandle<anyhow::Result<String>> {
