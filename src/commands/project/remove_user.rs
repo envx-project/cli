@@ -1,7 +1,8 @@
-use std::collections::HashSet;
+use std::{collections::HashSet, fmt::Display};
 
 use anyhow::Result;
 use clap::Parser;
+use envx_sdk::models::RemoveUserBody;
 use pgp::{Deserializable, SignedPublicKey};
 use rayon::iter::{IntoParallelRefIterator, ParallelIterator};
 use reqwest::header;
@@ -9,7 +10,6 @@ use serde_json::json;
 
 use crate::{
     sdk::{api_url, SDK},
-    types::User,
     utils::{
         choice::Choice,
         config::Config,
@@ -22,10 +22,6 @@ use crate::{
 /// Remove a user from a project
 #[derive(Parser)]
 pub struct Args {
-    /// Key to sign with
-    #[clap(short, long)]
-    key: Option<String>,
-
     /// Project ID to add user to
     #[clap(short, long)]
     project_id: Option<String>,
@@ -35,48 +31,62 @@ pub struct Args {
     user_id: Option<String>,
 }
 
+struct DisplayUser(envx_sdk::models::User);
+impl Display for DisplayUser {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{} - {}", self.0.username, self.0.id)
+    }
+}
+
 pub async fn command(args: Args, config: Config) -> anyhow::Result<()> {
-    let key = config.primary_key()?;
-    let password = config.primary_key_password()?;
-    let key = key.unlock(&password);
+    let key = config.unlocked_primary_key()?;
+    let sdk_config = config.sdk_configuration(&key)?;
 
     let project_id = Choice::try_project(args.project_id, &key).await?;
-    let project_info = SDK::get_project_info(&project_id, &key).await?;
+    let project_info = envx_sdk::apis::project_api::get_project_info_v2(
+        &sdk_config,
+        &project_id,
+    )
+    .await?;
 
-    let users_to_remove = match args.user_id {
-        Some(u) => vec![u],
+    let (selected, selected_ids) = match args.user_id {
+        Some(uid) => {
+            let user = project_info
+                .users
+                .clone()
+                .into_iter()
+                .find(|u| u.id == uid)
+                .ok_or(anyhow::anyhow!("User not found"))?;
+            (HashSet::from([user.public_key]), vec![uid])
+        }
         None => {
             let users = prompt_multi_options(
                 "Users to Remove",
-                project_info.users.clone(),
+                project_info
+                    .users
+                    .clone()
+                    .into_iter()
+                    .map(DisplayUser)
+                    .collect(),
             )?;
-            users.into_iter().map(|u| u.id).collect()
+            users
+                .into_iter()
+                .map(|u| (u.0.public_key, u.0.id))
+                .collect::<Vec<_>>()
+                .into_iter()
+                .unzip()
         }
     };
 
     let variables = SDK::get_variables(&project_id, &key).await?;
     let kvpairs = variables.to_kvpair();
 
-    let users_without_users_to_remove = project_info
+    let pubkeys = project_info
         .users
         .into_iter()
-        .filter(|u| !users_to_remove.contains(&u.id))
-        .collect::<Vec<User>>();
-
-    let recipients = users_without_users_to_remove
-        .iter()
-        .map(|e| e.public_key.clone())
-        .collect::<Vec<String>>();
-
-    let recipients = recipients
-        .into_iter()
-        .collect::<HashSet<String>>()
-        .into_iter()
-        .collect::<Vec<String>>();
-
-    let pubkeys = recipients
-        .iter()
-        .map(|k| Ok(SignedPublicKey::from_string(k)?.0))
+        .map(|e| e.public_key)
+        .filter(|e| !selected.contains(e))
+        .map(|k| Ok(SignedPublicKey::from_string(&k)?.0))
         .collect::<Result<Vec<SignedPublicKey>>>()?;
 
     let messages = kvpairs
@@ -84,7 +94,7 @@ pub async fn command(args: Args, config: Config) -> anyhow::Result<()> {
         .map(|k| encrypt(&k.to_json()?, &pubkeys))
         .collect::<Result<Vec<String>>>()?;
 
-    let encrypted: Vec<EncryptedVariable> = messages
+    let encrypted = messages
         .into_iter()
         .zip(variables.into_iter())
         .map(|(m, k)| EncryptedVariable {
@@ -93,7 +103,7 @@ pub async fn command(args: Args, config: Config) -> anyhow::Result<()> {
             project_id: k.project_id,
             created_at: k.created_at,
         })
-        .collect();
+        .collect::<Vec<_>>();
 
     let body = json!({
         "variables": encrypted,
@@ -116,15 +126,17 @@ pub async fn command(args: Args, config: Config) -> anyhow::Result<()> {
     println!("Updated {} variables", res.len());
     println!("IDs: {:?}", res);
 
-    SDK::remove_users_from_project(
-        &key,
-        users_to_remove.clone(),
-        &project_info.project_id,
+    envx_sdk::apis::project_api::remove_users(
+        &sdk_config,
+        &project_id,
+        RemoveUserBody {
+            user_ids: selected_ids,
+        },
     )
     .await?;
 
     println!("Successfully removed users from project");
-    println!("Users removed: {:?}", users_to_remove);
+    println!("Users removed: {:?}", selected);
 
     Ok(())
 }

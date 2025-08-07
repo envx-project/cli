@@ -304,66 +304,9 @@ impl SDK {
         Ok(kvpairs)
     }
 
-    pub async fn get_user(
-        key: &UnlockedKey,
-        user_to_get: &str,
-    ) -> Result<(String, String)> {
-        // url: /user/:id
-        let client = reqwest::Client::new();
-
-        #[derive(Serialize, Deserialize, Debug)]
-        pub struct StrippedUser {
-            pub id: String,
-            pub public_key: String,
-        }
-
-        let url = api_url().join("user/")?.join(user_to_get)?;
-
-        let user = client
-            .get(url)
-            .header(header::AUTHORIZATION, key.auth_token()?.bearer())
-            .send()
-            .await?
-            .json::<StrippedUser>()
-            .await?;
-
-        Ok((user.id, user.public_key))
-    }
-
-    pub async fn add_user_to_project(
-        key: &UnlockedKey,
-        user_to_add: &str,
-        project_id: &str,
-    ) -> Result<()> {
-        // url: /project/:id/add-user
-        let client = reqwest::Client::new();
-
-        let body = json!({
-            "user_id": user_to_add
-        });
-
-        let url =
-            api_url().join(&format!("/project/{}/add-user", project_id))?;
-
-        let res = client
-            .post(url.join(&format!("/project/{}/add-user", project_id))?)
-            .header(header::AUTHORIZATION, key.auth_token()?.bearer())
-            .json(&body)
-            .send()
-            .await?;
-
-        let status = res.status();
-
-        if status.is_success() {
-            Ok(())
-        } else {
-            bail!("Failed to add user to project: {}", res.text().await?)
-        }
-    }
-
     pub async fn remove_users_from_project(
         key: &UnlockedKey,
-        users_to_remove: Vec<String>,
+        users_to_remove: &Vec<String>,
         project_id: &str,
     ) -> Result<()> {
         // url: /project/:id/remove-user
@@ -484,23 +427,5 @@ impl SDK {
             .await?;
 
         Ok(res)
-    }
-    pub async fn delete_key(key: &UnlockedKey) -> Result<()> {
-        // DELETE /user/:id
-        let client = reqwest::Client::new();
-
-        let url = api_url()
-            .join("user/")?
-            .join(&key.key.uuid.clone().unwrap())?;
-
-        client
-            .delete(url)
-            .header(header::AUTHORIZATION, key.auth_token()?.bearer())
-            .send()
-            .await?
-            .text()
-            .await?;
-
-        Ok(())
     }
 }

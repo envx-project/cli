@@ -19,10 +19,6 @@ use uuid::Uuid;
 /// Add a user to a project
 #[derive(Parser)]
 pub struct Args {
-    /// Key to sign with
-    #[clap(short, long)]
-    key: Option<String>,
-
     /// Project ID to add user to
     #[clap(short, long)]
     project_id: Option<String>,
@@ -38,9 +34,8 @@ pub async fn command(args: Args, config: Config) -> Result<()> {
     } else {
         args.user_ids
     };
-    let key = config.primary_key()?;
-    let password = config.primary_key_password()?;
-    let key = key.unlock(&password);
+
+    let key = config.unlocked_primary_key()?;
     let sdk_config = config.sdk_configuration(&key)?;
 
     let project_id = Choice::try_project(args.project_id, &key).await?;

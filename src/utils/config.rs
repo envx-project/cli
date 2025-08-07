@@ -168,6 +168,12 @@ impl Config {
         Ok(())
     }
 
+    pub fn unlocked_primary_key(&self) -> Result<UnlockedKey> {
+        let key = self.primary_key()?;
+        let password = self.primary_key_password()?;
+        Ok(key.unlock(&password))
+    }
+
     pub fn primary_key(&self) -> Result<Key> {
         self.primary_key.clone().context("No primary key set")
     }

@@ -97,7 +97,7 @@ pub async fn check_update(force: bool) -> anyhow::Result<String> {
 
 #[cfg(not(target_os = "windows"))]
 pub async fn command(_args: Args, _config: Config) -> Result<()> {
-    let latest_version = check_update().await?;
+    let latest_version = check_update(true).await?;
 
     if matches!(
         compare_semver(env!("CARGO_PKG_VERSION"), &latest_version),

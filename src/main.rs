@@ -60,7 +60,7 @@ fn spawn_update_task() -> tokio::task::JoinHandle<anyhow::Result<String>> {
         if !std::io::stdout().is_terminal() {
             bail!("Stdout is not a terminal");
         }
-        let latest_version = update::check_update().await?;
+        let latest_version = update::check_update(false).await?;
 
         Ok(latest_version)
     })

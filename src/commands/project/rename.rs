@@ -2,8 +2,8 @@ use envx_sdk::models::UpdateProjectV2;
 
 use super::*;
 use crate::utils::choice::Choice;
+use crate::utils::config::Config;
 use crate::utils::prompt::prompt_text;
-use crate::{sdk::SDK, utils::config::Config};
 
 /// Rename a project
 #[derive(Parser)]
