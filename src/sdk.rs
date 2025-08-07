@@ -304,37 +304,6 @@ impl SDK {
         Ok(kvpairs)
     }
 
-    pub async fn remove_users_from_project(
-        key: &UnlockedKey,
-        users_to_remove: &Vec<String>,
-        project_id: &str,
-    ) -> Result<()> {
-        // url: /project/:id/remove-user
-        let client = reqwest::Client::new();
-
-        let body = json!({
-            "users": users_to_remove
-        });
-
-        let url =
-            api_url().join(&format!("/project/{}/remove-user", project_id))?;
-
-        let res = client
-            .post(url)
-            .header(header::AUTHORIZATION, key.auth_token()?.bearer())
-            .json(&body)
-            .send()
-            .await?;
-
-        let status = res.status();
-
-        if status.is_success() {
-            Ok(())
-        } else {
-            bail!("Failed to remove user from project: {}", res.text().await?)
-        }
-    }
-
     pub async fn delete_project(
         key: &UnlockedKey,
         project_id: &str,
