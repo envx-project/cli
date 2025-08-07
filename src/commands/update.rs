@@ -41,7 +41,7 @@ struct GithubApiRelease {
     tag_name: String,
 }
 
-pub async fn check_update() -> anyhow::Result<String> {
+pub async fn check_update(force: bool) -> anyhow::Result<String> {
     let home = home_dir().context("Failed to get home directory")?;
     let path = home.join(".config/envx/version.json");
     let update = if !path.exists() {
@@ -54,8 +54,11 @@ pub async fn check_update() -> anyhow::Result<String> {
     };
 
     if let Some(last_update_check) = update.last_update_check {
-        if chrono::Utc::now().date_naive() == last_update_check.date_naive() {
-            bail!("Update check already ran today");
+        if !force {
+            if chrono::Utc::now().date_naive() == last_update_check.date_naive()
+            {
+                bail!("Update check already ran today");
+            }
         }
     }
 
