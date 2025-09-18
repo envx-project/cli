@@ -1,5 +1,14 @@
 # Changelog
 
+## [2.8.1](https://github.com/envx-project/cli/compare/v2.8.0...v2.8.1) (2025-09-18)
+
+
+### Bug Fixes
+
+* include force flag in update command ([a0c02bc](https://github.com/envx-project/cli/commit/a0c02bc3c7e9980ccf999d12eb09e3ae06ddf569))
+* modernize the "remove user" command ([b1a4f85](https://github.com/envx-project/cli/commit/b1a4f853fdd7a7946303c092a432718aac22e569))
+* segfault ([5b44208](https://github.com/envx-project/cli/commit/5b442086009899c8020c6eb9d50ed7203a03b018))
+
 ## [2.8.0](https://github.com/envx-project/cli/compare/v2.7.0...v2.8.0) (2025-08-03)
 
 
