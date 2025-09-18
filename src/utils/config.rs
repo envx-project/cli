@@ -280,7 +280,8 @@ pub fn get_config_file_path() -> Result<PathBuf> {
     path.push(".config/envx/config.json");
     // if it doesn't exist, create it
     if !path.exists() {
-        let default = serde_json::to_string_pretty(&Config::default())?;
+        let tmp = std::mem::ManuallyDrop::new(Config::default());
+        let default = serde_json::to_string_pretty(&*tmp)?;
         let parent_path =
             path.parent().context("Failed to get parent directory")?;
         fs::create_dir_all(parent_path)?;
