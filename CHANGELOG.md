@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.9.0](https://github.com/envx-project/cli/compare/v2.8.1...v2.9.0) (2025-10-16)
+
+
+### Features
+
+* read password from command ([34761e8](https://github.com/envx-project/cli/commit/34761e844f15f11da598ce7f9db2f7580b43e744))
+
 ## [2.8.1](https://github.com/envx-project/cli/compare/v2.8.0...v2.8.1) (2025-09-18)
 
 
