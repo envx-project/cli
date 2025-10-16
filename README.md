@@ -28,6 +28,20 @@ Download the binary from [this page](https://github.com/envx-project/cli/release
 
 For more detailed instructions, see [windows installation](https://github.com/envx-project/cli/blob/main/windows-installation.md)
 
+## setting a primary key password command
+
+You can set a primary key password command (such as `op read "op://my secret
+password"`) by setting `config.primary_key_command` in your config file.
+
+```json
+{
+    ...
+    "primary_key_command": ["op", "read", "op://my secret password"]
+}
+```
+
+A command will be available for this in the future (maybe). See #72.
+
 ### Usage
 
 ```bash

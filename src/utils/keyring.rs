@@ -4,7 +4,7 @@ use anyhow::bail;
 use keyring::{Entry as Keyring, Result as KeyringResult};
 use std::{
     fs,
-    io::Write,
+    io::{IsTerminal, Write},
     path::PathBuf,
     time::{Duration, SystemTime},
 };
@@ -69,6 +69,10 @@ pub fn get_password(config: &Config) -> anyhow::Result<String> {
     }
 
     if let Some(password) = &config.primary_key_password {
+        if std::io::stdin().is_terminal() {
+            eprintln!("Using password from config will be deprecated in a future version! Please use config.primary_key_command instead.");
+            eprintln!("For more information, see https://github.com/envx-project/cli?tab=readme-ov-file#setting-a-primary-key-password-command");
+        }
         return Ok(password.clone());
     }
 
