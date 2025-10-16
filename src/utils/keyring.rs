@@ -65,7 +65,7 @@ pub fn get_password(config: &Config) -> anyhow::Result<String> {
             bail!("Command failed");
         }
         let password = String::from_utf8(output.stdout)?;
-        return Ok(password);
+        return Ok(password.trim_end_matches('\n').to_string());
     }
 
     if let Some(password) = &config.primary_key_password {
