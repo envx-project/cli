@@ -24,7 +24,7 @@ pub async fn command(args: Args, config: Config) -> Result<()> {
 
     println!("This will print the saved password in PLAIN TEXT");
     match prompt_confirm_with_default(
-        "Are you sure you want to continue? (y/N)",
+        "Are you sure you want to continue?",
         false,
     ) {
         Ok(true) => {

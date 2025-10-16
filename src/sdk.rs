@@ -18,13 +18,6 @@ use serde_json::json;
 use url::Url;
 use utils::variable::DeDupe;
 
-#[derive(Serialize, Deserialize, Debug)]
-pub struct SetEnvParams {
-    pub message: String,
-    pub allowed_keys: Vec<String>,
-    pub project_id: Option<String>,
-}
-
 pub fn api_url() -> Url {
     fn try_get_url() -> Result<Url> {
         let dev_mode = std::env::var("DEV_MODE").is_ok();

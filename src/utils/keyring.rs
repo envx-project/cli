@@ -47,6 +47,27 @@ pub fn get_password(config: &Config) -> anyhow::Result<String> {
 
     let fingerprint = &config.primary_key()?.fingerprint;
 
+    if let Some(mut command) = config.primary_key_command.clone() {
+        if command.is_empty() {
+            bail!("No command provided");
+        }
+
+        if std::env::var("ENVX_DEBUG").is_ok() {
+            println!("Running command: {:?}", command);
+        }
+
+        let first = command.remove(0);
+        let output = std::process::Command::new(first)
+            .args(command)
+            .output()
+            .expect("Failed to run command");
+        if !output.status.success() {
+            bail!("Command failed");
+        }
+        let password = String::from_utf8(output.stdout)?;
+        return Ok(password);
+    }
+
     if let Some(password) = &config.primary_key_password {
         return Ok(password.clone());
     }

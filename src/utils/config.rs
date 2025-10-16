@@ -33,6 +33,8 @@ pub struct Config {
     pub projects: Vec<Project>,
     /// Password for the primary key
     pub primary_key_password: Option<String>,
+    /// Command to run to get the primary key
+    pub primary_key_command: Option<Vec<String>>,
 }
 
 impl Drop for Config {
@@ -62,6 +64,7 @@ impl Default for Config {
             settings: None,
             projects: vec![],
             primary_key_password: None,
+            primary_key_command: None,
         }
     }
 }
