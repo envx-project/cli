@@ -1,5 +1,13 @@
 # Changelog
 
+## [2.9.1](https://github.com/envx-project/cli/compare/v2.9.0...v2.9.1) (2025-10-16)
+
+
+### Bug Fixes
+
+* offline envx ([68afb72](https://github.com/envx-project/cli/commit/68afb72d01f4bad86aeb2349f13e5308672ec55c))
+* trim trailing \n ([59ca702](https://github.com/envx-project/cli/commit/59ca7020a336c43cdca5017f312de0ec9a2b3066))
+
 ## [2.9.0](https://github.com/envx-project/cli/compare/v2.8.1...v2.9.0) (2025-10-16)
 
 
