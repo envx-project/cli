@@ -40,7 +40,7 @@ password"`) by setting `config.primary_key_command` in your config file.
 }
 ```
 
-A command will be available for this in the future (maybe). See #72.
+A command will be available for this in the future (maybe). See [#72](https://github.com/envx-project/cli/issues/72).
 
 ### Usage
 
