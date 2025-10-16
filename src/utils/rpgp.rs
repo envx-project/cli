@@ -94,7 +94,7 @@ pub fn encrypt_to_msg(
 
     let new_msg = msg.encrypt_to_keys_seipdv1(
         &mut rng,
-        crypto::sym::SymmetricKeyAlgorithm::AES128,
+        crypto::sym::SymmetricKeyAlgorithm::AES256,
         &borrowed_keys,
     )?;
 

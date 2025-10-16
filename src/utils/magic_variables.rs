@@ -62,7 +62,7 @@ async fn write_variables_magic(
 ) -> anyhow::Result<()> {
     let stringified_kvpairs = kvpairs
         .iter()
-        .map(|kv| kv.value.to_string())
+        .map(|kv| kv.to_string())
         .collect::<Vec<String>>()
         .join("\n");
     let msg = encrypt_to_msg(&stringified_kvpairs, &[key.try_into()?])?;
