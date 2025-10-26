@@ -47,9 +47,9 @@ pub enum UpdateManyError {
 
 pub async fn delete(configuration: &configuration::Configuration, variable_id: &str) -> Result<(), Error<DeleteError>> {
     // add a prefix to parameters to efficiently prevent name collisions
-    let p_variable_id = variable_id;
+    let p_path_variable_id = variable_id;
 
-    let uri_str = format!("{}/v2/variables/{variable_id}", configuration.base_path, variable_id=crate::apis::urlencode(p_variable_id));
+    let uri_str = format!("{}/v2/variables/{variable_id}", configuration.base_path, variable_id=crate::apis::urlencode(p_path_variable_id));
     let mut req_builder = configuration.client.request(reqwest::Method::DELETE, &uri_str);
 
     if let Some(ref user_agent) = configuration.user_agent {
@@ -75,9 +75,9 @@ pub async fn delete(configuration: &configuration::Configuration, variable_id: &
 
 pub async fn get(configuration: &configuration::Configuration, variable_id: &str) -> Result<models::Variable, Error<GetError>> {
     // add a prefix to parameters to efficiently prevent name collisions
-    let p_variable_id = variable_id;
+    let p_path_variable_id = variable_id;
 
-    let uri_str = format!("{}/v2/variables/{variable_id}", configuration.base_path, variable_id=crate::apis::urlencode(p_variable_id));
+    let uri_str = format!("{}/v2/variables/{variable_id}", configuration.base_path, variable_id=crate::apis::urlencode(p_path_variable_id));
     let mut req_builder = configuration.client.request(reqwest::Method::GET, &uri_str);
 
     if let Some(ref user_agent) = configuration.user_agent {
@@ -114,7 +114,7 @@ pub async fn get(configuration: &configuration::Configuration, variable_id: &str
 
 pub async fn set_many(configuration: &configuration::Configuration, set_many_body: models::SetManyBody) -> Result<(), Error<SetManyError>> {
     // add a prefix to parameters to efficiently prevent name collisions
-    let p_set_many_body = set_many_body;
+    let p_body_set_many_body = set_many_body;
 
     let uri_str = format!("{}/v2/variables/set-many", configuration.base_path);
     let mut req_builder = configuration.client.request(reqwest::Method::POST, &uri_str);
@@ -125,7 +125,7 @@ pub async fn set_many(configuration: &configuration::Configuration, set_many_bod
     if let Some(ref token) = configuration.bearer_access_token {
         req_builder = req_builder.bearer_auth(token.to_owned());
     };
-    req_builder = req_builder.json(&p_set_many_body);
+    req_builder = req_builder.json(&p_body_set_many_body);
 
     let req = req_builder.build()?;
     let resp = configuration.client.execute(req).await?;

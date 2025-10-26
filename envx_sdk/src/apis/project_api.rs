@@ -58,10 +58,10 @@ pub enum VariablesError {
 
 pub async fn add_user(configuration: &configuration::Configuration, project_id: &str, uuid_colon_colon_uuid: Vec<uuid::Uuid>) -> Result<(), Error<AddUserError>> {
     // add a prefix to parameters to efficiently prevent name collisions
-    let p_project_id = project_id;
-    let p_uuid_colon_colon_uuid = uuid_colon_colon_uuid;
+    let p_path_project_id = project_id;
+    let p_body_uuid_colon_colon_uuid = uuid_colon_colon_uuid;
 
-    let uri_str = format!("{}/v2/project/{project_id}", configuration.base_path, project_id=crate::apis::urlencode(p_project_id));
+    let uri_str = format!("{}/v2/project/{project_id}", configuration.base_path, project_id=crate::apis::urlencode(p_path_project_id));
     let mut req_builder = configuration.client.request(reqwest::Method::POST, &uri_str);
 
     if let Some(ref user_agent) = configuration.user_agent {
@@ -70,7 +70,7 @@ pub async fn add_user(configuration: &configuration::Configuration, project_id: 
     if let Some(ref token) = configuration.bearer_access_token {
         req_builder = req_builder.bearer_auth(token.to_owned());
     };
-    req_builder = req_builder.json(&p_uuid_colon_colon_uuid);
+    req_builder = req_builder.json(&p_body_uuid_colon_colon_uuid);
 
     let req = req_builder.build()?;
     let resp = configuration.client.execute(req).await?;
@@ -88,9 +88,9 @@ pub async fn add_user(configuration: &configuration::Configuration, project_id: 
 
 pub async fn get_project_info_v2(configuration: &configuration::Configuration, project_id: &str) -> Result<models::ProjectInfoV2, Error<GetProjectInfoV2Error>> {
     // add a prefix to parameters to efficiently prevent name collisions
-    let p_project_id = project_id;
+    let p_path_project_id = project_id;
 
-    let uri_str = format!("{}/v2/project/{project_id}", configuration.base_path, project_id=crate::apis::urlencode(p_project_id));
+    let uri_str = format!("{}/v2/project/{project_id}", configuration.base_path, project_id=crate::apis::urlencode(p_path_project_id));
     let mut req_builder = configuration.client.request(reqwest::Method::GET, &uri_str);
 
     if let Some(ref user_agent) = configuration.user_agent {
@@ -127,10 +127,10 @@ pub async fn get_project_info_v2(configuration: &configuration::Configuration, p
 
 pub async fn remove_users(configuration: &configuration::Configuration, project_id: &str, remove_user_body: models::RemoveUserBody) -> Result<(), Error<RemoveUsersError>> {
     // add a prefix to parameters to efficiently prevent name collisions
-    let p_project_id = project_id;
-    let p_remove_user_body = remove_user_body;
+    let p_path_project_id = project_id;
+    let p_body_remove_user_body = remove_user_body;
 
-    let uri_str = format!("{}/v2/project/{project_id}", configuration.base_path, project_id=crate::apis::urlencode(p_project_id));
+    let uri_str = format!("{}/v2/project/{project_id}", configuration.base_path, project_id=crate::apis::urlencode(p_path_project_id));
     let mut req_builder = configuration.client.request(reqwest::Method::DELETE, &uri_str);
 
     if let Some(ref user_agent) = configuration.user_agent {
@@ -139,7 +139,7 @@ pub async fn remove_users(configuration: &configuration::Configuration, project_
     if let Some(ref token) = configuration.bearer_access_token {
         req_builder = req_builder.bearer_auth(token.to_owned());
     };
-    req_builder = req_builder.json(&p_remove_user_body);
+    req_builder = req_builder.json(&p_body_remove_user_body);
 
     let req = req_builder.build()?;
     let resp = configuration.client.execute(req).await?;
@@ -157,10 +157,10 @@ pub async fn remove_users(configuration: &configuration::Configuration, project_
 
 pub async fn update(configuration: &configuration::Configuration, project_id: &str, update_project_v2: models::UpdateProjectV2) -> Result<(), Error<UpdateError>> {
     // add a prefix to parameters to efficiently prevent name collisions
-    let p_project_id = project_id;
-    let p_update_project_v2 = update_project_v2;
+    let p_path_project_id = project_id;
+    let p_body_update_project_v2 = update_project_v2;
 
-    let uri_str = format!("{}/v2/project/{project_id}", configuration.base_path, project_id=crate::apis::urlencode(p_project_id));
+    let uri_str = format!("{}/v2/project/{project_id}", configuration.base_path, project_id=crate::apis::urlencode(p_path_project_id));
     let mut req_builder = configuration.client.request(reqwest::Method::PUT, &uri_str);
 
     if let Some(ref user_agent) = configuration.user_agent {
@@ -169,7 +169,7 @@ pub async fn update(configuration: &configuration::Configuration, project_id: &s
     if let Some(ref token) = configuration.bearer_access_token {
         req_builder = req_builder.bearer_auth(token.to_owned());
     };
-    req_builder = req_builder.json(&p_update_project_v2);
+    req_builder = req_builder.json(&p_body_update_project_v2);
 
     let req = req_builder.build()?;
     let resp = configuration.client.execute(req).await?;
@@ -187,9 +187,9 @@ pub async fn update(configuration: &configuration::Configuration, project_id: &s
 
 pub async fn variables(configuration: &configuration::Configuration, project_id: &str) -> Result<Vec<models::PartialKey>, Error<VariablesError>> {
     // add a prefix to parameters to efficiently prevent name collisions
-    let p_project_id = project_id;
+    let p_path_project_id = project_id;
 
-    let uri_str = format!("{}/v2/project/{project_id}/variables", configuration.base_path, project_id=crate::apis::urlencode(p_project_id));
+    let uri_str = format!("{}/v2/project/{project_id}/variables", configuration.base_path, project_id=crate::apis::urlencode(p_path_project_id));
     let mut req_builder = configuration.client.request(reqwest::Method::GET, &uri_str);
 
     if let Some(ref user_agent) = configuration.user_agent {

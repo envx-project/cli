@@ -13,23 +13,26 @@ use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Default, Debug, PartialEq, Serialize, Deserialize)]
 pub struct InviteBody {
-    #[serde(rename = "author_signature")]
-    pub author_signature: String,
+    #[serde(rename = "ciphertext")]
+    pub ciphertext: String,
     #[serde(rename = "exp")]
     pub exp: String,
     #[serde(rename = "invite_code")]
     pub invite_code: uuid::Uuid,
     #[serde(rename = "project_id")]
     pub project_id: uuid::Uuid,
+    #[serde(rename = "verifier")]
+    pub verifier: String,
 }
 
 impl InviteBody {
-    pub fn new(author_signature: String, exp: String, invite_code: uuid::Uuid, project_id: uuid::Uuid) -> InviteBody {
+    pub fn new(ciphertext: String, exp: String, invite_code: uuid::Uuid, project_id: uuid::Uuid, verifier: String) -> InviteBody {
         InviteBody {
-            author_signature,
+            ciphertext,
             exp,
             invite_code,
             project_id,
+            verifier,
         }
     }
 }

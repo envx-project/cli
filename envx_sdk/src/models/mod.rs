@@ -1,3 +1,5 @@
+pub mod accept_invite_body;
+pub use self::accept_invite_body::AcceptInviteBody;
 pub mod invite_body;
 pub use self::invite_body::InviteBody;
 pub mod list_projects_v2;

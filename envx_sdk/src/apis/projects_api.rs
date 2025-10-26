@@ -69,7 +69,7 @@ pub async fn list_projects_v2(configuration: &configuration::Configuration, ) ->
 
 pub async fn new_project_v2(configuration: &configuration::Configuration, new_project_body: models::NewProjectBody) -> Result<String, Error<NewProjectV2Error>> {
     // add a prefix to parameters to efficiently prevent name collisions
-    let p_new_project_body = new_project_body;
+    let p_body_new_project_body = new_project_body;
 
     let uri_str = format!("{}/v2/projects/new", configuration.base_path);
     let mut req_builder = configuration.client.request(reqwest::Method::POST, &uri_str);
@@ -80,7 +80,7 @@ pub async fn new_project_v2(configuration: &configuration::Configuration, new_pr
     if let Some(ref token) = configuration.bearer_access_token {
         req_builder = req_builder.bearer_auth(token.to_owned());
     };
-    req_builder = req_builder.json(&p_new_project_body);
+    req_builder = req_builder.json(&p_body_new_project_body);
 
     let req = req_builder.build()?;
     let resp = configuration.client.execute(req).await?;

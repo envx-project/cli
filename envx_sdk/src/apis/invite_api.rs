@@ -15,6 +15,16 @@ use crate::{apis::ResponseContent, models};
 use super::{Error, configuration, ContentType};
 
 
+/// struct for typed errors of method [`accept_invite`]
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(untagged)]
+pub enum AcceptInviteError {
+    Status400(),
+    Status404(),
+    Status409(),
+    UnknownValue(serde_json::Value),
+}
+
 /// struct for typed errors of method [`new_invite`]
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(untagged)]
@@ -24,9 +34,39 @@ pub enum NewInviteError {
 }
 
 
+pub async fn accept_invite(configuration: &configuration::Configuration, invite_code: &str, accept_invite_body: models::AcceptInviteBody) -> Result<(), Error<AcceptInviteError>> {
+    // add a prefix to parameters to efficiently prevent name collisions
+    let p_path_invite_code = invite_code;
+    let p_body_accept_invite_body = accept_invite_body;
+
+    let uri_str = format!("{}/v2/invite/accept/{invite_code}", configuration.base_path, invite_code=crate::apis::urlencode(p_path_invite_code));
+    let mut req_builder = configuration.client.request(reqwest::Method::POST, &uri_str);
+
+    if let Some(ref user_agent) = configuration.user_agent {
+        req_builder = req_builder.header(reqwest::header::USER_AGENT, user_agent.clone());
+    }
+    if let Some(ref token) = configuration.bearer_access_token {
+        req_builder = req_builder.bearer_auth(token.to_owned());
+    };
+    req_builder = req_builder.json(&p_body_accept_invite_body);
+
+    let req = req_builder.build()?;
+    let resp = configuration.client.execute(req).await?;
+
+    let status = resp.status();
+
+    if !status.is_client_error() && !status.is_server_error() {
+        Ok(())
+    } else {
+        let content = resp.text().await?;
+        let entity: Option<AcceptInviteError> = serde_json::from_str(&content).ok();
+        Err(Error::ResponseError(ResponseContent { status, content, entity }))
+    }
+}
+
 pub async fn new_invite(configuration: &configuration::Configuration, invite_body: models::InviteBody) -> Result<(), Error<NewInviteError>> {
     // add a prefix to parameters to efficiently prevent name collisions
-    let p_invite_body = invite_body;
+    let p_body_invite_body = invite_body;
 
     let uri_str = format!("{}/v2/invite/new", configuration.base_path);
     let mut req_builder = configuration.client.request(reqwest::Method::POST, &uri_str);
@@ -37,7 +77,7 @@ pub async fn new_invite(configuration: &configuration::Configuration, invite_bod
     if let Some(ref token) = configuration.bearer_access_token {
         req_builder = req_builder.bearer_auth(token.to_owned());
     };
-    req_builder = req_builder.json(&p_invite_body);
+    req_builder = req_builder.json(&p_body_invite_body);
 
     let req = req_builder.build()?;
     let resp = configuration.client.execute(req).await?;

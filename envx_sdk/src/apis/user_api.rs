@@ -41,7 +41,7 @@ pub enum NewUserV2Error {
 
 pub async fn get_many_users(configuration: &configuration::Configuration, uuid_colon_colon_uuid: Vec<uuid::Uuid>) -> Result<Vec<models::StrippedUser>, Error<GetManyUsersError>> {
     // add a prefix to parameters to efficiently prevent name collisions
-    let p_uuid_colon_colon_uuid = uuid_colon_colon_uuid;
+    let p_body_uuid_colon_colon_uuid = uuid_colon_colon_uuid;
 
     let uri_str = format!("{}/v2/user/get-many", configuration.base_path);
     let mut req_builder = configuration.client.request(reqwest::Method::GET, &uri_str);
@@ -52,7 +52,7 @@ pub async fn get_many_users(configuration: &configuration::Configuration, uuid_c
     if let Some(ref token) = configuration.bearer_access_token {
         req_builder = req_builder.bearer_auth(token.to_owned());
     };
-    req_builder = req_builder.json(&p_uuid_colon_colon_uuid);
+    req_builder = req_builder.json(&p_body_uuid_colon_colon_uuid);
 
     let req = req_builder.build()?;
     let resp = configuration.client.execute(req).await?;
@@ -81,9 +81,9 @@ pub async fn get_many_users(configuration: &configuration::Configuration, uuid_c
 
 pub async fn get_user_v2(configuration: &configuration::Configuration, user_id: &str) -> Result<models::StrippedUser, Error<GetUserV2Error>> {
     // add a prefix to parameters to efficiently prevent name collisions
-    let p_user_id = user_id;
+    let p_path_user_id = user_id;
 
-    let uri_str = format!("{}/v2/user/{user_id}", configuration.base_path, user_id=crate::apis::urlencode(p_user_id));
+    let uri_str = format!("{}/v2/user/{user_id}", configuration.base_path, user_id=crate::apis::urlencode(p_path_user_id));
     let mut req_builder = configuration.client.request(reqwest::Method::GET, &uri_str);
 
     if let Some(ref user_agent) = configuration.user_agent {
@@ -120,7 +120,7 @@ pub async fn get_user_v2(configuration: &configuration::Configuration, user_id: 
 
 pub async fn new_user_v2(configuration: &configuration::Configuration, new_user_body: models::NewUserBody) -> Result<String, Error<NewUserV2Error>> {
     // add a prefix to parameters to efficiently prevent name collisions
-    let p_new_user_body = new_user_body;
+    let p_body_new_user_body = new_user_body;
 
     let uri_str = format!("{}/v2/user/new", configuration.base_path);
     let mut req_builder = configuration.client.request(reqwest::Method::POST, &uri_str);
@@ -131,7 +131,7 @@ pub async fn new_user_v2(configuration: &configuration::Configuration, new_user_
     if let Some(ref token) = configuration.bearer_access_token {
         req_builder = req_builder.bearer_auth(token.to_owned());
     };
-    req_builder = req_builder.json(&p_new_user_body);
+    req_builder = req_builder.json(&p_body_new_user_body);
 
     let req = req_builder.build()?;
     let resp = configuration.client.execute(req).await?;

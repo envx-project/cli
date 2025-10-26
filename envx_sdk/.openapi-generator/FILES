@@ -2,6 +2,7 @@
 .travis.yml
 Cargo.toml
 README.md
+docs/AcceptInviteBody.md
 docs/DefaultApi.md
 docs/InviteApi.md
 docs/InviteBody.md
@@ -31,6 +32,7 @@ src/apis/projects_api.rs
 src/apis/user_api.rs
 src/apis/variables_api.rs
 src/lib.rs
+src/models/accept_invite_body.rs
 src/models/invite_body.rs
 src/models/list_projects_v2.rs
 src/models/mod.rs
