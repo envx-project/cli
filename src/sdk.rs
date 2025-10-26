@@ -10,7 +10,7 @@ use crate::{
     },
 };
 use anyhow::bail;
-use pgp::{Deserializable, SignedPublicKey};
+use pgp::composed::{Deserializable, SignedPublicKey};
 use rayon::iter::{IntoParallelRefIterator, ParallelIterator};
 use reqwest::{header, StatusCode};
 use serde::{Deserialize, Serialize};

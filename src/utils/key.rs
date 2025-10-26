@@ -1,6 +1,12 @@
 use super::{auth::AuthToken, rpgp::get_vault_location};
 use anyhow::{bail, Context, Result};
-use pgp::{crypto, ArmorOptions, Deserializable, Message};
+use pgp::{
+    composed::{
+        ArmorOptions, Deserializable, MessageBuilder, SignedPublicKey,
+        SignedSecretKey,
+    },
+    crypto::hash::HashAlgorithm,
+};
 use serde::{Deserialize, Serialize};
 use std::{fmt::Display, fs};
 use thiserror::Error;
@@ -30,35 +36,33 @@ impl UnlockedKey {
             .signed_secret_key()
             .context("Failed to get secret key")?;
 
-        let msg = Message::new_literal("none", &chrono::Utc::now().to_string());
+        let mut rng = rand::rngs::OsRng;
 
-        let pw = || self.password.to_string();
-
-        let rng = rand::rngs::OsRng;
+        let ts = chrono::Utc::now().to_string();
+        let mut builder = MessageBuilder::from_bytes("", ts);
+        builder.sign(
+            &key.primary_key,
+            self.password.clone().into(),
+            HashAlgorithm::Sha3_512,
+        );
         let signature =
-            msg.sign(rng, &key, pw, crypto::hash::HashAlgorithm::SHA3_512);
+            builder.to_armored_string(&mut rng, ArmorOptions::default());
 
+        // TODO: check to make sure the password is correct
         let signature = match signature {
             Ok(s) => s,
             Err(e) => {
                 eprintln!("Failed to sign API authentication challenge: {}", e);
-                if let pgp::errors::Error::Incomplete(_) = e {
-                    eprintln!("This is most likely due to a missing or incorrect passphrase.");
-                    println!(
+
+                eprintln!("This is most likely due to a missing or incorrect passphrase.");
+                println!(
                     "You can view the saved passphrase with 'envx keyring view [fingerprint]'"
                 );
-                    println!("This command is interactive");
-                    // println!("Or you can check against the saved passphrase with 'envx keyring check -k <fingerprint> -p <passphrase>'");
-                    // println!("Both of these commands are interactive")
-                }
+                println!("This command is interactive");
 
                 bail!("Failed to sign API authentication challenge");
             }
         };
-
-        let signature = signature
-            .to_armored_string(ArmorOptions::default())
-            .context("Failed to convert signature to armored string")?;
 
         let auth_token =
             AuthToken::new(self.key.uuid.clone().unwrap().into(), signature);
@@ -122,9 +126,9 @@ impl Key {
         Ok(key)
     }
 
-    fn signed_public_key(&self) -> Result<pgp::SignedPublicKey, KeyError> {
+    fn signed_public_key(&self) -> Result<SignedPublicKey, KeyError> {
         let key = self.public_key_str()?;
-        let (pubkey, _) = pgp::SignedPublicKey::from_string(key.as_str())
+        let (pubkey, _) = SignedPublicKey::from_string(key.as_str())
             .map_err(|_| KeyError::FailedToParse(KeyType::Public))?;
 
         Ok(pubkey)
@@ -141,32 +145,32 @@ impl Key {
         Ok(key)
     }
 
-    fn signed_secret_key(&self) -> Result<pgp::SignedSecretKey, KeyError> {
+    fn signed_secret_key(&self) -> Result<SignedSecretKey, KeyError> {
         let key = self.secret_key_str()?;
-        let (seckey, _) = pgp::SignedSecretKey::from_string(key.as_str())
+        let (seckey, _) = SignedSecretKey::from_string(key.as_str())
             .map_err(|_| KeyError::FailedToParse(KeyType::Secret))?;
 
         Ok(seckey)
     }
 }
 
-impl TryInto<pgp::SignedSecretKey> for Key {
+impl TryInto<SignedSecretKey> for Key {
     type Error = KeyError;
 
-    fn try_into(self) -> Result<pgp::SignedSecretKey, Self::Error> {
+    fn try_into(self) -> Result<SignedSecretKey, Self::Error> {
         self.signed_secret_key()
     }
 }
 
-impl TryInto<pgp::SignedPublicKey> for Key {
+impl TryInto<SignedPublicKey> for Key {
     type Error = KeyError;
 
-    fn try_into(self) -> Result<pgp::SignedPublicKey, Self::Error> {
+    fn try_into(self) -> Result<SignedPublicKey, Self::Error> {
         self.signed_public_key()
     }
 }
 
-impl TryFrom<&Key> for pgp::SignedSecretKey {
+impl TryFrom<&Key> for SignedSecretKey {
     type Error = KeyError;
 
     fn try_from(key: &Key) -> Result<Self, Self::Error> {
@@ -174,7 +178,7 @@ impl TryFrom<&Key> for pgp::SignedSecretKey {
     }
 }
 
-impl TryFrom<&Key> for pgp::SignedPublicKey {
+impl TryFrom<&Key> for SignedPublicKey {
     type Error = KeyError;
 
     fn try_from(key: &Key) -> Result<Self, Self::Error> {
@@ -182,7 +186,7 @@ impl TryFrom<&Key> for pgp::SignedPublicKey {
     }
 }
 
-impl TryFrom<&UnlockedKey> for pgp::SignedSecretKey {
+impl TryFrom<&UnlockedKey> for SignedSecretKey {
     type Error = KeyError;
 
     fn try_from(key: &UnlockedKey) -> Result<Self, Self::Error> {
@@ -190,7 +194,7 @@ impl TryFrom<&UnlockedKey> for pgp::SignedSecretKey {
     }
 }
 
-impl TryFrom<&UnlockedKey> for pgp::SignedPublicKey {
+impl TryFrom<&UnlockedKey> for SignedPublicKey {
     type Error = KeyError;
 
     fn try_from(key: &UnlockedKey) -> Result<Self, Self::Error> {

@@ -1,5 +1,5 @@
 use anyhow::{Context, Result};
-use pgp::{Deserializable, Message};
+use pgp::composed::{Message, SignedSecretKey};
 use serde::{Deserialize, Serialize};
 use std::fmt;
 use std::str::FromStr;
@@ -30,15 +30,21 @@ pub fn read_kvpairs_from_file(
     file_name: &str,
     key: &UnlockedKey,
 ) -> Result<Vec<KVPair>> {
-    let file = std::fs::File::open(file_name)?;
-    let (msg, _) = Message::from_reader_single(file)?;
-    let (dec, _) = msg
-        .decrypt(|| key.password.clone(), &[&key.key.clone().try_into()?])
-        .context("Failed to decrypt local .envx keys")?;
-    dec.get_literal()
-        .ok_or(anyhow::anyhow!("Failed to find message"))?
-        .to_string()
-        .context("Failed to convert literal to string")?
+    let msg = Message::from_file(&file_name)?;
+
+    let ssk = SignedSecretKey::try_from(key)?;
+    let mut decrypted = msg
+        .decrypt(&key.password.clone().into(), &ssk)
+        .context("Decrypting the message")?;
+
+    if decrypted.is_compressed() {
+        decrypted = decrypted
+            .decompress()
+            .context("Failed to decompress message")?;
+    }
+
+    decrypted
+        .as_data_string()?
         .split("\n")
         .map(|s| KVPair::from_str(s))
         .collect::<Result<Vec<KVPair>>>()

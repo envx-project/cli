@@ -3,7 +3,7 @@ use std::{collections::HashSet, fmt::Display};
 use anyhow::Result;
 use clap::Parser;
 use envx_sdk::models::RemoveUserBody;
-use pgp::{Deserializable, SignedPublicKey};
+use pgp::composed::{Deserializable, SignedPublicKey};
 use rayon::iter::{IntoParallelRefIterator, ParallelIterator};
 use reqwest::header;
 use serde_json::json;

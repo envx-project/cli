@@ -1,16 +1,19 @@
+use std::io::Write;
+
 use anyhow::{bail, Context};
 use home::home_dir;
-use pgp::ser::Serialize;
+use pgp::composed::SignedPublicKey;
 
 use crate::{
     sdk::SDK,
-    utils::{kvpair::read_kvpairs_from_file, variable::ToKVPair},
+    utils::{
+        kvpair::read_kvpairs_from_file, rpgp::encrypt, variable::ToKVPair,
+    },
 };
 
 use super::{
     key::{Key, UnlockedKey},
     kvpair::KVPair,
-    rpgp::encrypt_to_msg,
 };
 
 /// Magically get variables from the API or default to ~/.envx/<fingerprint>.envx file
@@ -65,17 +68,16 @@ async fn write_variables_magic(
         .map(|kv| kv.to_string())
         .collect::<Vec<String>>()
         .join("\n");
-    let msg = encrypt_to_msg(&stringified_kvpairs, &[key.try_into()?])?;
 
-    let home_dir = home_dir().context("Failed to get home directory")?;
-    let config_dir = home_dir.join(".config/envx");
-    let envx_file = config_dir.join(format!("{}.envx", &project_id));
-    let envx_file = envx_file
-        .to_str()
-        .ok_or(anyhow::anyhow!("Failed to convert path to string"))?;
+    let spk = [SignedPublicKey::try_from(key)?];
+    let msg = encrypt(&stringified_kvpairs, &spk)?;
+
+    let envx_file = home_dir()
+        .context("Failed to get home directory")?
+        .join(format!(".config/envx/{}.envx", &project_id));
 
     let mut file = std::fs::File::create(envx_file)?;
-    msg.to_writer(&mut file)?;
+    file.write_all(msg.as_bytes())?;
 
     Ok(())
 }

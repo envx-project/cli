@@ -11,6 +11,7 @@ pub mod magic_variables;
 pub mod prompt;
 pub mod rpgp;
 pub mod settings;
+pub mod symmetric;
 pub mod table;
 pub mod variable;
 pub mod vecu8;

@@ -10,8 +10,8 @@ use crate::utils::prompt::{prompt_password, prompt_text};
 use crate::utils::rpgp::{generate_key_pair, get_vault_location, user_id};
 use crate::utils::vecu8::ToHex;
 use anyhow::{bail, Context};
-use pgp::types::PublicKeyTrait;
-use pgp::ArmorOptions;
+use pgp::composed::ArmorOptions;
+use pgp::types::KeyDetails;
 use std::fs;
 
 extern crate keyring;

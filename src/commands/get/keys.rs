@@ -1,5 +1,4 @@
 use super::*;
-use crate::utils::config::Config;
 
 /// List all keys in the config
 #[derive(Parser)]

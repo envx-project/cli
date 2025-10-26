@@ -5,11 +5,13 @@ pub(super) use colored::Colorize;
 // With subcommands
 pub mod config;
 pub mod get;
+pub mod invite;
 pub mod keyring;
 pub mod project;
 
 // No subcommands
 pub mod auth;
+pub mod completion;
 pub mod export;
 pub mod gen;
 pub mod import;
@@ -26,4 +28,3 @@ pub mod upload;
 pub mod variables;
 pub mod version;
 pub mod whoami;
-pub mod completion;

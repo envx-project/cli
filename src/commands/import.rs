@@ -5,10 +5,13 @@ use crate::utils::prompt::prompt_text;
 use crate::utils::rpgp::get_vault_location;
 use crate::utils::vecu8::ToHex;
 use clap::Subcommand;
-use pgp::ArmorOptions;
-use pgp::{types::PublicKeyTrait, Deserializable};
 use std::fs;
 use std::io::Cursor;
+
+use pgp::{
+    composed::{ArmorOptions, Deserializable},
+    types::KeyDetails,
+};
 
 /// Import ascii armored keys from a file
 #[derive(Parser, Debug)]
@@ -46,7 +49,7 @@ pub async fn command(args: Args, _config: Config) -> Result<()> {
                 .context("Failed to get user id from key")?
                 .id
                 .id()
-                .to_string();
+                .to_hex();
 
             // TODO: fix this
             let primary_user_id = if only_hex(&first_user_id)

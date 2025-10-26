@@ -9,7 +9,7 @@ use crate::{
         variable::{EncryptedVariable, ToKVPair},
     },
 };
-use pgp::{Deserializable, SignedPublicKey};
+use pgp::composed::{Deserializable, SignedPublicKey};
 use rayon::iter::{IntoParallelRefIterator, ParallelIterator};
 use reqwest::header;
 use serde_json::json;

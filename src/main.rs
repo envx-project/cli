@@ -52,7 +52,8 @@ commands_enum!(
     config,
     get,
     keyring,
-    project
+    project,
+    invite
 );
 
 fn spawn_update_task() -> tokio::task::JoinHandle<anyhow::Result<String>> {
