@@ -49,6 +49,7 @@ impl Drop for Config {
 // TODO: add project name
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Project {
+    // TODO: make this a UUID
     pub project_id: String,
     pub path: PathBuf,
 }
@@ -222,7 +223,7 @@ impl Config {
             .iter()
             .filter(|p| p.path == path)
             .map(|p| p.project_id.clone())
-            .collect::<Vec<String>>();
+            .collect::<Vec<_>>();
 
         if matching.is_empty() {
             return Err(anyhow!("No project set in this directory".red()));

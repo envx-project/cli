@@ -17,22 +17,16 @@ pub struct InviteBody {
     pub ciphertext: String,
     #[serde(rename = "exp")]
     pub exp: String,
-    #[serde(rename = "invite_code")]
-    pub invite_code: uuid::Uuid,
     #[serde(rename = "project_id")]
     pub project_id: uuid::Uuid,
-    #[serde(rename = "verifier")]
-    pub verifier: String,
 }
 
 impl InviteBody {
-    pub fn new(ciphertext: String, exp: String, invite_code: uuid::Uuid, project_id: uuid::Uuid, verifier: String) -> InviteBody {
+    pub fn new(ciphertext: String, exp: String, project_id: uuid::Uuid) -> InviteBody {
         InviteBody {
             ciphertext,
             exp,
-            invite_code,
             project_id,
-            verifier,
         }
     }
 }
