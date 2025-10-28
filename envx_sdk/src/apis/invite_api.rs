@@ -34,12 +34,11 @@ pub enum NewInviteError {
 }
 
 
-pub async fn accept_invite(configuration: &configuration::Configuration, invite_code: &str, accept_invite_body: models::AcceptInviteBody) -> Result<String, Error<AcceptInviteError>> {
+pub async fn accept_invite(configuration: &configuration::Configuration, accept_invite_body: models::AcceptInviteBody) -> Result<models::AcceptInviteReturnType, Error<AcceptInviteError>> {
     // add a prefix to parameters to efficiently prevent name collisions
-    let p_path_invite_code = invite_code;
     let p_body_accept_invite_body = accept_invite_body;
 
-    let uri_str = format!("{}/v2/invite/accept/{invite_code}", configuration.base_path, invite_code=crate::apis::urlencode(p_path_invite_code));
+    let uri_str = format!("{}/v2/invite/accept", configuration.base_path);
     let mut req_builder = configuration.client.request(reqwest::Method::POST, &uri_str);
 
     if let Some(ref user_agent) = configuration.user_agent {
@@ -65,8 +64,8 @@ pub async fn accept_invite(configuration: &configuration::Configuration, invite_
         let content = resp.text().await?;
         match content_type {
             ContentType::Json => serde_json::from_str(&content).map_err(Error::from),
-            ContentType::Text => return Ok(content),
-            ContentType::Unsupported(unknown_type) => return Err(Error::from(serde_json::Error::custom(format!("Received `{unknown_type}` content type response that cannot be converted to `String`")))),
+            ContentType::Text => return Err(Error::from(serde_json::Error::custom("Received `text/plain` content type response that cannot be converted to `models::AcceptInviteReturnType`"))),
+            ContentType::Unsupported(unknown_type) => return Err(Error::from(serde_json::Error::custom(format!("Received `{unknown_type}` content type response that cannot be converted to `models::AcceptInviteReturnType`")))),
         }
     } else {
         let content = resp.text().await?;

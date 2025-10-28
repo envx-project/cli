@@ -1,12 +1,10 @@
-# Variable
+# UpdateManyBody
 
 ## Properties
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**id** | **String** |  | 
-**project_id** | **String** |  | 
-**value** | **String** |  | 
+**variables** | [**Vec<models::Variable>**](Variable.md) |  | 
 
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
 

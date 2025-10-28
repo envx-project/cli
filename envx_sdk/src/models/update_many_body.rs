@@ -12,18 +12,15 @@ use crate::models;
 use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Default, Debug, PartialEq, Serialize, Deserialize)]
-pub struct AcceptInviteBody {
-    #[serde(rename = "code")]
-    pub code: uuid::Uuid,
-    #[serde(rename = "verifier")]
-    pub verifier: uuid::Uuid,
+pub struct UpdateManyBody {
+    #[serde(rename = "variables")]
+    pub variables: Vec<models::Variable>,
 }
 
-impl AcceptInviteBody {
-    pub fn new(code: uuid::Uuid, verifier: uuid::Uuid) -> AcceptInviteBody {
-        AcceptInviteBody {
-            code,
-            verifier,
+impl UpdateManyBody {
+    pub fn new(variables: Vec<models::Variable>) -> UpdateManyBody {
+        UpdateManyBody {
+            variables,
         }
     }
 }

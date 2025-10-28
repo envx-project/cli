@@ -27,11 +27,7 @@ pub async fn command(args: Args, config: Config) -> Result<()> {
 
     let project_id = Choice::try_project(args.project_id, &key).await?;
     let kvpairs = SDK::get_variables(&project_id, &key).await?;
-    let stringified_kvpairs = kvpairs
-        .iter()
-        .map(|kv| kv.to_string())
-        .collect::<Vec<String>>()
-        .join("\n");
+    let stringified_kvpairs = serde_json::to_string(&kvpairs)?;
 
     let symmetrical_encryption_key = uuid::Uuid::new_v4().to_string();
     let encrypted = password_encrypt_to_armor(

@@ -1,5 +1,7 @@
 pub mod accept_invite_body;
 pub use self::accept_invite_body::AcceptInviteBody;
+pub mod accept_invite_return_type;
+pub use self::accept_invite_return_type::AcceptInviteReturnType;
 pub mod invite_body;
 pub use self::invite_body::InviteBody;
 pub mod invite_response;
@@ -20,6 +22,8 @@ pub mod set_many_body;
 pub use self::set_many_body::SetManyBody;
 pub mod stripped_user;
 pub use self::stripped_user::StrippedUser;
+pub mod update_many_body;
+pub use self::update_many_body::UpdateManyBody;
 pub mod update_project_v2;
 pub use self::update_project_v2::UpdateProjectV2;
 pub mod user;

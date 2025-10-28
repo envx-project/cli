@@ -97,16 +97,19 @@ Name | Type | Description  | Required | Notes
 
 ## update_many
 
-> update_many()
+> Vec<String> update_many(update_many_body)
 
 
 ### Parameters
 
-This endpoint does not need any parameter.
+
+Name | Type | Description  | Required | Notes
+------------- | ------------- | ------------- | ------------- | -------------
+**update_many_body** | [**UpdateManyBody**](UpdateManyBody.md) |  | [required] |
 
 ### Return type
 
- (empty response body)
+**Vec<String>**
 
 ### Authorization
 
@@ -114,8 +117,8 @@ This endpoint does not need any parameter.
 
 ### HTTP request headers
 
-- **Content-Type**: Not defined
-- **Accept**: Not defined
+- **Content-Type**: application/json
+- **Accept**: application/json
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 

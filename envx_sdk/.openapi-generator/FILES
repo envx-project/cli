@@ -3,6 +3,7 @@
 Cargo.toml
 README.md
 docs/AcceptInviteBody.md
+docs/AcceptInviteReturnType.md
 docs/DefaultApi.md
 docs/InviteApi.md
 docs/InviteBody.md
@@ -17,6 +18,7 @@ docs/ProjectsApi.md
 docs/RemoveUserBody.md
 docs/SetManyBody.md
 docs/StrippedUser.md
+docs/UpdateManyBody.md
 docs/UpdateProjectV2.md
 docs/User.md
 docs/UserApi.md
@@ -34,6 +36,7 @@ src/apis/user_api.rs
 src/apis/variables_api.rs
 src/lib.rs
 src/models/accept_invite_body.rs
+src/models/accept_invite_return_type.rs
 src/models/invite_body.rs
 src/models/invite_response.rs
 src/models/list_projects_v2.rs
@@ -45,6 +48,7 @@ src/models/project_info_v2.rs
 src/models/remove_user_body.rs
 src/models/set_many_body.rs
 src/models/stripped_user.rs
+src/models/update_many_body.rs
 src/models/update_project_v2.rs
 src/models/user.rs
 src/models/variable.rs

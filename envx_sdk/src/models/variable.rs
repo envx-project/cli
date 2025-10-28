@@ -14,15 +14,15 @@ use serde::{Deserialize, Serialize};
 #[derive(Clone, Default, Debug, PartialEq, Serialize, Deserialize)]
 pub struct Variable {
     #[serde(rename = "id")]
-    pub id: uuid::Uuid,
+    pub id: String,
     #[serde(rename = "project_id")]
-    pub project_id: uuid::Uuid,
+    pub project_id: String,
     #[serde(rename = "value")]
     pub value: String,
 }
 
 impl Variable {
-    pub fn new(id: uuid::Uuid, project_id: uuid::Uuid, value: String) -> Variable {
+    pub fn new(id: String, project_id: String, value: String) -> Variable {
         Variable {
             id,
             project_id,

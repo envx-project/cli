@@ -27,7 +27,7 @@ All URIs are relative to *http://localhost*
 Class | Method | HTTP request | Description
 ------------ | ------------- | ------------- | -------------
 *DefaultApi* | [**health_check**](docs/DefaultApi.md#health_check) | **GET** /.well-known/health-check | Get health of the API.
-*InviteApi* | [**accept_invite**](docs/InviteApi.md#accept_invite) | **POST** /v2/invite/accept/{invite_code} | 
+*InviteApi* | [**accept_invite**](docs/InviteApi.md#accept_invite) | **POST** /v2/invite/accept | 
 *InviteApi* | [**new_invite**](docs/InviteApi.md#new_invite) | **POST** /v2/invite/new | 
 *ProjectApi* | [**add_user**](docs/ProjectApi.md#add_user) | **POST** /v2/project/{project_id} | 
 *ProjectApi* | [**get_project_info_v2**](docs/ProjectApi.md#get_project_info_v2) | **GET** /v2/project/{project_id} | 
@@ -48,6 +48,7 @@ Class | Method | HTTP request | Description
 ## Documentation For Models
 
  - [AcceptInviteBody](docs/AcceptInviteBody.md)
+ - [AcceptInviteReturnType](docs/AcceptInviteReturnType.md)
  - [InviteBody](docs/InviteBody.md)
  - [InviteResponse](docs/InviteResponse.md)
  - [ListProjectsV2](docs/ListProjectsV2.md)
@@ -58,6 +59,7 @@ Class | Method | HTTP request | Description
  - [RemoveUserBody](docs/RemoveUserBody.md)
  - [SetManyBody](docs/SetManyBody.md)
  - [StrippedUser](docs/StrippedUser.md)
+ - [UpdateManyBody](docs/UpdateManyBody.md)
  - [UpdateProjectV2](docs/UpdateProjectV2.md)
  - [User](docs/User.md)
  - [Variable](docs/Variable.md)
