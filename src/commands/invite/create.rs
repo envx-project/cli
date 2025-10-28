@@ -39,15 +39,19 @@ pub async fn command(args: Args, config: Config) -> Result<()> {
         &symmetrical_encryption_key,
     )?;
 
-    envx_sdk::apis::invite_api::new_invite(
+    let response = envx_sdk::apis::invite_api::new_invite(
         &sdk_config,
         InviteBody {
             ciphertext: encrypted,
-            exp: chrono::Utc::now().to_string(),
             project_id: Uuid::parse_str(&project_id)?,
         },
     )
     .await?;
+
+    println!(
+        "envx invite accept {}:{}:{}",
+        symmetrical_encryption_key, response.invite_code, response.verifier
+    );
 
     Ok(())
 }

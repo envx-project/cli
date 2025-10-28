@@ -34,7 +34,7 @@ pub enum NewInviteError {
 }
 
 
-pub async fn accept_invite(configuration: &configuration::Configuration, invite_code: &str, accept_invite_body: models::AcceptInviteBody) -> Result<(), Error<AcceptInviteError>> {
+pub async fn accept_invite(configuration: &configuration::Configuration, invite_code: &str, accept_invite_body: models::AcceptInviteBody) -> Result<String, Error<AcceptInviteError>> {
     // add a prefix to parameters to efficiently prevent name collisions
     let p_path_invite_code = invite_code;
     let p_body_accept_invite_body = accept_invite_body;
@@ -54,9 +54,20 @@ pub async fn accept_invite(configuration: &configuration::Configuration, invite_
     let resp = configuration.client.execute(req).await?;
 
     let status = resp.status();
+    let content_type = resp
+        .headers()
+        .get("content-type")
+        .and_then(|v| v.to_str().ok())
+        .unwrap_or("application/octet-stream");
+    let content_type = super::ContentType::from(content_type);
 
     if !status.is_client_error() && !status.is_server_error() {
-        Ok(())
+        let content = resp.text().await?;
+        match content_type {
+            ContentType::Json => serde_json::from_str(&content).map_err(Error::from),
+            ContentType::Text => return Ok(content),
+            ContentType::Unsupported(unknown_type) => return Err(Error::from(serde_json::Error::custom(format!("Received `{unknown_type}` content type response that cannot be converted to `String`")))),
+        }
     } else {
         let content = resp.text().await?;
         let entity: Option<AcceptInviteError> = serde_json::from_str(&content).ok();
@@ -64,7 +75,7 @@ pub async fn accept_invite(configuration: &configuration::Configuration, invite_
     }
 }
 
-pub async fn new_invite(configuration: &configuration::Configuration, invite_body: models::InviteBody) -> Result<(), Error<NewInviteError>> {
+pub async fn new_invite(configuration: &configuration::Configuration, invite_body: models::InviteBody) -> Result<models::InviteResponse, Error<NewInviteError>> {
     // add a prefix to parameters to efficiently prevent name collisions
     let p_body_invite_body = invite_body;
 
@@ -83,9 +94,20 @@ pub async fn new_invite(configuration: &configuration::Configuration, invite_bod
     let resp = configuration.client.execute(req).await?;
 
     let status = resp.status();
+    let content_type = resp
+        .headers()
+        .get("content-type")
+        .and_then(|v| v.to_str().ok())
+        .unwrap_or("application/octet-stream");
+    let content_type = super::ContentType::from(content_type);
 
     if !status.is_client_error() && !status.is_server_error() {
-        Ok(())
+        let content = resp.text().await?;
+        match content_type {
+            ContentType::Json => serde_json::from_str(&content).map_err(Error::from),
+            ContentType::Text => return Err(Error::from(serde_json::Error::custom("Received `text/plain` content type response that cannot be converted to `models::InviteResponse`"))),
+            ContentType::Unsupported(unknown_type) => return Err(Error::from(serde_json::Error::custom(format!("Received `{unknown_type}` content type response that cannot be converted to `models::InviteResponse`")))),
+        }
     } else {
         let content = resp.text().await?;
         let entity: Option<NewInviteError> = serde_json::from_str(&content).ok();

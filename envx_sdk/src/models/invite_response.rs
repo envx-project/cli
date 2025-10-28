@@ -12,18 +12,18 @@ use crate::models;
 use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Default, Debug, PartialEq, Serialize, Deserialize)]
-pub struct InviteBody {
-    #[serde(rename = "ciphertext")]
-    pub ciphertext: String,
-    #[serde(rename = "project_id")]
-    pub project_id: uuid::Uuid,
+pub struct InviteResponse {
+    #[serde(rename = "invite_code")]
+    pub invite_code: uuid::Uuid,
+    #[serde(rename = "verifier")]
+    pub verifier: uuid::Uuid,
 }
 
-impl InviteBody {
-    pub fn new(ciphertext: String, project_id: uuid::Uuid) -> InviteBody {
-        InviteBody {
-            ciphertext,
-            project_id,
+impl InviteResponse {
+    pub fn new(invite_code: uuid::Uuid, verifier: uuid::Uuid) -> InviteResponse {
+        InviteResponse {
+            invite_code,
+            verifier,
         }
     }
 }

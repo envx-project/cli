@@ -10,7 +10,6 @@ pub fn password_encrypt_to_armor(
     let mut msg = MessageBuilder::from_bytes("", input.as_bytes().to_vec())
         .seipd_v1(&mut rng, SymmetricKeyAlgorithm::AES256);
     msg.compression(CompressionAlgorithm::ZLIB);
-
     msg.encrypt_with_password(
         StringToKey::new_argon2(&mut rng, 1, 4, 21),
         &passphrase.into(),

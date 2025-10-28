@@ -49,6 +49,7 @@ Class | Method | HTTP request | Description
 
  - [AcceptInviteBody](docs/AcceptInviteBody.md)
  - [InviteBody](docs/InviteBody.md)
+ - [InviteResponse](docs/InviteResponse.md)
  - [ListProjectsV2](docs/ListProjectsV2.md)
  - [NewProjectBody](docs/NewProjectBody.md)
  - [NewUserBody](docs/NewUserBody.md)

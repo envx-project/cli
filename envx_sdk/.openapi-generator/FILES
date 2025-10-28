@@ -6,6 +6,7 @@ docs/AcceptInviteBody.md
 docs/DefaultApi.md
 docs/InviteApi.md
 docs/InviteBody.md
+docs/InviteResponse.md
 docs/ListProjectsV2.md
 docs/NewProjectBody.md
 docs/NewUserBody.md
@@ -34,6 +35,7 @@ src/apis/variables_api.rs
 src/lib.rs
 src/models/accept_invite_body.rs
 src/models/invite_body.rs
+src/models/invite_response.rs
 src/models/list_projects_v2.rs
 src/models/mod.rs
 src/models/new_project_body.rs
