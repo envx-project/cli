@@ -1,5 +1,13 @@
 # Changelog
 
+## [2.10.0](https://github.com/envx-project/cli/compare/v2.9.1...v2.10.0) (2025-10-28)
+
+
+### Features
+
+* accept invite ([8cab0a3](https://github.com/envx-project/cli/commit/8cab0a37218d9f85164567706f041513e95b3182))
+* create invite ([75e87e4](https://github.com/envx-project/cli/commit/75e87e44e42e849ba1e635688055fa950fe673d8))
+
 ## [2.9.1](https://github.com/envx-project/cli/compare/v2.9.0...v2.9.1) (2025-10-16)
 
 
