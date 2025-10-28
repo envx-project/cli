@@ -42,7 +42,12 @@ impl Drop for Config {
         if std::env::var("ENVX_DEBUG").is_ok() {
             dbg!("writing config");
         }
-        self.write().unwrap();
+        match self.write() {
+            Ok(_) => {}
+            Err(e) => {
+                eprintln!("Failed to write config: {}", e);
+            }
+        }
     }
 }
 
@@ -124,13 +129,6 @@ impl Config {
     }
     // NEVER call this function EVER
     pub fn write(&self) -> Result<()> {
-        Config::priv_write(self)
-    }
-
-    fn priv_write<T>(value: &T) -> Result<()>
-    where
-        T: ?Sized + Serialize,
-    {
         let path =
             get_config_file_path().context("Failed to get config path")?;
 
@@ -141,7 +139,7 @@ impl Config {
         temp_path.set_extension(format!("tmp.{}-{}.json", pid, nanos));
 
         // Serialize to JSON
-        let contents = serde_json::to_string_pretty(value)
+        let contents = serde_json::to_string_pretty(self)
             .context("Failed to serialize config to JSON string")?;
 
         // Write to the temp file

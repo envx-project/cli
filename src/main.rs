@@ -92,11 +92,11 @@ async fn handle_update_task(
 async fn main() -> Result<()> {
     let check_updates_handle = if std::io::stdout().is_terminal() {
         let home = home_dir().context("Failed to get home directory")?;
-        let path = home.join(".config/envx/version.json");
-        let update = if !path.exists() {
+        let base_path = home.join(".config/envx/version.json");
+        let update = if !base_path.exists() {
             update::UpdateCheck::default()
         } else {
-            let contents = std::fs::read_to_string(&path)
+            let contents = std::fs::read_to_string(&base_path)
                 .context("Failed to read update check file")?;
             serde_json::from_str::<update::UpdateCheck>(&contents)
                 .context("Failed to parse update check file")?
@@ -123,14 +123,14 @@ async fn main() -> Result<()> {
             let nanos = chrono::Utc::now().timestamp_nanos_opt().unwrap();
             let pid = std::process::id();
             let path =
-                path.with_extension(format!("tmp.{}-{}.json", pid, nanos));
+                base_path.with_extension(format!("tmp.{}-{}.json", pid, nanos));
             let update = update::UpdateCheck {
                 last_update_check: Some(chrono::Utc::now()),
                 latest_version: None,
             };
             let contents = serde_json::to_string_pretty(&update)?;
             std::fs::write(&path, contents)?;
-            std::fs::rename(&path, &path.with_extension("json"))?;
+            std::fs::rename(path, base_path)?;
         }
 
         Some(spawn_update_task())
