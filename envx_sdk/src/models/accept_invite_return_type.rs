@@ -15,15 +15,18 @@ use serde::{Deserialize, Serialize};
 pub struct AcceptInviteReturnType {
     #[serde(rename = "ciphertext")]
     pub ciphertext: String,
-    #[serde(rename = "id")]
-    pub id: String,
+    #[serde(rename = "invite_id")]
+    pub invite_id: String,
+    #[serde(rename = "project_id")]
+    pub project_id: String,
 }
 
 impl AcceptInviteReturnType {
-    pub fn new(ciphertext: String, id: String) -> AcceptInviteReturnType {
+    pub fn new(ciphertext: String, invite_id: String, project_id: String) -> AcceptInviteReturnType {
         AcceptInviteReturnType {
             ciphertext,
-            id,
+            invite_id,
+            project_id,
         }
     }
 }

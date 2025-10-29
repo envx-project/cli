@@ -42,7 +42,8 @@ pub async fn command(args: Args, config: Config) -> Result<()> {
         &sdk_config,
         AcceptInviteBody { verifier, code },
     )
-    .await?;
+    .await
+    .context("Failed to accept invite")?;
 
     let decrypted =
         password_decrypt_from_armor(&response.ciphertext, &sym.to_string())?;
@@ -55,9 +56,10 @@ pub async fn command(args: Args, config: Config) -> Result<()> {
 
     let project_info = envx_sdk::apis::project_api::get_project_info_v2(
         &sdk_config,
-        &response.id,
+        &response.project_id,
     )
-    .await?;
+    .await
+    .context("Failed to get project info")?;
 
     let mut recipients = project_info
         .users
@@ -92,10 +94,13 @@ pub async fn command(args: Args, config: Config) -> Result<()> {
             variables: encrypted,
         },
     )
-    .await?;
+    .await
+    .context("Failed to update variables")?;
 
     println!("Updated {} variables", res.len());
     println!("IDs: {:?}", res);
+
+    println!("\nSuccessfully joined project {}", response.project_id);
 
     Ok(())
 }
