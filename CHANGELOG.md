@@ -1,5 +1,13 @@
 # Changelog
 
+## [2.10.1](https://github.com/envx-project/cli/compare/v2.10.0...v2.10.1) (2025-10-29)
+
+
+### Bug Fixes
+
+* accept invites ([60c7a26](https://github.com/envx-project/cli/commit/60c7a26ac2673708658756c41cb1ba5185b196fa))
+* bugs ([b3e573c](https://github.com/envx-project/cli/commit/b3e573c8c56db32dc8604130680df8495192b2ad))
+
 ## [2.10.0](https://github.com/envx-project/cli/compare/v2.9.1...v2.10.0) (2025-10-28)
 
 
