@@ -26,7 +26,7 @@ fn envcli_dir() -> Result<PathBuf> {
     Ok(home_dir)
 }
 
-pub async fn command(args: Args, _config: Config) -> Result<()> {
+pub async fn command(args: Args, _config: &mut Config) -> Result<()> {
     println!("Migrating config file... Please do not interrupt this process.");
 
     let old_config_dir = envcli_dir()?;

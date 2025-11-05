@@ -21,7 +21,7 @@ commands_enum!(set, migrate);
 
 pub async fn command(
     args: Args,
-    config: crate::utils::config::Config,
+    config: &mut crate::utils::config::Config,
 ) -> Result<()> {
     Commands::exec(args, config).await?;
     Ok(())

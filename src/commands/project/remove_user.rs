@@ -38,7 +38,7 @@ impl Display for DisplayUser {
     }
 }
 
-pub async fn command(args: Args, config: Config) -> anyhow::Result<()> {
+pub async fn command(args: Args, config: &mut Config) -> anyhow::Result<()> {
     let key = config.unlocked_primary_key()?;
     let sdk_config = config.sdk_configuration(&key)?;
 

@@ -1,4 +1,4 @@
-pub mod auth;
+pub mod auth_token;
 pub mod btreemap;
 pub mod choice;
 mod compare_semver;

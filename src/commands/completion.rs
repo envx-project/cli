@@ -12,7 +12,7 @@ pub struct Args {
     shell: Shell,
 }
 
-pub async fn command(args: Args, _config: Config) -> Result<()> {
+pub async fn command(args: Args, _config: &mut Config) -> Result<()> {
     generate(
         args.shell,
         &mut self::Args::command(),

@@ -4,7 +4,7 @@ use crate::utils::config::Config;
 #[derive(Parser)]
 pub struct Args {}
 
-pub async fn command(_args: Args, config: Config) -> Result<()> {
+pub async fn command(_args: Args, config: &mut Config) -> Result<()> {
     let key = config.primary_key()?;
     let password = config.primary_key_password()?;
     let key = key.unlock(&password);

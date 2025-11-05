@@ -37,20 +37,20 @@ pub struct Config {
     pub primary_key_command: Option<Vec<String>>,
 }
 
-impl Drop for Config {
-    fn drop(&mut self) {
-        if std::env::var("ENVX_DEBUG").is_ok() {
-            dbg!("writing config");
-        }
-        match self.write() {
-            Ok(_) => {}
-            Err(e) => {
-                eprintln!("Failed to write config: {}", e);
-            }
-        }
-    }
-}
-
+// impl Drop for Config {
+//     fn drop(&mut self) {
+//         if std::env::var("ENVX_DEBUG").is_ok() {
+//             dbg!("writing config");
+//         }
+//         match self.write() {
+//             Ok(_) => {}
+//             Err(e) => {
+//                 eprintln!("Failed to write config: {}", e);
+//             }
+//         }
+//     }
+// }
+//
 // TODO: add project name
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Project {
@@ -127,6 +127,7 @@ impl Config {
             }
         }
     }
+
     // NEVER call this function EVER
     pub fn write(&self) -> Result<()> {
         let path =

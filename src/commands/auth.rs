@@ -11,7 +11,7 @@ pub struct Args {
     debug: bool,
 }
 
-pub async fn command(args: Args, config: Config) -> anyhow::Result<()> {
+pub async fn command(args: Args, config: &mut Config) -> anyhow::Result<()> {
     let key = config.primary_key()?;
     let password = config.primary_key_password()?;
 
@@ -34,7 +34,7 @@ pub async fn command(args: Args, config: Config) -> anyhow::Result<()> {
 
     let res = client
         .post(url)
-        .header(header::AUTHORIZATION, format!("Bearer {}", auth_token))
+        .header(header::AUTHORIZATION, auth_token.bearer())
         .send()
         .await?;
 

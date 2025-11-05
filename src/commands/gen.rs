@@ -41,7 +41,7 @@ pub struct Args {
     no_upload: bool,
 }
 
-pub async fn command(args: Args, config: Config) -> Result<()> {
+pub async fn command(args: Args, config: &mut Config) -> Result<()> {
     let settings = config.get_settings();
 
     if config.primary_key.is_some() {
@@ -161,7 +161,6 @@ pub async fn command(args: Args, config: Config) -> Result<()> {
         uuid,
     };
 
-    let mut config = config;
     config.primary_key = Some(key);
 
     Ok(())

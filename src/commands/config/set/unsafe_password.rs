@@ -15,7 +15,7 @@ pub struct Args {
     password: Option<String>,
 }
 
-pub async fn command(args: Args, config: Config) -> Result<()> {
+pub async fn command(args: Args, config: &mut Config) -> Result<()> {
     println!("This command is VERY insecure. It will store your password in PLAIN TEXT in the config file.");
     prompt_confirm("Are you sure you want to continue?")?;
 
@@ -24,7 +24,6 @@ pub async fn command(args: Args, config: Config) -> Result<()> {
         None => prompt_password("Enter the password to set")?,
     };
 
-    let mut config = config;
     if password.is_empty() {
         config.primary_key_password = None;
         println!("Primary key password removed");

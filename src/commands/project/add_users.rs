@@ -28,7 +28,7 @@ pub struct Args {
     user_ids: Vec<Uuid>,
 }
 
-pub async fn command(args: Args, config: Config) -> Result<()> {
+pub async fn command(args: Args, config: &mut Config) -> Result<()> {
     let user_ids = if args.user_ids.is_empty() {
         vec![prompt_text("User ID: ")?.parse::<Uuid>()?]
     } else {

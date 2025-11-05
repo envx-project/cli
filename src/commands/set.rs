@@ -26,7 +26,7 @@ pub struct Args {
     project_id: Option<String>,
 }
 
-pub async fn command(args: Args, config: Config) -> Result<()> {
+pub async fn command(args: Args, config: &mut Config) -> Result<()> {
     if args.kvpairs.is_empty() {
         bail!(
             "{}\n{}",

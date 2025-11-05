@@ -19,7 +19,7 @@ pub struct Args {
 }
 
 // TODO: Pretty print project info (in a table?)
-pub async fn command(args: Args, config: Config) -> Result<()> {
+pub async fn command(args: Args, config: &mut Config) -> Result<()> {
     let key = config.primary_key()?;
     let key = key.unlock(&config.primary_key_password()?);
     let project_id = Choice::try_project(args.project_id, &key).await?;

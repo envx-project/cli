@@ -21,7 +21,7 @@ pub struct Args {
     all: bool,
 }
 
-pub async fn command(args: Args, config: Config) -> Result<()> {
+pub async fn command(args: Args, config: &mut Config) -> Result<()> {
     let key = config.primary_key()?;
     let key = key.unlock(&config.primary_key_password()?);
     let project_id = match args.all {

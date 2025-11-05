@@ -26,7 +26,7 @@ pub enum Commands {
     Pubkey { path: String },
 }
 
-pub async fn command(args: Args, _config: Config) -> Result<()> {
+pub async fn command(args: Args, _config: &mut Config) -> Result<()> {
     let mut vault_path = get_vault_location()?;
     match args.command {
         Commands::Pubkey { path } => {

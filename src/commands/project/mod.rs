@@ -39,7 +39,7 @@ commands_enum!(
     info
 );
 
-pub async fn command(args: Args, config: Config) -> Result<()> {
+pub async fn command(args: Args, config: &mut Config) -> Result<()> {
     Commands::exec(args, config).await?;
     Ok(())
 }

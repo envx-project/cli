@@ -1,4 +1,4 @@
-use super::{auth::AuthToken, rpgp::get_vault_location};
+use super::{auth_token::AuthToken, rpgp::get_vault_location};
 use anyhow::{bail, Context, Result};
 use pgp::{
     composed::{
@@ -30,7 +30,7 @@ impl UnlockedKey {
         Self { password, key }
     }
 
-    pub fn auth_token(&self) -> Result<crate::utils::auth::AuthToken> {
+    pub fn auth_token(&self) -> Result<AuthToken> {
         let key = self
             .key
             .signed_secret_key()
@@ -38,8 +38,8 @@ impl UnlockedKey {
 
         let mut rng = rand::rngs::OsRng;
 
-        let ts = chrono::Utc::now().to_string();
-        let mut builder = MessageBuilder::from_bytes("", ts);
+        let timestamp = chrono::Utc::now().to_string();
+        let mut builder = MessageBuilder::from_bytes("", timestamp);
         builder.sign(
             &key.primary_key,
             self.password.clone().into(),

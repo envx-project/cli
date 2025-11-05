@@ -14,8 +14,7 @@ pub struct Args {
     force: bool,
 }
 
-pub async fn command(args: Args, config: Config) -> Result<()> {
-    let mut config = config;
+pub async fn command(args: Args, config: &mut Config) -> Result<()> {
     let projects = &config.projects;
     let cwd = std::env::current_dir()?;
 

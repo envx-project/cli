@@ -5,8 +5,7 @@ use crate::utils::config::Config;
 #[derive(Parser)]
 pub struct Args {}
 
-pub async fn command(_args: Args, config: Config) -> Result<()> {
-    let mut config = config;
+pub async fn command(_args: Args, config: &mut Config) -> Result<()> {
     let unset = config.unlink_project()?;
 
     // There should only ever be one project unset

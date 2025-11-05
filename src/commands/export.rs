@@ -13,7 +13,7 @@ pub struct Args {
     secret_key: bool,
 }
 
-pub async fn command(args: Args, config: Config) -> Result<()> {
+pub async fn command(args: Args, config: &mut Config) -> Result<()> {
     let keys: Vec<&str> = config.keys.all_fingerprints();
 
     let fingerprint = match args.fingerprint {

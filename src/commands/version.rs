@@ -6,7 +6,7 @@ use super::*;
 #[derive(Parser)]
 pub struct Args {}
 
-pub async fn command(_args: Args, _config: Config) -> Result<()> {
+pub async fn command(_args: Args, _config: &mut Config) -> Result<()> {
     println!(
         "{} {} {} {}",
         "envx".cyan(),

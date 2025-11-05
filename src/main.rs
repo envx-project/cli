@@ -178,8 +178,12 @@ async fn main() -> Result<()> {
         }
     };
 
-    let config = Config::get();
-    let exec_result = Commands::exec(cli, config).await;
+    let exec_result = {
+        let mut config = Config::get();
+        let exec_result = Commands::exec(cli, &mut config).await;
+        config.write()?;
+        exec_result
+    };
 
     if let Err(e) = exec_result {
         if matches!(

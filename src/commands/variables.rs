@@ -22,7 +22,7 @@ pub struct Args {
     all: bool,
 }
 
-pub async fn command(args: Args, config: Config) -> Result<()> {
+pub async fn command(args: Args, config: &mut Config) -> Result<()> {
     let mode = Mode::from_args(&args);
 
     let key = config.primary_key()?;

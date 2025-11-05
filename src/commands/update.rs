@@ -14,7 +14,7 @@ use super::*;
 pub struct Args {}
 
 #[cfg(target_os = "windows")]
-pub async fn command(_args: Args, _config: Config) -> Result<()> {
+pub async fn command(_args: Args, _config: &mut Config) -> Result<()> {
     use anyhow::bail;
 
     eprintln!("Self-update is not supported on Windows");
@@ -96,7 +96,7 @@ pub async fn check_update(force: bool) -> anyhow::Result<String> {
 }
 
 #[cfg(not(target_os = "windows"))]
-pub async fn command(_args: Args, _config: Config) -> Result<()> {
+pub async fn command(_args: Args, _config: &mut Config) -> Result<()> {
     let latest_version = check_update(true).await?;
 
     if matches!(

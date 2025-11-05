@@ -19,7 +19,7 @@ pub struct Args {
     json: bool,
 }
 
-pub async fn command(args: Args, config: Config) -> Result<()> {
+pub async fn command(args: Args, config: &mut Config) -> Result<()> {
     let key = config.primary_key()?;
     let password = config.primary_key_password()?;
     let key = key.unlock(&password);

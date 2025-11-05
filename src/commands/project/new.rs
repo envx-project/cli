@@ -19,7 +19,7 @@ pub struct Args {
     force: bool,
 }
 
-pub async fn command(args: Args, config: Config) -> Result<()> {
+pub async fn command(args: Args, config: &mut Config) -> Result<()> {
     let key = config.primary_key()?;
     let password = config.primary_key_password()?;
     let key = key.unlock(&password);
@@ -59,7 +59,6 @@ pub async fn command(args: Args, config: Config) -> Result<()> {
 
     println!("Linking project...");
 
-    let mut config = config;
     match config.unlink_project() {
         Ok(unlinked) => {
             println!("Unlinked project(s):");

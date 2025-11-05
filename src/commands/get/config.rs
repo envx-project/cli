@@ -15,7 +15,7 @@ pub struct Args {
     json: bool,
 }
 
-pub async fn command(args: Args, config: Config) -> Result<()> {
+pub async fn command(args: Args, config: &mut Config) -> Result<()> {
     if args.json {
         let json = serde_json::to_string_pretty(&config)
             .context("Failed to serialize")?;

@@ -8,7 +8,7 @@ pub struct Args {
     full: bool,
 }
 
-pub async fn command(_args: Args, config: Config) -> Result<()> {
+pub async fn command(_args: Args, config: &mut Config) -> Result<()> {
     println!("Keys:");
     for key in config.keys.iter() {
         let fingerprint = match _args.full {

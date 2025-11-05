@@ -22,7 +22,7 @@ pub struct Args {
 
 commands_enum!(accept, create);
 
-pub async fn command(args: Args, config: Config) -> Result<()> {
+pub async fn command(args: Args, config: &mut Config) -> Result<()> {
     Commands::exec(args, config).await?;
     Ok(())
 }

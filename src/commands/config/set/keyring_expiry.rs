@@ -12,7 +12,7 @@ pub struct Args {
     days: u32,
 }
 
-pub async fn command(args: Args, config: Config) -> Result<()> {
+pub async fn command(args: Args, config: &mut Config) -> Result<()> {
     if args.days == 0 {
         println!("Keyring will not expire. This is not recommended.");
     } else {
@@ -27,7 +27,6 @@ pub async fn command(args: Args, config: Config) -> Result<()> {
     }
 
     {
-        let mut config = config;
         config.settings = Some(settings);
     }
     Ok(())
