@@ -9,6 +9,7 @@ use clap::Subcommand;
 
 pub mod keyring_expiry;
 pub mod unsafe_password;
+pub mod password_command;
 
 /// Delete a resource. (project, key)
 #[derive(Parser)]
@@ -17,7 +18,7 @@ pub struct Args {
     command: Commands,
 }
 
-commands_enum!(unsafe_password, keyring_expiry);
+commands_enum!(unsafe_password, keyring_expiry, password_command);
 
 pub async fn command(args: Args, config: &mut Config) -> Result<()> {
     Commands::exec(args, config).await?;

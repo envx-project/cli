@@ -1016,6 +1016,7 @@ dependencies = [
  "reqwest",
  "serde",
  "serde_json",
+ "shlex",
  "smallvec",
  "textwrap",
  "thiserror 1.0.69",
