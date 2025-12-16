@@ -1,5 +1,19 @@
 # Changelog
 
+## [2.11.0](https://github.com/envx-project/cli/compare/v2.10.1...v2.11.0) (2025-12-16)
+
+
+### Features
+
+* get variable command ([7d709ee](https://github.com/envx-project/cli/commit/7d709eef82b82116d79f676fa035ec0176657e63))
+* set/unset password command ([1cfa9d6](https://github.com/envx-project/cli/commit/1cfa9d63971fe2f8d3d1e522cbf20b2b4ab59acd))
+
+
+### Bug Fixes
+
+* added error message on empty projects array ([4ef333e](https://github.com/envx-project/cli/commit/4ef333e12e0111d09cb885c7e16db4916eda22c6)), closes [#78](https://github.com/envx-project/cli/issues/78)
+* typo ([80060e2](https://github.com/envx-project/cli/commit/80060e251ce6bbdfe7549f962935b16e4f93e80b))
+
 ## [2.10.1](https://github.com/envx-project/cli/compare/v2.10.0...v2.10.1) (2025-10-29)
 
 

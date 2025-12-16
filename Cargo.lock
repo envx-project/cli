@@ -988,7 +988,7 @@ dependencies = [
 
 [[package]]
 name = "envx"
-version = "2.10.1"
+version = "2.11.0"
 dependencies = [
  "anyhow",
  "bincode",
