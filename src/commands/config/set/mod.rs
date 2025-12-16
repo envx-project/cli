@@ -8,8 +8,8 @@ use crate::{commands_enum, utils::config::Config};
 use clap::Subcommand;
 
 pub mod keyring_expiry;
-pub mod unsafe_password;
 pub mod password_command;
+pub mod unsafe_password;
 
 /// Delete a resource. (project, key)
 #[derive(Parser)]
