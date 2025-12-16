@@ -38,7 +38,7 @@ pub async fn command(args: Args, config: &mut Config) -> Result<()> {
                 SDK::get_all_variables(&key).await?
             };
 
-            prompt::prompt_options("Select variables to delete", variables)?.id
+            prompt::prompt_options("Select variable to delete", variables)?.id
         }
     };
 
