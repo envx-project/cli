@@ -8,6 +8,7 @@ pub mod config;
 pub mod keys;
 pub mod project;
 pub mod projects;
+pub mod variable;
 
 use crate::{commands_enum, utils::config::Config};
 use clap::Subcommand;
@@ -22,7 +23,7 @@ pub struct Args {
     json: bool,
 }
 
-commands_enum!(project, config, keys, projects);
+commands_enum!(project, config, keys, projects, variable);
 
 pub async fn command(args: Args, config: &mut Config) -> Result<()> {
     Commands::exec(args, config).await?;
