@@ -54,16 +54,20 @@ impl Choice {
             .collect::<Vec<_>>();
 
         all_projects.iter().for_each(|p| {
-            let pname = match p.project_name.trim().is_empty() {
+            let project_name = match p.project_name.trim().is_empty() {
                 true => "<unnamed>",
                 false => &p.project_name,
             };
             options.push(DisplayProject {
                 project_id: &p.project_id,
-                project_name: pname,
+                project_name,
                 path: "Remote",
             });
         });
+
+        if options.is_empty() {
+            return Err(anyhow::anyhow!("No projects found"));
+        }
 
         let selected =
             crate::utils::prompt::prompt_options("Select project", options)?;
