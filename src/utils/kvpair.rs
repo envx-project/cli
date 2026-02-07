@@ -1,10 +1,7 @@
 use anyhow::{Context, Result};
-use pgp::composed::{Message, SignedSecretKey};
 use serde::{Deserialize, Serialize};
 use std::fmt;
 use std::str::FromStr;
-
-use super::key::UnlockedKey;
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct KVPair {
@@ -24,30 +21,6 @@ impl KVPair {
     pub fn to_json(&self) -> Result<String> {
         serde_json::to_string(&self).context("Failed to serialize KVPair")
     }
-}
-
-pub fn read_kvpairs_from_file(
-    file_name: &str,
-    key: &UnlockedKey,
-) -> Result<Vec<KVPair>> {
-    let msg = Message::from_file(&file_name)?;
-
-    let ssk = SignedSecretKey::try_from(key)?;
-    let mut decrypted = msg
-        .decrypt(&key.password.clone().into(), &ssk)
-        .context("Decrypting the message")?;
-
-    if decrypted.is_compressed() {
-        decrypted = decrypted
-            .decompress()
-            .context("Failed to decompress message")?;
-    }
-
-    decrypted
-        .as_data_string()?
-        .split("\n")
-        .map(|s| KVPair::from_str(s))
-        .collect::<Result<Vec<KVPair>>>()
 }
 
 impl fmt::Display for KVPair {
