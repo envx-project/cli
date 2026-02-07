@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.11.1](https://github.com/envx-project/cli/compare/v2.11.0...v2.11.1) (2026-02-07)
+
+
+### Bug Fixes
+
+* remove .envx file fallback on variable get failure ([6c3a8a6](https://github.com/envx-project/cli/commit/6c3a8a60dbc38ee82b52a4148f73f50e17a9cd1f))
+
 ## [2.11.0](https://github.com/envx-project/cli/compare/v2.10.1...v2.11.0) (2025-12-16)
 
 
