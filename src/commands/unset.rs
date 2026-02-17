@@ -32,12 +32,13 @@ pub async fn command(args: Args, config: &mut Config) -> Result<()> {
     let variable = match args.variable {
         Some(v) => v,
         None => {
-            let variables = if let Some(project_id) = project_id {
+            let mut variables = if let Some(project_id) = project_id {
                 SDK::get_variables(&project_id, &key).await?
             } else {
                 SDK::get_all_variables(&key).await?
             };
 
+            variables.sort_by(|a, b| a.value.key.cmp(&b.value.key));
             prompt::prompt_options("Select variable to delete", variables)?.id
         }
     };
