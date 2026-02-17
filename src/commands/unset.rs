@@ -29,20 +29,29 @@ pub async fn command(args: Args, config: &mut Config) -> Result<()> {
         false => Some(Choice::try_project(args.project_id, &key).await?),
     };
 
-    let variable = match args.variable {
-        Some(v) => v,
+    let variables = match args.variable {
+        Some(v) => vec![v],
         None => {
-            let variables = if let Some(project_id) = project_id {
+            let mut variables = if let Some(project_id) = project_id {
                 SDK::get_variables(&project_id, &key).await?
             } else {
                 SDK::get_all_variables(&key).await?
             };
 
-            prompt::prompt_options("Select variable to delete", variables)?.id
+            variables.sort_by(|a, b| a.value.key.cmp(&b.value.key));
+            prompt::prompt_multi_options(
+                "Select variables to delete:",
+                variables,
+            )?
+            .into_iter()
+            .map(|v| v.id)
+            .collect()
         }
     };
 
-    SDK::delete_variable(&variable, &key).await?;
+    for variable in &variables {
+        SDK::delete_variable(variable, &key).await?;
+    }
 
     Ok(())
 }
