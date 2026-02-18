@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.12.0](https://github.com/envx-project/cli/compare/v2.11.1...v2.12.0) (2026-02-17)
+
+
+### Features
+
+* sorting kv and regex filtering ([#81](https://github.com/envx-project/cli/issues/81)) ([2fa9f50](https://github.com/envx-project/cli/commit/2fa9f5000b36bd54b4002e295e7ebed0893abd25))
+
 ## [2.11.1](https://github.com/envx-project/cli/compare/v2.11.0...v2.11.1) (2026-02-07)
 
 
