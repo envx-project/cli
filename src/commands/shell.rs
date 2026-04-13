@@ -30,10 +30,10 @@ use std::mem::zeroed;
 #[derive(Parser)]
 pub struct Args {
     /// Project ID
-    #[clap(short, long)]
+    #[arg(short, long)]
     project_id: Option<String>,
 
-    #[clap(short, long)]
+    #[arg(short, long)]
     silent: bool,
 }
 

@@ -8,7 +8,7 @@ use crate::{
 #[derive(Parser)]
 pub struct Args {
     /// Username to add to project
-    #[clap(short, long)]
+    #[arg(short, long)]
     username: Option<String>,
 }
 

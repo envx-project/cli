@@ -8,7 +8,7 @@ use super::*;
 #[derive(Parser)]
 pub struct Args {
     /// Number of days before the keyring password expires
-    #[clap(short, long)]
+    #[arg(short, long)]
     days: u32,
 }
 

@@ -13,7 +13,7 @@ pub mod view;
 /// Interact with the envx keyring. All commands are interactive.
 #[derive(Parser)]
 pub struct Args {
-    #[clap(subcommand)]
+    #[command(subcommand)]
     command: Commands,
 }
 

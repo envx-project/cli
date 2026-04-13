@@ -5,11 +5,11 @@ use crate::utils::{config::Config, key::VecKeyTrait, prompt::prompt_options};
 #[derive(Parser)]
 pub struct Args {
     /// The fingerprint of the key to export
-    #[clap(short = 'k', long = "key")]
+    #[arg(short = 'k', long = "key")]
     fingerprint: Option<String>,
 
     /// Export the secret key
-    #[clap(short, long = "secret-key")]
+    #[arg(short, long = "secret-key")]
     secret_key: bool,
 }
 

@@ -6,16 +6,16 @@ use crate::{sdk::SDK, utils::config::Config};
 #[derive(Parser)]
 pub struct Args {
     /// Project name
-    #[clap(short, long)]
+    #[arg(short, long)]
     name: Option<String>,
 
-    #[clap(long = "no-name")]
+    #[arg(long = "no-name")]
     noname: bool,
 
-    #[clap(long = "no-link")]
+    #[arg(long = "no-link")]
     nolink: bool,
 
-    #[clap(long, short)]
+    #[arg(long, short)]
     force: bool,
 }
 

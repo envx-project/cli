@@ -11,7 +11,7 @@ use crate::utils::{
 #[derive(Parser)]
 pub struct Args {
     /// UNSAFE: Set the primary key password in plain text. Enter "" to unset the password.
-    #[clap(short, long)]
+    #[arg(short, long)]
     password: Option<String>,
 }
 

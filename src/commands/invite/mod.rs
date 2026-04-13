@@ -13,10 +13,10 @@ use clap::Subcommand;
 /// Get a resource. (project, key, config)
 #[derive(Parser)]
 pub struct Args {
-    #[clap(subcommand)]
+    #[command(subcommand)]
     command: Commands,
 
-    #[clap(global = true, long)]
+    #[arg(global = true, long)]
     json: bool,
 }
 

@@ -8,7 +8,7 @@ use super::*;
 
 #[derive(Parser)]
 pub struct Args {
-    #[clap(short, long, default_value_t = false)]
+    #[arg(short, long, default_value_t = false)]
     verbose: bool,
 }
 
