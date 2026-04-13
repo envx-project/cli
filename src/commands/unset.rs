@@ -7,17 +7,17 @@ use crate::{sdk::SDK, utils::config::Config};
 #[derive(Parser)]
 pub struct Args {
     /// Variable to unset
-    #[clap(short, long)]
+    #[args(short, long)]
     variable: Option<String>,
 
     /// Key to use
-    #[clap(short, long)]
+    #[args(short, long)]
     key: Option<String>,
 
-    #[clap(short, long)]
+    #[args(short, long)]
     project_id: Option<String>,
 
-    #[clap(short, long, default_value_t = false)]
+    #[args(short, long, default_value_t = false)]
     all: bool,
 }
 

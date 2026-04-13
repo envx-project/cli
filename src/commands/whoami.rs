@@ -4,7 +4,7 @@ use crate::utils::config::Config;
 /// Print the primary key fingerprint and uuid
 #[derive(Parser)]
 pub struct Args {
-    #[clap(long)]
+    #[args(long)]
     json: bool,
 }
 

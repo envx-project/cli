@@ -8,10 +8,10 @@ use anyhow::Result;
 /// Get the configuration either as a table or as a JSON output
 #[derive(Parser)]
 pub struct Args {
-    #[clap(short, long)]
+    #[args(short, long)]
     keys_only: bool,
 
-    #[clap(long)]
+    #[args(long)]
     json: bool,
 }
 

@@ -11,11 +11,11 @@ use super::*;
 #[derive(Parser)]
 pub struct Args {
     /// Project ID
-    #[clap(short, long)]
+    #[args(short, long)]
     project_id: Option<String>,
 
     /// Output as JSON
-    #[clap(long)]
+    #[args(long)]
     json: bool,
 }
 

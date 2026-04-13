@@ -14,7 +14,7 @@ pub mod unsafe_password;
 /// Delete a resource. (project, key)
 #[derive(Parser)]
 pub struct Args {
-    #[clap(subcommand)]
+    #[args(subcommand)]
     command: Commands,
 }
 

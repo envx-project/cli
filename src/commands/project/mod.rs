@@ -20,10 +20,10 @@ use clap::Subcommand;
 /// Command group for project related commands
 #[derive(Parser)]
 pub struct Args {
-    #[clap(subcommand)]
+    #[args(subcommand)]
     command: Commands,
 
-    #[clap(global = true, long)]
+    #[args(global = true, long)]
     json: bool,
 }
 

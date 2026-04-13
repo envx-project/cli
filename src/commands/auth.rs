@@ -7,7 +7,7 @@ use reqwest::header;
 #[derive(Parser)]
 pub struct Args {
     /// Debug output
-    #[clap(short, long)]
+    #[args(short, long)]
     debug: bool,
 }
 

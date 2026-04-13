@@ -17,13 +17,13 @@ mod macros;
 
 /// Interact with env-store/rusty-api via CLI
 #[derive(Parser)]
-#[clap(author, version, about, long_about = None)]
-#[clap(propagate_version = true)]
+#[args(author, version, about, long_about = None)]
+#[args(propagate_version = true)]
 pub struct Args {
-    #[clap(subcommand)]
+    #[args(subcommand)]
     command: Commands,
 
-    #[clap(long)]
+    #[args(long)]
     silent: bool,
 }
 

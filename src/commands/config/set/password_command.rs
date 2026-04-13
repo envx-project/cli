@@ -15,7 +15,7 @@ use super::*;
 #[derive(Parser)]
 pub struct Args {
     /// Print the command
-    #[clap(short, long)]
+    #[args(short, long)]
     print: bool,
 
     /// Command to run

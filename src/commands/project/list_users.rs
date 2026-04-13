@@ -7,19 +7,19 @@ use crate::{sdk::SDK, utils::choice::Choice};
 #[derive(Parser)]
 pub struct Args {
     /// Partial fingerprint of key to use
-    #[clap(short, long)]
+    #[args(short, long)]
     key: Option<String>,
 
     /// Project ID
-    #[clap(short, long)]
+    #[args(short, long)]
     project_id: Option<String>,
 
     /// Output in JSON format
-    #[clap(long)]
+    #[args(long)]
     json: bool,
 
     /// Show all info
-    #[clap(short, long)]
+    #[args(short, long)]
     all: bool,
 }
 
