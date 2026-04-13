@@ -23,11 +23,11 @@ use crate::{
 #[derive(Parser)]
 pub struct Args {
     /// Project ID to add user to
-    #[args(short, long)]
+    #[clap(short, long)]
     project_id: Option<String>,
 
     /// User ID to add to project
-    #[args(short, long)]
+    #[clap(short, long)]
     user_id: Option<String>,
 }
 

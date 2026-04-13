@@ -7,11 +7,11 @@ use crate::{
 #[derive(Parser)]
 pub struct Args {
     /// Project ID
-    #[args(long, short)]
+    #[clap(long, short)]
     project_id: Option<String>,
 
     /// Output as JSON
-    #[args(long)]
+    #[clap(long)]
     json: bool,
 }
 

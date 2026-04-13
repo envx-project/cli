@@ -20,11 +20,11 @@ use uuid::Uuid;
 #[derive(Parser)]
 pub struct Args {
     /// Project ID to add user to
-    #[args(short, long)]
+    #[clap(short, long)]
     project_id: Option<String>,
 
     /// User ID to add to project
-    #[args(trailing_var_arg = true)]
+    #[clap(trailing_var_arg = true)]
     user_ids: Vec<Uuid>,
 }
 

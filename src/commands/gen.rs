@@ -22,22 +22,22 @@ use keyring::Error as KeyringError;
 #[derive(Parser)]
 pub struct Args {
     /// Username for the key. Do NOT use your real name, or anything that could be used to identify you.
-    #[args(short, long)]
+    #[clap(short, long)]
     username: Option<String>,
 
     /// Passphrase to encrypt the key with
-    #[args(short, long)]
+    #[clap(short, long)]
     passphrase: Option<String>,
 
     /// force overwrite of existing key
-    #[args(long = "force", short = 'f')]
+    #[clap(long = "force", short = 'f')]
     force: bool,
 
-    #[args(long)]
+    #[clap(long)]
     export: bool,
 
     /// Don't upload the key to the API
-    #[args(long = "no-upload")]
+    #[clap(long = "no-upload")]
     no_upload: bool,
 }
 

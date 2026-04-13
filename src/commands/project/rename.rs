@@ -9,11 +9,11 @@ use crate::utils::prompt::prompt_text;
 #[derive(Parser)]
 pub struct Args {
     /// New name for the project
-    #[args(short, long)]
+    #[clap(short, long)]
     name: Option<String>,
 
     /// Project ID
-    #[args(short, long)]
+    #[clap(short, long)]
     project_id: Option<String>,
 }
 

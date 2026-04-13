@@ -18,11 +18,11 @@ use crate::{
 #[derive(Parser)]
 pub struct Args {
     /// KVPairs
-    #[args(trailing_var_arg = true)]
+    #[clap(trailing_var_arg = true)]
     kvpairs: Vec<String>,
 
     /// Project ID
-    #[args(short, long)]
+    #[clap(short, long)]
     project_id: Option<String>,
 }
 

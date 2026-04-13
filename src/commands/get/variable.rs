@@ -8,10 +8,10 @@ use super::*;
 
 #[derive(Parser)]
 pub struct Args {
-    #[args(short, long)]
+    #[clap(short, long)]
     project_id: Option<String>,
 
-    #[args(short, long)]
+    #[clap(short, long)]
     key: String,
 }
 

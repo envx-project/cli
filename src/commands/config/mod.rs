@@ -13,7 +13,7 @@ pub mod set;
 /// Configure envx
 #[derive(Parser)]
 pub struct Args {
-    #[args(subcommand)]
+    #[clap(subcommand)]
     command: Commands,
 }
 

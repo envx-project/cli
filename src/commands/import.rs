@@ -16,7 +16,7 @@ use pgp::{
 /// Import ascii armored keys from a file
 #[derive(Parser, Debug)]
 pub struct Args {
-    #[args(subcommand)]
+    #[clap(subcommand)]
     command: Commands,
 }
 

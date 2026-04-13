@@ -6,11 +6,11 @@ use crate::utils::config::Config;
 #[derive(Parser)]
 pub struct Args {
     /// Project ID
-    #[args(short, long)]
+    #[clap(short, long)]
     project_id: Option<String>,
 
     /// Force a new project to be linked to the current directory, unlinking the current project
-    #[args(short, long)]
+    #[clap(short, long)]
     force: bool,
 }
 

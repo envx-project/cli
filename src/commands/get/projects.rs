@@ -4,7 +4,7 @@ use super::*;
 
 #[derive(Parser)]
 pub struct Args {
-    #[args(long)]
+    #[clap(long)]
     json: bool,
 }
 

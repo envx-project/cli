@@ -10,7 +10,7 @@ use super::*;
 #[derive(Parser)]
 pub struct Args {
     /// Don't prompt for confirmation
-    #[args(short, long)]
+    #[clap(short, long)]
     yes: bool,
 }
 

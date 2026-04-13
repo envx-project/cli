@@ -9,11 +9,11 @@ use std::collections::BTreeMap;
 #[derive(Debug, Parser)]
 pub struct Args {
     /// Project ID
-    #[args(short, long)]
+    #[clap(short, long)]
     project_id: Option<String>,
 
     /// Args to pass to the command
-    #[args(trailing_var_arg = true)]
+    #[clap(trailing_var_arg = true)]
     args: Vec<String>,
 }
 

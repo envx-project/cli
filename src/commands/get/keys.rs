@@ -4,7 +4,7 @@ use super::*;
 #[derive(Parser)]
 pub struct Args {
     /// Use full length fingerprints
-    #[args(short, long)]
+    #[clap(short, long)]
     full: bool,
 }
 
