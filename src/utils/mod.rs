@@ -4,6 +4,7 @@ pub mod choice;
 mod compare_semver;
 pub use compare_semver::compare_semver;
 pub mod config;
+pub mod env_override;
 pub mod key;
 pub mod keyring;
 pub mod kvpair;
