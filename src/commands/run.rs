@@ -14,7 +14,7 @@ pub struct Args {
     project_id: Option<String>,
 
     /// Override or add environment variables (KEY=VALUE), repeatable
-    #[arg(short = 'e', long = "env")]
+    #[arg(short = 'e', long = "env", value_name = "KEY=VALUE")]
     env_override: Vec<String>,
 
     /// Args to pass to the command
