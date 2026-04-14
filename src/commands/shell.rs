@@ -1,5 +1,6 @@
 use crate::utils::choice::Choice;
 use crate::utils::config::Config;
+use crate::utils::env_override::apply_env_overrides;
 use crate::utils::magic_variables::get_variables_magic;
 
 use super::*;
@@ -35,6 +36,10 @@ pub struct Args {
 
     #[arg(short, long)]
     silent: bool,
+
+    /// Override or add environment variables (KEY=VALUE), repeatable
+    #[arg(short = 'e', long = "env")]
+    env_override: Vec<String>,
 }
 
 pub async fn command(args: Args, config: &mut Config) -> Result<()> {
@@ -55,6 +60,8 @@ pub async fn command(args: Args, config: &mut Config) -> Result<()> {
     for variable in variables {
         all_variables.insert(variable.key, variable.value);
     }
+
+    apply_env_overrides(&mut all_variables, args.env_override)?;
 
     let shell = std::env::var("SHELL").unwrap_or(match std::env::consts::OS {
         "windows" => match windows_shell_detection().await {
