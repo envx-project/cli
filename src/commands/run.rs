@@ -1,6 +1,7 @@
 use super::*;
 use crate::utils::{
-    choice::Choice, config::Config, magic_variables::get_variables_magic,
+    choice::Choice, config::Config, env_override::apply_env_overrides,
+    magic_variables::get_variables_magic,
 };
 use anyhow::bail;
 use std::collections::BTreeMap;
@@ -11,6 +12,10 @@ pub struct Args {
     /// Project ID
     #[arg(short, long)]
     project_id: Option<String>,
+
+    /// Override or add environment variables (KEY=VALUE), repeatable
+    #[arg(short = 'e', long = "env")]
+    env_override: Vec<String>,
 
     /// Args to pass to the command
     #[arg(trailing_var_arg = true)]
@@ -35,6 +40,8 @@ pub async fn command(args: Args, config: &mut Config) -> Result<()> {
     for variable in variables {
         all_variables.insert(variable.key, variable.value);
     }
+
+    apply_env_overrides(&mut all_variables, args.env_override)?;
 
     // a bit janky :/
     ctrlc::set_handler(move || {
