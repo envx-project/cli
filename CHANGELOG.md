@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.13.0](https://github.com/envx-project/cli/compare/v2.12.0...v2.13.0) (2026-04-19)
+
+
+### Features
+
+* `-e` variable override for `envx run` and `envx shell` ([563de4f](https://github.com/envx-project/cli/commit/563de4f849ad7d190cc1ade1616d7e5b7b24e21e))
+
 ## [2.12.0](https://github.com/envx-project/cli/compare/v2.11.1...v2.12.0) (2026-02-17)
 
 
