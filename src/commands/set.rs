@@ -1,4 +1,4 @@
-use std::io::IsTerminal;
+use std::io::{BufRead, IsTerminal};
 
 use anyhow::bail;
 
@@ -17,6 +17,8 @@ use crate::{
 /// Set a variable (Interactive)
 ///
 /// Overwrites existing variables if they exist.
+/// Accepts KEY=VALUE pairs as positional args and/or on stdin
+/// (one per line; `#` comments and blank lines ignored).
 #[derive(Parser)]
 pub struct Args {
     /// KVPairs
@@ -36,12 +38,36 @@ pub struct Args {
     json: bool,
 }
 
+/// Read additional KEY=VALUE lines from stdin when it is piped.
+/// Blank lines and lines starting with `#` are ignored.
+fn read_stdin_kvpairs() -> anyhow::Result<Vec<String>> {
+    let stdin = std::io::stdin();
+    if stdin.is_terminal() {
+        return Ok(Vec::new());
+    }
+    let mut out = Vec::new();
+    for line in stdin.lock().lines() {
+        let line = line?;
+        let trimmed = line.trim();
+        if trimmed.is_empty() || trimmed.starts_with('#') {
+            continue;
+        }
+        out.push(trimmed.to_string());
+    }
+    Ok(out)
+}
+
 pub async fn command(args: Args, config: &mut Config) -> Result<()> {
-    if args.kvpairs.is_empty() {
+    let stdin_pairs = read_stdin_kvpairs()?;
+
+    let all_inputs: Vec<String> =
+        args.kvpairs.iter().cloned().chain(stdin_pairs).collect();
+
+    if all_inputs.is_empty() {
         bail!(
             "{}\n{}",
             "No KV pairs provided".red(),
-            "Usage: envx set key=value [key=value]...",
+            "Usage: envx set key=value [key=value]...  (or pipe KEY=VALUE lines on stdin)",
         );
     }
 
@@ -54,10 +80,9 @@ pub async fn command(args: Args, config: &mut Config) -> Result<()> {
         return Err(anyhow::anyhow!("No project ID provided"));
     }
 
-    let (kvpairs, errors): (Vec<KVPair>, Vec<String>) = args
-        .kvpairs
-        .iter()
-        .fold((Vec::new(), Vec::new()), |(mut ok, mut err), k| {
+    let (kvpairs, errors): (Vec<KVPair>, Vec<String>) = all_inputs.iter().fold(
+        (Vec::new(), Vec::new()),
+        |(mut ok, mut err), k| {
             match k.split_once('=') {
                 Some((key, value)) => {
                     ok.push(KVPair::new(key.to_uppercase(), value.into()))
@@ -65,7 +90,8 @@ pub async fn command(args: Args, config: &mut Config) -> Result<()> {
                 None => err.push(format!("Invalid KVPair: {}", k)),
             }
             (ok, err)
-        });
+        },
+    );
 
     errors.iter().for_each(|e| println!("Skipping {}", e));
 
