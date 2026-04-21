@@ -1,9 +1,10 @@
+use anyhow::bail;
 use envx_sdk::models::UpdateProjectV2;
 
 use super::*;
 use crate::utils::choice::Choice;
 use crate::utils::config::Config;
-use crate::utils::prompt::prompt_text;
+use crate::utils::prompt::{is_interactive, prompt_text};
 
 /// Rename a project
 #[derive(Parser)]
@@ -22,9 +23,18 @@ pub async fn command(args: Args, config: &mut Config) -> Result<()> {
     let key = key.unlock(&config.primary_key_password()?);
 
     let project_id = Choice::try_project(args.project_id, &key).await?;
-    let new_name = args.name.unwrap_or_else(|| {
-        prompt_text("New name for project").expect("Failed to prompt")
-    });
+    let new_name = match args.name {
+        Some(n) => n,
+        None => {
+            if !is_interactive() {
+                bail!(
+                    "No --name given and stdin is not a terminal.\n\
+                     Pass --name <new-name> to rename non-interactively.",
+                );
+            }
+            prompt_text("New name for project")?
+        }
+    };
 
     let sdk_config = config.sdk_configuration(&key)?;
     envx_sdk::apis::project_api::update(

@@ -1,10 +1,12 @@
+use anyhow::bail;
+
 use super::*;
 use crate::{
     sdk::{api_url, SDK},
     utils::{
         choice::Choice,
         config::Config,
-        prompt::prompt_text,
+        prompt::{is_interactive, prompt_text},
         rpgp::encrypt,
         variable::{EncryptedVariable, ToKVPair},
     },
@@ -30,6 +32,12 @@ pub struct Args {
 
 pub async fn command(args: Args, config: &mut Config) -> Result<()> {
     let user_ids = if args.user_ids.is_empty() {
+        if !is_interactive() {
+            bail!(
+                "No user IDs given and stdin is not a terminal.\n\
+                 Pass user IDs as positional args: `envx project add-users <uuid>...`",
+            );
+        }
         vec![prompt_text("User ID: ")?.parse::<Uuid>()?]
     } else {
         args.user_ids

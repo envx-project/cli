@@ -1,5 +1,7 @@
+use anyhow::bail;
+
 use super::*;
-use crate::utils::prompt::prompt_text;
+use crate::utils::prompt::{is_interactive, prompt_text};
 use crate::{sdk::SDK, utils::config::Config};
 
 /// Create a new project
@@ -27,9 +29,18 @@ pub async fn command(args: Args, config: &mut Config) -> Result<()> {
     let name = if args.noname {
         "".to_string()
     } else {
-        args.name.unwrap_or_else(|| {
-            prompt_text("What is the name of this project?").unwrap()
-        })
+        match args.name {
+            Some(n) => n,
+            None => {
+                if !is_interactive() {
+                    bail!(
+                        "No --name given and stdin is not a terminal.\n\
+                         Pass --name <name> (or --no-name for an unnamed project).",
+                    );
+                }
+                prompt_text("What is the name of this project?")?
+            }
+        }
     };
 
     let new_project_id = SDK::new_project(&key, &name).await?;

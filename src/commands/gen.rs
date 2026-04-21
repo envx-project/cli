@@ -6,7 +6,7 @@ use crate::sdk::SDK;
 use crate::utils::config::Config;
 use crate::utils::key::Key;
 use crate::utils::keyring::set_password;
-use crate::utils::prompt::{prompt_password, prompt_text};
+use crate::utils::prompt::{is_interactive, prompt_password, prompt_text};
 use crate::utils::rpgp::{generate_key_pair, get_vault_location, user_id};
 use crate::utils::vecu8::ToHex;
 use anyhow::{bail, Context};
@@ -50,6 +50,15 @@ pub async fn command(args: Args, config: &mut Config) -> Result<()> {
         } else {
             println!("Overwriting primary key...");
         }
+    }
+
+    if (args.username.is_none() || args.passphrase.is_none())
+        && !is_interactive()
+    {
+        bail!(
+            "Cannot prompt for username/passphrase in a non-interactive terminal.\n\
+             Pass --username <name> and --passphrase <value>.",
+        );
     }
 
     println!("For your username, do not use your real name, or anything that could be used to identify you.");

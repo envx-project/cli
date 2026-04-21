@@ -1,7 +1,12 @@
+use anyhow::bail;
+
 use super::*;
 use crate::{
     sdk::SDK,
-    utils::{config::Config, prompt::prompt_text},
+    utils::{
+        config::Config,
+        prompt::{is_interactive, prompt_text},
+    },
 };
 
 /// If your key is not in the database, use this command to upload it
@@ -18,7 +23,15 @@ pub async fn command(args: Args, config: &mut Config) -> Result<()> {
 
     let username = match args.username {
         Some(u) => u,
-        None => prompt_text("Username: ")?,
+        None => {
+            if !is_interactive() {
+                bail!(
+                    "No --username given and stdin is not a terminal.\n\
+                     Pass --username <name> to upload non-interactively.",
+                );
+            }
+            prompt_text("Username: ")?
+        }
     };
 
     let id = SDK::new_user(&username, &key.public_key_str()?).await?;

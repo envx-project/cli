@@ -1,5 +1,11 @@
+use anyhow::bail;
+
 use super::*;
-use crate::utils::{config::Config, key::VecKeyTrait, prompt::prompt_options};
+use crate::utils::{
+    config::Config,
+    key::VecKeyTrait,
+    prompt::{is_interactive, prompt_options},
+};
 
 /// Export a public or secret key
 #[derive(Parser)]
@@ -18,11 +24,19 @@ pub async fn command(args: Args, config: &mut Config) -> Result<()> {
 
     let fingerprint = match args.fingerprint {
         Some(fingerprint) => fingerprint.to_uppercase(),
-        None => prompt_options(
-            "Select key to export",
-            keys.iter().map(|e| e[..8].to_string()).collect(),
-        )?
-        .to_string(),
+        None => {
+            if !is_interactive() {
+                bail!(
+                    "No key selected and stdin is not a terminal.\n\
+                     Pass --key <fingerprint> to pick a key non-interactively.",
+                );
+            }
+            prompt_options(
+                "Select key to export",
+                keys.iter().map(|e| e[..8].to_string()).collect(),
+            )?
+            .to_string()
+        }
     };
 
     let key = config
