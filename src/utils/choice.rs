@@ -69,6 +69,11 @@ impl Choice {
             return Err(anyhow::anyhow!("No projects found"));
         }
 
+        crate::utils::prompt::require_interactive(
+            "No project selected and stdin is not a terminal.",
+            "Pass --project-id <id> or run `envx link` to link one to this directory.",
+        )?;
+
         let selected =
             crate::utils::prompt::prompt_options("Select project", options)?;
 

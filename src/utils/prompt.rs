@@ -1,6 +1,23 @@
-use anyhow::{Context, Result};
+use anyhow::{bail, Context, Result};
 use inquire::ui::{Attributes, RenderConfig, StyleSheet, Styled};
 use std::fmt::Display;
+use std::io::IsTerminal;
+
+/// Returns true if stdin is a terminal (interactive use).
+pub fn is_interactive() -> bool {
+    std::io::stdin().is_terminal()
+}
+
+/// Bail with a helpful error if stdin is not a TTY.
+///
+/// `reason` describes what prompt the command wanted to show.
+/// `hint` is a suggestion such as "pass --project-id" for scripted use.
+pub fn require_interactive(reason: &str, hint: &str) -> Result<()> {
+    if !is_interactive() {
+        bail!("{}\n{}", reason, hint);
+    }
+    Ok(())
+}
 
 pub fn get_render_config() -> RenderConfig {
     RenderConfig::default_colored()
