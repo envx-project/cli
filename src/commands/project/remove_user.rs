@@ -1,6 +1,6 @@
 use std::{collections::HashSet, fmt::Display};
 
-use anyhow::Result;
+use anyhow::{bail, Result};
 use clap::Parser;
 use envx_sdk::models::RemoveUserBody;
 use pgp::composed::{Deserializable, SignedPublicKey};
@@ -13,7 +13,9 @@ use crate::{
     utils::{
         choice::Choice,
         config::Config,
-        prompt::prompt_multi_options,
+        prompt::{
+            is_interactive, prompt_confirm_with_default, prompt_multi_options,
+        },
         rpgp::encrypt,
         variable::{EncryptedVariable, ToKVPair},
     },
@@ -29,6 +31,10 @@ pub struct Args {
     /// User ID to add to project
     #[arg(short, long)]
     user_id: Option<String>,
+
+    /// Skip confirmation prompt
+    #[arg(short, long)]
+    yes: bool,
 }
 
 struct DisplayUser(envx_sdk::models::User);
@@ -60,6 +66,12 @@ pub async fn command(args: Args, config: &mut Config) -> anyhow::Result<()> {
             (HashSet::from([user.public_key]), vec![uid])
         }
         None => {
+            if !is_interactive() {
+                bail!(
+                    "No --user-id given and stdin is not a terminal.\n\
+                     Pass --user-id <uuid> to remove a user non-interactively.",
+                );
+            }
             let users = prompt_multi_options(
                 "Users to Remove",
                 project_info
@@ -77,6 +89,32 @@ pub async fn command(args: Args, config: &mut Config) -> anyhow::Result<()> {
                 .unzip()
         }
     };
+
+    if selected_ids.is_empty() {
+        println!("No users selected. Aborting.");
+        return Ok(());
+    }
+
+    if !args.yes {
+        if !is_interactive() {
+            bail!(
+                "Refusing to remove users without confirmation in a non-interactive terminal.\n\
+                 Re-run with --yes (-y) to confirm.",
+            );
+        }
+        let confirmed = prompt_confirm_with_default(
+            &format!(
+                "Remove {} user(s) from project {}? All variables will be re-encrypted.",
+                selected_ids.len(),
+                &project_id,
+            ),
+            false,
+        )?;
+        if !confirmed {
+            println!("Aborting...");
+            return Ok(());
+        }
+    }
 
     let variables = SDK::get_variables(&project_id, &key).await?;
     let kvpairs = variables.to_kvpair();

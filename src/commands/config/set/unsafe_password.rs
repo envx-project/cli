@@ -1,7 +1,9 @@
+use anyhow::bail;
+
 use super::*;
 use crate::utils::{
     config::{get_config_file_path, Config},
-    prompt::{prompt_confirm, prompt_password},
+    prompt::{is_interactive, prompt_confirm, prompt_password},
 };
 
 /// Set the primary key password in plain text
@@ -13,15 +15,41 @@ pub struct Args {
     /// UNSAFE: Set the primary key password in plain text. Enter "" to unset the password.
     #[arg(short, long)]
     password: Option<String>,
+
+    /// Skip the "are you sure" confirmation prompt
+    #[arg(short, long)]
+    yes: bool,
 }
 
 pub async fn command(args: Args, config: &mut Config) -> Result<()> {
     println!("This command is VERY insecure. It will store your password in PLAIN TEXT in the config file.");
-    prompt_confirm("Are you sure you want to continue?")?;
+
+    if !args.yes {
+        if !is_interactive() {
+            bail!(
+                "Refusing to store an unsafe password without confirmation in a non-interactive terminal.\n\
+                 Re-run with --yes (-y) to confirm.",
+            );
+        }
+
+        let confirmed = prompt_confirm("Are you sure you want to continue?")?;
+        if !confirmed {
+            println!("Aborting...");
+            return Ok(());
+        }
+    }
 
     let password = match args.password {
         Some(k) => k,
-        None => prompt_password("Enter the password to set")?,
+        None => {
+            if !is_interactive() {
+                bail!(
+                    "Cannot prompt for a password in a non-interactive terminal.\n\
+                     Pass --password <value> (or --password \"\" to clear).",
+                );
+            }
+            prompt_password("Enter the password to set")?
+        }
     };
 
     if password.is_empty() {

@@ -27,9 +27,13 @@ pub struct Args {
     #[arg(short, long)]
     project_id: Option<String>,
 
-    /// Overwrite existing variables without prompting
+    /// Skip confirmation and overwrite existing variables
     #[arg(short, long)]
-    force: bool,
+    yes: bool,
+
+    /// Output uploaded variable IDs as JSON
+    #[arg(long)]
+    json: bool,
 }
 
 pub async fn command(args: Args, config: &mut Config) -> Result<()> {
@@ -91,12 +95,12 @@ pub async fn command(args: Args, config: &mut Config) -> Result<()> {
             );
         }
 
-        if !args.force {
+        if !args.yes {
             if !std::io::stdin().is_terminal() {
                 bail!(
                     "{}\n{}",
                     "Cannot prompt for overwrite confirmation in a non-interactive terminal.".red(),
-                    "Re-run with --force (-f) to overwrite existing variables.",
+                    "Re-run with --yes (-y) to overwrite existing variables.",
                 );
             }
 
@@ -118,8 +122,12 @@ pub async fn command(args: Args, config: &mut Config) -> Result<()> {
 
     let ids = SDK::set_many(kvpairs, &project_id, &key).await?;
 
-    println!("Uploaded {} variables", ids.len());
-    println!("IDs: {:?}", ids);
+    if args.json {
+        println!("{}", serde_json::to_string(&ids)?);
+    } else {
+        println!("Uploaded {} variables", ids.len());
+        println!("IDs: {:?}", ids);
+    }
 
     Ok(())
 }
