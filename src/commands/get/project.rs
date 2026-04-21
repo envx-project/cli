@@ -2,7 +2,7 @@ use super::*;
 use crate::utils::config::Config;
 use crate::{sdk::SDK, utils::choice::Choice};
 
-/// Get all environment variables for a project
+/// Get project info
 #[derive(Parser)]
 pub struct Args {
     /// Partial fingerprint of key to use
@@ -18,12 +18,24 @@ pub struct Args {
     json: bool,
 }
 
-// TODO: Pretty print project info (in a table?)
 pub async fn command(args: Args, config: &mut Config) -> Result<()> {
     let key = config.primary_key()?;
     let key = key.unlock(&config.primary_key_password()?);
     let project_id = Choice::try_project(args.project_id, &key).await?;
     let project_info = SDK::get_project_info(&project_id, &key).await?;
-    println!("{:?}", project_info);
+
+    if args.json {
+        println!("{}", serde_json::to_string(&project_info)?);
+        return Ok(());
+    }
+
+    println!("Project Info:\n");
+    println!("ID: {}", project_info.project_id);
+    println!("Name: {}", project_info.project_name);
+    println!("Users:");
+    for user in project_info.users {
+        println!("    {} - {}", user.id, user.username);
+    }
+
     Ok(())
 }

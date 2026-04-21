@@ -13,6 +13,10 @@ pub struct Args {
 
     #[arg(short, long)]
     key: String,
+
+    /// Output the key/value pair as JSON
+    #[arg(long)]
+    json: bool,
 }
 
 pub async fn command(args: Args, config: &mut Config) -> Result<()> {
@@ -26,6 +30,17 @@ pub async fn command(args: Args, config: &mut Config) -> Result<()> {
 
     match kvpair {
         Some(kvpair) => {
+            if args.json {
+                println!(
+                    "{}",
+                    serde_json::json!({
+                        "key": kvpair.key,
+                        "value": kvpair.value,
+                    })
+                );
+                return Ok(());
+            }
+
             let mut stdout = std::io::stdout();
             stdout.write_all(kvpair.key.as_bytes())?;
             if stdout.is_terminal() {

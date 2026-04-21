@@ -6,9 +6,18 @@ pub struct Args {
     /// Use full length fingerprints
     #[arg(short, long)]
     full: bool,
+
+    /// Output as JSON
+    #[arg(long)]
+    json: bool,
 }
 
 pub async fn command(_args: Args, config: &mut Config) -> Result<()> {
+    if _args.json {
+        println!("{}", serde_json::to_string(&config.keys)?);
+        return Ok(());
+    }
+
     println!("Keys:");
     for key in config.keys.iter() {
         let fingerprint = match _args.full {
