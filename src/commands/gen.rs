@@ -39,6 +39,10 @@ pub struct Args {
     /// Don't upload the key to the API
     #[arg(long = "no-upload")]
     no_upload: bool,
+
+    /// Output the result as JSON (suppresses human-readable output)
+    #[arg(long)]
+    json: bool,
 }
 
 pub async fn command(args: Args, config: &mut Config) -> Result<()> {
@@ -126,11 +130,25 @@ pub async fn command(args: Args, config: &mut Config) -> Result<()> {
         }
     }
 
-    println!("Fingerprint: {}", fingerprint);
+    if !args.json {
+        println!("Fingerprint: {}", fingerprint);
+    }
 
     if args.export {
-        println!("PRIVATE:\n{}", priv_key);
-        println!("\nPUBLIC:\n{}", pub_key);
+        if args.json {
+            println!(
+                "{}",
+                serde_json::json!({
+                    "fingerprint": fingerprint,
+                    "private_key": priv_key,
+                    "public_key": pub_key,
+                    "exported": true,
+                })
+            );
+        } else {
+            println!("PRIVATE:\n{}", priv_key);
+            println!("\nPUBLIC:\n{}", pub_key);
+        }
         return Ok(());
     }
 
@@ -146,7 +164,9 @@ pub async fn command(args: Args, config: &mut Config) -> Result<()> {
     let uuid = if !args.no_upload {
         match SDK::new_user(&username, &pub_key).await {
             Ok(id) => {
-                println!("User ID: {}", id);
+                if !args.json {
+                    println!("User ID: {}", id);
+                }
                 Some(id)
             }
             Err(_) => {
@@ -160,17 +180,30 @@ pub async fn command(args: Args, config: &mut Config) -> Result<()> {
         None
     };
 
-    println!("Setting primary key to {}...", &fingerprint);
+    if !args.json {
+        println!("Setting primary key to {}...", &fingerprint);
+    }
 
     let key: Key = Key {
-        fingerprint,
+        fingerprint: fingerprint.clone(),
         note: "Primary Key".to_string(),
         primary_user_id: user_id(&username),
         pubkey_only: Some(false),
-        uuid,
+        uuid: uuid.clone(),
     };
 
     config.primary_key = Some(key);
+
+    if args.json {
+        println!(
+            "{}",
+            serde_json::json!({
+                "fingerprint": fingerprint,
+                "user_id": uuid,
+                "public_key": pub_key,
+            })
+        );
+    }
 
     Ok(())
 }

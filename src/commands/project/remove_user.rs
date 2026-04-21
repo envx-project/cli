@@ -35,6 +35,10 @@ pub struct Args {
     /// Skip confirmation prompt
     #[arg(short, long)]
     yes: bool,
+
+    /// Output result as JSON
+    #[arg(long)]
+    json: bool,
 }
 
 struct DisplayUser(envx_sdk::models::User);
@@ -161,20 +165,30 @@ pub async fn command(args: Args, config: &mut Config) -> anyhow::Result<()> {
         .json::<Vec<String>>()
         .await?;
 
-    println!("Updated {} variables", res.len());
-    println!("IDs: {:?}", res);
-
     envx_sdk::apis::project_api::remove_users(
         &sdk_config,
         &project_id,
         RemoveUserBody {
-            user_ids: selected_ids,
+            user_ids: selected_ids.clone(),
         },
     )
     .await?;
 
-    println!("Successfully removed users from project");
-    println!("Users removed: {:?}", selected);
+    if args.json {
+        println!(
+            "{}",
+            json!({
+                "project_id": project_id,
+                "removed_user_ids": selected_ids,
+                "updated_variable_ids": res,
+            })
+        );
+    } else {
+        println!("Updated {} variables", res.len());
+        println!("IDs: {:?}", res);
+        println!("Successfully removed users from project");
+        println!("Users removed: {:?}", selected);
+    }
 
     Ok(())
 }

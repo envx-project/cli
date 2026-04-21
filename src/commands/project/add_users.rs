@@ -28,6 +28,10 @@ pub struct Args {
     /// User ID to add to project
     #[arg(trailing_var_arg = true)]
     user_ids: Vec<Uuid>,
+
+    /// Output result as JSON
+    #[arg(long)]
+    json: bool,
 }
 
 pub async fn command(args: Args, config: &mut Config) -> Result<()> {
@@ -107,10 +111,26 @@ pub async fn command(args: Args, config: &mut Config) -> Result<()> {
         .json::<Vec<String>>()
         .await?;
 
-    println!("Updated {} variables", res.len());
-    println!("IDs: {:?}", res);
-    envx_sdk::apis::project_api::add_user(&sdk_config, &project_id, user_ids)
-        .await?;
+    envx_sdk::apis::project_api::add_user(
+        &sdk_config,
+        &project_id,
+        user_ids.clone(),
+    )
+    .await?;
+
+    if args.json {
+        println!(
+            "{}",
+            json!({
+                "project_id": project_id,
+                "added_user_ids": user_ids,
+                "updated_variable_ids": res,
+            })
+        );
+    } else {
+        println!("Updated {} variables", res.len());
+        println!("IDs: {:?}", res);
+    }
 
     Ok(())
 }

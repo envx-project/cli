@@ -19,6 +19,10 @@ pub struct Args {
 
     #[arg(long, short)]
     force: bool,
+
+    /// Output the new project ID as JSON (suppresses all other output)
+    #[arg(long)]
+    json: bool,
 }
 
 pub async fn command(args: Args, config: &mut Config) -> Result<()> {
@@ -44,42 +48,72 @@ pub async fn command(args: Args, config: &mut Config) -> Result<()> {
     };
 
     let new_project_id = SDK::new_project(&key, &name).await?;
-    println!("Created new project with ID: {}", new_project_id);
+    if !args.json {
+        println!("Created new project with ID: {}", new_project_id);
+    }
 
     // early return if nolink flag is set, we are done already
     if args.nolink {
+        if args.json {
+            println!(
+                "{}",
+                serde_json::json!({
+                    "project_id": new_project_id,
+                    "linked": false,
+                })
+            );
+        }
         return Ok(());
     }
 
     if !args.force {
-        match config.get_project() {
-            Ok(_) => {
+        if let Ok(existing) = config.get_project() {
+            if args.json {
+                println!(
+                    "{}",
+                    serde_json::json!({
+                        "project_id": new_project_id,
+                        "linked": false,
+                        "already_linked_project_id": existing.project_id,
+                    })
+                );
+            } else {
                 println!("A project is already linked to this directory");
                 println!("  Use `envx unlink` to unlink the current project");
                 println!("  Or force link a project with `envx link --force`");
                 println!(
                     "{} {}",
                     "Current project:".green(),
-                    config.get_project()?.project_id
+                    existing.project_id
                 );
-                return Ok(());
             }
-            Err(_) => {}
+            return Ok(());
         }
     }
 
-    println!("Linking project...");
+    if !args.json {
+        println!("Linking project...");
+    }
 
-    match config.unlink_project() {
-        Ok(unlinked) => {
+    if let Ok(unlinked) = config.unlink_project() {
+        if !args.json {
             println!("Unlinked project(s):");
             for project in unlinked {
                 println!("  {}", project);
             }
         }
-        Err(_) => {} // do nothing, we don't need to unlink
     }
     config.link_project(&new_project_id)?;
+
+    if args.json {
+        println!(
+            "{}",
+            serde_json::json!({
+                "project_id": new_project_id,
+                "linked": true,
+            })
+        );
+    }
 
     Ok(())
 }
