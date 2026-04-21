@@ -1,3 +1,5 @@
+use std::io::IsTerminal;
+
 use anyhow::bail;
 
 use super::*;
@@ -24,6 +26,10 @@ pub struct Args {
     /// Project ID
     #[arg(short, long)]
     project_id: Option<String>,
+
+    /// Overwrite existing variables without prompting
+    #[arg(short, long)]
+    force: bool,
 }
 
 pub async fn command(args: Args, config: &mut Config) -> Result<()> {
@@ -85,12 +91,22 @@ pub async fn command(args: Args, config: &mut Config) -> Result<()> {
             );
         }
 
-        let overwrite =
-            prompt_confirm("Do you want to override existing variables?")?;
+        if !args.force {
+            if !std::io::stdin().is_terminal() {
+                bail!(
+                    "{}\n{}",
+                    "Cannot prompt for overwrite confirmation in a non-interactive terminal.".red(),
+                    "Re-run with --force (-f) to overwrite existing variables.",
+                );
+            }
 
-        if !overwrite {
-            println!("Aborting...");
-            return Ok(());
+            let overwrite =
+                prompt_confirm("Do you want to override existing variables?")?;
+
+            if !overwrite {
+                println!("Aborting...");
+                return Ok(());
+            }
         }
 
         println!("Overwriting existing variables...");
