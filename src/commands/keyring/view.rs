@@ -15,7 +15,7 @@ pub struct Args {
 }
 
 pub async fn command(args: Args, config: &mut Config) -> Result<()> {
-    let password = get_password(&config)?;
+    let password = get_password(config)?;
 
     if args.yes {
         println!("{}", password);

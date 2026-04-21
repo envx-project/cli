@@ -10,7 +10,7 @@ macro_rules! commands_enum {
             }
 
             impl Commands {
-                async fn exec(cli: Args, config: &mut crate::utils::config::Config) -> Result<()> {
+                async fn exec(cli: Args, config: &mut $crate::utils::config::Config) -> Result<()> {
                     match cli.command {
                         $(
                             Commands::[<$module:camel>](args) => $module::command(args, config).await?,

@@ -15,7 +15,7 @@ pub fn password_encrypt_to_armor(
         &passphrase.into(),
     )?;
 
-    let armor = msg.to_armored_string(&mut rng, ArmorOptions::default())?;
+    let armor = msg.to_armored_string(rng, ArmorOptions::default())?;
     Ok(armor)
 }
 

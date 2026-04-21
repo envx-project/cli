@@ -190,7 +190,7 @@ impl SDK {
                 .iter()
                 .map(|e| e.value.clone())
                 .collect::<Vec<String>>(),
-            &key,
+            key,
         )?;
 
         let kvpairs = decrypted
@@ -260,7 +260,7 @@ impl SDK {
                 .iter()
                 .map(|e| e.value.clone())
                 .collect::<Vec<String>>(),
-            &key,
+            key,
         )?;
 
         let kvpairs = decrypted
@@ -289,7 +289,7 @@ impl SDK {
         project_id: &str,
         key: &UnlockedKey,
     ) -> Result<Vec<KVPair>> {
-        let variables = Self::get_variables(project_id, &key)
+        let variables = Self::get_variables(project_id, key)
             .await
             .context("Failed to get variables")?;
 

@@ -50,7 +50,7 @@ pub async fn command(args: Args, config: &mut Config) -> Result<()> {
     let variables: Vec<DecryptedVariable> = serde_json::from_str(&decrypted)?;
     let kvpairs = variables.to_kvpair();
 
-    if variables.len() == 0 {
+    if variables.is_empty() {
         bail!("No variables found");
     }
 

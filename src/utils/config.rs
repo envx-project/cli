@@ -182,12 +182,7 @@ impl Config {
     }
 
     pub fn get_settings(&self) -> Settings {
-        let settings = self.settings.clone();
-        if let Some(settings) = settings {
-            settings
-        } else {
-            Settings::default()
-        }
+        self.settings.clone().unwrap_or_default()
     }
 
     pub fn get_project(&self) -> Result<&Project> {
@@ -257,7 +252,7 @@ impl Config {
     pub fn primary_key_password(&self) -> Result<String> {
         let key = self.primary_key()?;
 
-        let password = get_password(&self);
+        let password = get_password(self);
         match password {
             Ok(p) => Ok(p),
             Err(e) => {

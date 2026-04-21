@@ -36,7 +36,7 @@ impl UnlockedKey {
             .signed_secret_key()
             .context("Failed to get secret key")?;
 
-        let mut rng = rand::rngs::OsRng;
+        let rng = rand::rngs::OsRng;
 
         let timestamp = chrono::Utc::now().to_string();
         let mut builder = MessageBuilder::from_bytes("", timestamp);
@@ -45,8 +45,7 @@ impl UnlockedKey {
             self.password.clone().into(),
             HashAlgorithm::Sha3_512,
         );
-        let signature =
-            builder.to_armored_string(&mut rng, ArmorOptions::default());
+        let signature = builder.to_armored_string(rng, ArmorOptions::default());
 
         // TODO: check to make sure the password is correct
         let signature = match signature {
@@ -65,15 +64,15 @@ impl UnlockedKey {
         };
 
         let auth_token =
-            AuthToken::new(self.key.uuid.clone().unwrap().into(), signature);
+            AuthToken::new(self.key.uuid.clone().unwrap(), signature);
 
         Ok(auth_token)
     }
 }
 
-impl Into<Key> for UnlockedKey {
-    fn into(self) -> Key {
-        self.key
+impl From<UnlockedKey> for Key {
+    fn from(val: UnlockedKey) -> Self {
+        val.key
     }
 }
 

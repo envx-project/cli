@@ -23,18 +23,10 @@ pub async fn command(_args: Args, _config: &mut Config) -> Result<()> {
     Ok(())
 }
 
-#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Default, serde::Serialize, serde::Deserialize)]
 pub struct UpdateCheck {
     pub last_update_check: Option<chrono::DateTime<chrono::Utc>>,
     pub latest_version: Option<String>,
-}
-impl Default for UpdateCheck {
-    fn default() -> Self {
-        Self {
-            last_update_check: None,
-            latest_version: None,
-        }
-    }
 }
 #[derive(serde::Deserialize)]
 struct GithubApiRelease {
@@ -54,11 +46,10 @@ pub async fn check_update(force: bool) -> anyhow::Result<String> {
     };
 
     if let Some(last_update_check) = update.last_update_check {
-        if !force {
-            if chrono::Utc::now().date_naive() == last_update_check.date_naive()
-            {
-                bail!("Update check already ran today");
-            }
+        if !force
+            && chrono::Utc::now().date_naive() == last_update_check.date_naive()
+        {
+            bail!("Update check already ran today");
         }
     }
 
@@ -71,25 +62,21 @@ pub async fn check_update(force: bool) -> anyhow::Result<String> {
     let response = response.json::<GithubApiRelease>().await?;
     let latest_version = response.tag_name.trim_start_matches('v');
 
-    match crate::utils::compare_semver(
-        env!("CARGO_PKG_VERSION"),
-        &latest_version,
-    ) {
-        Ordering::Less => {
-            let nanos = chrono::Utc::now().timestamp_nanos_opt().unwrap();
-            let pid = std::process::id();
-            let tmp_path =
-                path.with_extension(format!("tmp.{}-{}.json", pid, nanos));
-            let update = UpdateCheck {
-                last_update_check: Some(chrono::Utc::now()),
-                latest_version: Some(latest_version.to_owned()),
-            };
-            let contents = serde_json::to_string_pretty(&update)?;
-            // need to use tokio fs so the function actually waits for the file to be written
-            tokio::fs::write(&tmp_path, contents).await?;
-            tokio::fs::rename(&tmp_path, &path).await?;
-        }
-        _ => {}
+    if crate::utils::compare_semver(env!("CARGO_PKG_VERSION"), latest_version)
+        == Ordering::Less
+    {
+        let nanos = chrono::Utc::now().timestamp_nanos_opt().unwrap();
+        let pid = std::process::id();
+        let tmp_path =
+            path.with_extension(format!("tmp.{}-{}.json", pid, nanos));
+        let update = UpdateCheck {
+            last_update_check: Some(chrono::Utc::now()),
+            latest_version: Some(latest_version.to_owned()),
+        };
+        let contents = serde_json::to_string_pretty(&update)?;
+        // need to use tokio fs so the function actually waits for the file to be written
+        tokio::fs::write(&tmp_path, contents).await?;
+        tokio::fs::rename(&tmp_path, &path).await?;
     }
 
     Ok(latest_version.to_string())

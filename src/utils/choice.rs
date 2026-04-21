@@ -28,7 +28,7 @@ impl fmt::Display for DisplayProject<'_> {
 pub struct Choice {}
 impl Choice {
     pub async fn choose_project(
-        projects: &Vec<Project>,
+        projects: &[Project],
         key: &UnlockedKey,
     ) -> Result<String> {
         let all_projects = SDK::list_projects(key).await?;
