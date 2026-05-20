@@ -23,8 +23,6 @@ pub struct Config {
     pub salt: String,
     /// The fingerprint of the primary signing key
     pub primary_key: Option<Key>,
-    /// A vector of fingerprints of all usable public keys
-    pub keys: Vec<Key>,
     /// Custom URL for the SDK
     pub sdk_url: Option<String>,
     /// Settings that apply to all environments
@@ -65,7 +63,6 @@ impl Default for Config {
         Self {
             salt,
             primary_key: None,
-            keys: vec![],
             sdk_url: Some("https://api.envx.sh".into()),
             settings: None,
             projects: vec![],
@@ -239,10 +236,9 @@ impl Config {
     }
 
     pub fn set_uuid(&mut self, fingerprint: &str, uuid: &str) -> Result<()> {
-        for k in self.keys.iter_mut() {
+        if let Some(k) = self.primary_key.as_mut() {
             if k.fingerprint == fingerprint {
                 k.uuid = Some(uuid.to_string());
-                return Ok(());
             }
         }
 

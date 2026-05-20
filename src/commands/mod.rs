@@ -16,7 +16,6 @@ pub mod export;
 pub mod gen;
 pub mod import;
 pub mod link;
-pub mod list_keys;
 pub mod list_projects;
 pub mod run;
 pub mod set;

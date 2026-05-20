@@ -201,16 +201,6 @@ impl TryFrom<&UnlockedKey> for SignedPublicKey {
     }
 }
 
-pub trait VecKeyTrait {
-    fn all_fingerprints(&self) -> Vec<&str>;
-}
-
-impl VecKeyTrait for Vec<Key> {
-    fn all_fingerprints(&self) -> Vec<&str> {
-        self.iter().map(|k| k.fingerprint.as_str()).collect()
-    }
-}
-
 impl Display for Key {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{} - ({})", self.fingerprint, self.primary_user_id)

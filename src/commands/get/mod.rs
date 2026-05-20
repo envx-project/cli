@@ -5,7 +5,6 @@ pub(super) use clap::Parser;
 pub(super) use colored::Colorize;
 
 pub mod config;
-pub mod keys;
 pub mod project;
 pub mod projects;
 pub mod variable;
@@ -23,7 +22,7 @@ pub struct Args {
     json: bool,
 }
 
-commands_enum!(project, config, keys, projects, variable);
+commands_enum!(project, config, projects, variable);
 
 pub async fn command(args: Args, config: &mut Config) -> Result<()> {
     Commands::exec(args, config).await?;

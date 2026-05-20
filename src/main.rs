@@ -36,7 +36,6 @@ commands_enum!(
     gen,
     import,
     link,
-    list_keys,
     list_projects,
     run,
     set,
