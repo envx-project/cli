@@ -11,6 +11,7 @@ use crate::{
         kvpair::KVPair,
         // partial_variable::ToParsed,
         prompt::prompt_confirm,
+        variable::DecryptedVariable,
     },
 };
 
@@ -110,6 +111,8 @@ pub async fn command(args: Args, config: &mut Config) -> Result<()> {
         })
         .collect::<Vec<_>>();
 
+    enforce_project_caps(config, &variables, &existing_keys, &kvpairs)?;
+
     if !existing_keys.is_empty() {
         println!("The following variables already exist:");
         for key in &existing_keys {
@@ -153,6 +156,60 @@ pub async fn command(args: Args, config: &mut Config) -> Result<()> {
     } else {
         println!("Uploaded {} variables", ids.len());
         println!("IDs: {:?}", ids);
+    }
+
+    Ok(())
+}
+
+fn kvpair_bytes(key: &str, value: &str) -> u64 {
+    (key.len() + value.len()) as u64
+}
+
+fn enforce_project_caps(
+    config: &Config,
+    existing: &[DecryptedVariable],
+    overwrites: &[&DecryptedVariable],
+    incoming: &[KVPair],
+) -> Result<()> {
+    let settings = config.get_settings();
+    let max_count = settings.get_max_variables_per_project() as usize;
+    let max_bytes = settings.get_max_project_bytes();
+
+    let final_count = existing
+        .len()
+        .saturating_sub(overwrites.len())
+        .saturating_add(incoming.len());
+    if final_count > max_count {
+        bail!(
+            "Variable count cap exceeded: this `envx set` would put the project at {} variable(s) (cap: {}).\n\
+             Raise it with `envx config set settings.max_variables_per_project <n>`.",
+            final_count,
+            max_count,
+        );
+    }
+
+    let existing_bytes: u64 = existing
+        .iter()
+        .map(|v| kvpair_bytes(&v.value.key, &v.value.value))
+        .sum();
+    let overwrite_bytes: u64 = overwrites
+        .iter()
+        .map(|v| kvpair_bytes(&v.value.key, &v.value.value))
+        .sum();
+    let new_bytes: u64 = incoming
+        .iter()
+        .map(|kv| kvpair_bytes(&kv.key, &kv.value))
+        .sum();
+    let final_bytes = existing_bytes
+        .saturating_sub(overwrite_bytes)
+        .saturating_add(new_bytes);
+    if final_bytes > max_bytes {
+        bail!(
+            "Project size cap exceeded: this `envx set` would put the project at {} bytes of plaintext (cap: {}).\n\
+             Raise it with `envx config set settings.max_project_bytes <bytes>`.",
+            final_bytes,
+            max_bytes,
+        );
     }
 
     Ok(())
