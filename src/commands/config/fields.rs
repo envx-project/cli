@@ -54,6 +54,13 @@ pub const FIELDS: &[Field] = &[
         format_hint: "'never' or a positive integer (days)",
         can_unset: true,
     },
+    Field {
+        path: "settings.loud",
+        kind: FieldKind::Bool,
+        description: "Print one-line action summaries to stderr (link/gen/run)",
+        format_hint: "true | false",
+        can_unset: true,
+    },
 ];
 
 pub fn find(path: &str) -> Result<&'static Field> {
@@ -113,6 +120,12 @@ pub fn current_display(config: &Config, field: &Field) -> String {
                 KeyringExpiry::Days(n) => format!("{} days", n),
             })
             .unwrap_or_else(|| "<unset>".to_string()),
+        "settings.loud" => config
+            .settings
+            .as_ref()
+            .and_then(|s| s.loud)
+            .map(|b| b.to_string())
+            .unwrap_or_else(|| "false".to_string()),
         _ => "?".to_string(),
     }
 }
@@ -140,6 +153,10 @@ pub fn current_json(config: &Config, field: &Field) -> serde_json::Value {
                 .and_then(|s| s.keyring_expiry.clone()),
         )
         .unwrap(),
+        "settings.loud" => {
+            serde_json::to_value(config.settings.as_ref().and_then(|s| s.loud))
+                .unwrap()
+        }
         _ => serde_json::Value::Null,
     }
 }
@@ -179,6 +196,12 @@ pub fn set(config: &mut Config, field: &Field, raw: &str) -> Result<()> {
             s.keyring_expiry = Some(v);
             config.settings = Some(s);
         }
+        "settings.loud" => {
+            let v = parse_bool(raw)?;
+            let mut s = config.settings.clone().unwrap_or_default();
+            s.loud = Some(v);
+            config.settings = Some(s);
+        }
         _ => bail!("Field not handled in setter"),
     }
     Ok(())
@@ -199,6 +222,11 @@ pub fn unset(config: &mut Config, field: &Field) -> Result<()> {
         "settings.keyring_expiry" => {
             if let Some(s) = config.settings.as_mut() {
                 s.keyring_expiry = None;
+            }
+        }
+        "settings.loud" => {
+            if let Some(s) = config.settings.as_mut() {
+                s.loud = None;
             }
         }
         _ => bail!("Field not handled in unsetter"),

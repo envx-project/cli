@@ -8,6 +8,7 @@ pub mod env_override;
 pub mod key;
 pub mod keyring;
 pub mod kvpair;
+pub mod loud;
 pub mod magic_variables;
 pub mod prompt;
 pub mod rpgp;

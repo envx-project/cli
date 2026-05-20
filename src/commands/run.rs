@@ -1,6 +1,6 @@
 use super::*;
 use crate::utils::{
-    choice::Choice, config::Config, env_override::apply_env_overrides,
+    choice::Choice, config::Config, env_override::apply_env_overrides, loud,
     magic_variables::get_variables_magic,
 };
 use anyhow::bail;
@@ -36,12 +36,18 @@ pub async fn command(args: Args, config: &mut Config) -> Result<()> {
     all_variables.insert("IN_ENVX_SHELL".to_owned(), "true".to_owned());
 
     let variables = get_variables_magic(&project_id, &key, false).await?;
+    let decrypted_count = variables.len();
 
     for variable in variables {
         all_variables.insert(variable.key, variable.value);
     }
 
     apply_env_overrides(&mut all_variables, args.env_override)?;
+
+    loud::say(
+        config,
+        format!("injected {} decrypted vars", decrypted_count),
+    );
 
     // a bit janky :/
     ctrlc::set_handler(move || {

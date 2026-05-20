@@ -6,6 +6,7 @@ use crate::sdk::SDK;
 use crate::utils::config::Config;
 use crate::utils::key::{validate_passphrase_not_empty, Key};
 use crate::utils::keyring::set_password;
+use crate::utils::loud;
 use crate::utils::prompt::{is_interactive, prompt_password, prompt_text};
 use crate::utils::rpgp::{generate_key_pair, get_vault_location, user_id};
 use crate::utils::vecu8::ToHex;
@@ -197,6 +198,11 @@ pub async fn command(args: Args, config: &mut Config) -> Result<()> {
 
     config.primary_key = Some(key);
 
+    loud::say(
+        config,
+        format!("created GPG key {}", short_fpr(&fingerprint)),
+    );
+
     if args.json {
         println!(
             "{}",
@@ -209,4 +215,12 @@ pub async fn command(args: Args, config: &mut Config) -> Result<()> {
     }
 
     Ok(())
+}
+
+fn short_fpr(fingerprint: &str) -> String {
+    let upper = fingerprint.to_uppercase();
+    if upper.len() <= 8 {
+        return upper;
+    }
+    format!("{}...{}", &upper[..4], &upper[upper.len() - 4..])
 }

@@ -1,6 +1,7 @@
 use super::*;
 use crate::utils::choice::Choice;
 use crate::utils::config::Config;
+use crate::utils::loud;
 
 /// Link a project to the current directory
 #[derive(Parser)]
@@ -50,5 +51,27 @@ pub async fn command(args: Args, config: &mut Config) -> Result<()> {
 
     config.link_project(&project_id)?;
 
+    loud::say(
+        config,
+        format!(
+            "linked {} → project {}",
+            tilde_path(&cwd),
+            short_id(&project_id),
+        ),
+    );
+
     Ok(())
+}
+
+fn tilde_path(p: &std::path::Path) -> String {
+    if let Some(home) = home::home_dir() {
+        if let Ok(rel) = p.strip_prefix(&home) {
+            return format!("~/{}", rel.display());
+        }
+    }
+    p.display().to_string()
+}
+
+fn short_id(id: &str) -> String {
+    id.chars().take(8).collect()
 }
