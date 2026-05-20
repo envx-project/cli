@@ -103,9 +103,8 @@ fn read_value(field: &Field, config: &Config) -> Result<String> {
             let v = prompt_confirm_with_default(&prompt, current)?;
             Ok(v.to_string())
         }
-        FieldKind::Url
-        | FieldKind::StringList
-        | FieldKind::KeyringExpiry
-        | FieldKind::Number => prompt_text(&prompt),
+        FieldKind::Url | FieldKind::StringList | FieldKind::KeyringExpiry => {
+            prompt_text(&prompt)
+        }
     }
 }

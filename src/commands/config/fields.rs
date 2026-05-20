@@ -8,7 +8,6 @@ pub enum FieldKind {
     Password,
     StringList,
     KeyringExpiry,
-    Number,
 }
 
 pub struct Field {
@@ -60,20 +59,6 @@ pub const FIELDS: &[Field] = &[
         kind: FieldKind::Bool,
         description: "Print one-line action summaries to stderr (link/gen/run)",
         format_hint: "true | false",
-        can_unset: true,
-    },
-    Field {
-        path: "settings.max_variables_per_project",
-        kind: FieldKind::Number,
-        description: "Reject `envx set` that would push a project over this many variables",
-        format_hint: "positive integer (default 256)",
-        can_unset: true,
-    },
-    Field {
-        path: "settings.max_project_bytes",
-        kind: FieldKind::Number,
-        description: "Reject `envx set` that would push a project over this many bytes of plaintext",
-        format_hint: "positive integer in bytes (default 104857600 = 100MB)",
         can_unset: true,
     },
 ];
@@ -141,18 +126,6 @@ pub fn current_display(config: &Config, field: &Field) -> String {
             .and_then(|s| s.loud)
             .map(|b| b.to_string())
             .unwrap_or_else(|| "false".to_string()),
-        "settings.max_variables_per_project" => config
-            .settings
-            .as_ref()
-            .and_then(|s| s.max_variables_per_project)
-            .map(|n| n.to_string())
-            .unwrap_or_else(|| "<unset>".to_string()),
-        "settings.max_project_bytes" => config
-            .settings
-            .as_ref()
-            .and_then(|s| s.max_project_bytes)
-            .map(|n| n.to_string())
-            .unwrap_or_else(|| "<unset>".to_string()),
         _ => "?".to_string(),
     }
 }
@@ -184,17 +157,6 @@ pub fn current_json(config: &Config, field: &Field) -> serde_json::Value {
             serde_json::to_value(config.settings.as_ref().and_then(|s| s.loud))
                 .unwrap()
         }
-        "settings.max_variables_per_project" => serde_json::to_value(
-            config
-                .settings
-                .as_ref()
-                .and_then(|s| s.max_variables_per_project),
-        )
-        .unwrap(),
-        "settings.max_project_bytes" => serde_json::to_value(
-            config.settings.as_ref().and_then(|s| s.max_project_bytes),
-        )
-        .unwrap(),
         _ => serde_json::Value::Null,
     }
 }
@@ -240,22 +202,6 @@ pub fn set(config: &mut Config, field: &Field, raw: &str) -> Result<()> {
             s.loud = Some(v);
             config.settings = Some(s);
         }
-        "settings.max_variables_per_project" => {
-            let v: u32 = raw.trim().parse().map_err(|_| {
-                anyhow!("Expected positive integer, got '{}'", raw.trim())
-            })?;
-            let mut s = config.settings.clone().unwrap_or_default();
-            s.max_variables_per_project = Some(v);
-            config.settings = Some(s);
-        }
-        "settings.max_project_bytes" => {
-            let v: u64 = raw.trim().parse().map_err(|_| {
-                anyhow!("Expected positive integer, got '{}'", raw.trim())
-            })?;
-            let mut s = config.settings.clone().unwrap_or_default();
-            s.max_project_bytes = Some(v);
-            config.settings = Some(s);
-        }
         _ => bail!("Field not handled in setter"),
     }
     Ok(())
@@ -281,16 +227,6 @@ pub fn unset(config: &mut Config, field: &Field) -> Result<()> {
         "settings.loud" => {
             if let Some(s) = config.settings.as_mut() {
                 s.loud = None;
-            }
-        }
-        "settings.max_variables_per_project" => {
-            if let Some(s) = config.settings.as_mut() {
-                s.max_variables_per_project = None;
-            }
-        }
-        "settings.max_project_bytes" => {
-            if let Some(s) = config.settings.as_mut() {
-                s.max_project_bytes = None;
             }
         }
         _ => bail!("Field not handled in unsetter"),
