@@ -7,8 +7,12 @@ pub(super) use colored::Colorize;
 use crate::commands_enum;
 use clap::Subcommand;
 
+pub mod edit;
+pub mod fields;
+pub mod get;
 pub mod migrate;
 pub mod set;
+pub mod unset;
 
 /// Configure envx
 #[derive(Parser)]
@@ -17,7 +21,7 @@ pub struct Args {
     command: Commands,
 }
 
-commands_enum!(set, migrate);
+commands_enum!(edit, get, set, unset, migrate);
 
 pub async fn command(
     args: Args,

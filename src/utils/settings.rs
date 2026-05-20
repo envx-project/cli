@@ -22,12 +22,6 @@ impl Default for Settings {
 }
 
 impl Settings {
-    pub fn set_keyring_expiry(&mut self, days: u32) {
-        self.keyring_expiry = Some(KeyringExpiry::Days(days));
-    }
-    pub fn set_keyring_expiry_never(&mut self) {
-        self.keyring_expiry = Some(KeyringExpiry::Never);
-    }
     pub fn get_keyring_expiry(&self) -> KeyringExpiry {
         let expiry = self.keyring_expiry.clone();
         expiry.unwrap_or(KeyringExpiry::Days(30))
