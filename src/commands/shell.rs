@@ -11,6 +11,8 @@ use std::vec;
 #[cfg(target_os = "windows")]
 extern crate winapi;
 use anyhow::Context;
+use std::path::PathBuf;
+use std::time::{SystemTime, UNIX_EPOCH};
 #[cfg(target_os = "windows")]
 use winapi::shared::minwindef::DWORD;
 #[cfg(target_os = "windows")]
@@ -53,7 +55,11 @@ pub async fn command(args: Args, config: &mut Config) -> Result<()> {
     }
 
     let mut all_variables = BTreeMap::<String, String>::new();
+    let project_label = format!("envx:{}", short_project_id(&project_id));
+
     all_variables.insert("IN_ENVX_SHELL".to_owned(), "true".to_owned());
+    all_variables.insert("ENVX_PROJECT_ID".to_owned(), project_id.clone());
+    all_variables.insert("ENVX_PROJECT_LABEL".to_owned(), project_label);
 
     let variables = get_variables_magic(&project_id, &key, false).await?;
 
@@ -81,6 +87,8 @@ pub async fn command(args: Args, config: &mut Config) -> Result<()> {
         "cmd" => vec!["/k"],
         _ => vec![],
     };
+    let shell_options = shell_options.into_iter().map(str::to_owned).collect();
+    let shell_setup = setup_shell_prompt(&shell, shell_options, &project_id)?;
 
     if !args.silent {
         println!("Entering subshell with envx variables available. Type 'exit' to exit.\n");
@@ -93,16 +101,103 @@ pub async fn command(args: Args, config: &mut Config) -> Result<()> {
     })?;
 
     tokio::process::Command::new(shell)
-        .args(shell_options)
+        .args(shell_setup.args)
         .envs(all_variables)
+        .envs(shell_setup.env)
         .spawn()
         .context("Failed to spawn command")?
         .wait()
         .await
         .context("Failed to wait for command")?;
 
+    drop(shell_setup.cleanup);
+
     println!("Exited subshell, envx variables no longer available.");
     Ok(())
+}
+
+struct ShellSetup {
+    args: Vec<String>,
+    env: BTreeMap<String, String>,
+    cleanup: Option<ShellTempDir>,
+}
+
+struct ShellTempDir {
+    path: PathBuf,
+}
+
+impl Drop for ShellTempDir {
+    fn drop(&mut self) {
+        let _ = std::fs::remove_dir_all(&self.path);
+    }
+}
+
+fn short_project_id(project_id: &str) -> String {
+    project_id.chars().take(8).collect()
+}
+
+fn setup_shell_prompt(
+    shell: &str,
+    mut args: Vec<String>,
+    project_id: &str,
+) -> Result<ShellSetup> {
+    let short_id = short_project_id(project_id);
+    let mut env = BTreeMap::from([("ENVX_SHORT".to_owned(), short_id)]);
+    let mut cleanup = None;
+
+    if shell.ends_with("/bash") || shell == "bash" {
+        let temp_dir = create_shell_temp_dir()?;
+        let rcfile = temp_dir.path.join("bashrc");
+        std::fs::write(
+            &rcfile,
+            r#"[ -f "$HOME/.bashrc" ] && . "$HOME/.bashrc"
+export PS1="(envx:${ENVX_SHORT}) $PS1"
+"#,
+        )
+        .context("Failed to write envx bash rcfile")?;
+        args.push("--rcfile".to_owned());
+        args.push(rcfile.to_string_lossy().into_owned());
+        cleanup = Some(temp_dir);
+    } else if shell.ends_with("/zsh") || shell == "zsh" {
+        let temp_dir = create_shell_temp_dir()?;
+        let zshrc = temp_dir.path.join(".zshrc");
+        std::fs::write(
+            &zshrc,
+            r#"[ -f "${ENVX_ORIG_ZDOTDIR:-$HOME}/.zshrc" ] && . "${ENVX_ORIG_ZDOTDIR:-$HOME}/.zshrc"
+PROMPT="(envx:${ENVX_SHORT}) $PROMPT"
+"#,
+        )
+        .context("Failed to write envx zshrc")?;
+        let orig_zdotdir = std::env::var("ZDOTDIR")
+            .or_else(|_| std::env::var("HOME"))
+            .unwrap_or_default();
+        env.insert("ENVX_ORIG_ZDOTDIR".to_owned(), orig_zdotdir);
+        env.insert(
+            "ZDOTDIR".to_owned(),
+            temp_dir.path.to_string_lossy().into_owned(),
+        );
+        cleanup = Some(temp_dir);
+    } else if shell.ends_with("/fish") || shell == "fish" {
+        args.push("--init-command".to_owned());
+        args.push(
+            "functions -c fish_prompt _envx_old_fish_prompt; function fish_prompt; printf \"(envx:%s) \" $ENVX_SHORT; _envx_old_fish_prompt; end"
+                .to_owned(),
+        );
+    }
+
+    Ok(ShellSetup { args, env, cleanup })
+}
+
+fn create_shell_temp_dir() -> Result<ShellTempDir> {
+    let nanos = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .context("System clock is before Unix epoch")?
+        .as_nanos();
+    let path = std::env::temp_dir()
+        .join(format!("envx-shell-{}-{nanos}", std::process::id()));
+    std::fs::create_dir(&path)
+        .context("Failed to create envx shell tempdir")?;
+    Ok(ShellTempDir { path })
 }
 
 #[cfg(target_os = "windows")]
@@ -250,4 +345,52 @@ unsafe fn get_process_name(pid: DWORD) -> Option<String> {
 
     unsafe { CloseHandle(h_snapshot) };
     None
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    const PROJECT_ID: &str = "12345678-90ab-cdef-1234-567890abcdef";
+
+    #[test]
+    fn bash_setup_uses_rcfile_with_prompt_prefix() {
+        let setup =
+            setup_shell_prompt("/bin/bash", Vec::new(), PROJECT_ID).unwrap();
+
+        assert_eq!(setup.env.get("ENVX_SHORT"), Some(&"12345678".to_owned()));
+        assert_eq!(setup.args[0], "--rcfile");
+        let rcfile = PathBuf::from(&setup.args[1]);
+        let contents = std::fs::read_to_string(&rcfile).unwrap();
+        assert!(
+            contents.contains(r#"[ -f "$HOME/.bashrc" ] && . "$HOME/.bashrc""#)
+        );
+        assert!(contents.contains(r#"export PS1="(envx:${ENVX_SHORT}) $PS1""#));
+    }
+
+    #[test]
+    fn zsh_setup_redirects_zdotdir_and_preserves_original() {
+        let setup =
+            setup_shell_prompt("/bin/zsh", Vec::new(), PROJECT_ID).unwrap();
+
+        assert_eq!(setup.env.get("ENVX_SHORT"), Some(&"12345678".to_owned()));
+        assert!(setup.env.contains_key("ENVX_ORIG_ZDOTDIR"));
+        let zdotdir = setup.env.get("ZDOTDIR").unwrap();
+        let zshrc = PathBuf::from(zdotdir).join(".zshrc");
+        let contents = std::fs::read_to_string(zshrc).unwrap();
+        assert!(contents.contains(r#"${ENVX_ORIG_ZDOTDIR:-$HOME}/.zshrc"#));
+        assert!(contents.contains(r#"PROMPT="(envx:${ENVX_SHORT}) $PROMPT""#));
+    }
+
+    #[test]
+    fn fish_setup_wraps_fish_prompt() {
+        let setup = setup_shell_prompt("/usr/bin/fish", Vec::new(), PROJECT_ID)
+            .unwrap();
+
+        assert_eq!(setup.env.get("ENVX_SHORT"), Some(&"12345678".to_owned()));
+        assert_eq!(setup.args[0], "--init-command");
+        assert!(setup.args[1]
+            .contains("functions -c fish_prompt _envx_old_fish_prompt"));
+        assert!(setup.args[1].contains(r#"printf "(envx:%s) " $ENVX_SHORT"#));
+    }
 }
