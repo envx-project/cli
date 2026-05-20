@@ -4,7 +4,7 @@ use super::*;
 use crate::constants::MINIMUM_PASSWORD_LENGTH;
 use crate::sdk::SDK;
 use crate::utils::config::Config;
-use crate::utils::key::Key;
+use crate::utils::key::{validate_passphrase_not_empty, Key};
 use crate::utils::keyring::set_password;
 use crate::utils::prompt::{is_interactive, prompt_password, prompt_text};
 use crate::utils::rpgp::{generate_key_pair, get_vault_location, user_id};
@@ -74,6 +74,7 @@ pub async fn command(args: Args, config: &mut Config) -> Result<()> {
     let passphrase = args
         .passphrase
         .unwrap_or_else(|| prompt_password("password").unwrap());
+    validate_passphrase_not_empty(&passphrase)?;
 
     if settings.warn_on_short_passwords
         && passphrase.len() < MINIMUM_PASSWORD_LENGTH
@@ -97,38 +98,6 @@ pub async fn command(args: Args, config: &mut Config) -> Result<()> {
         .expect("Failed to convert public key to armored ASCII string");
 
     let fingerprint = key_pair.secret_key.fingerprint().as_bytes().to_hex();
-
-    let result =
-        set_password(&fingerprint, &passphrase, settings.get_keyring_expiry());
-
-    if let Err(e) = result {
-        match e {
-            KeyringError::TooLong(_, length) => {
-                eprintln!("Password is too long to store in keyring");
-                eprintln!("Length: {}", length);
-                eprintln!("Continuing with generation...");
-            }
-            KeyringError::Invalid(_, _) => {
-                eprintln!("Password is invalid");
-                eprintln!("Continuing with generation...");
-            }
-            KeyringError::Ambiguous(c) => {
-                eprintln!(
-                    "Somehow there are multiple keys with the same fingerprint"
-                );
-                eprintln!("Keys: {:?}", c);
-                eprintln!(
-                    "Please submit a bug report at https://github.com/envx-project/cli/issues/new"
-                );
-                eprintln!("Continuing with generation...");
-            }
-            _ => {
-                eprintln!("Failed to set password in keyring");
-                eprintln!("{}", e);
-                eprintln!("Continuing with generation...");
-            }
-        }
-    }
 
     if !args.json {
         println!("Fingerprint: {}", fingerprint);
@@ -191,6 +160,40 @@ pub async fn command(args: Args, config: &mut Config) -> Result<()> {
         pubkey_only: Some(false),
         uuid: uuid.clone(),
     };
+
+    key.verify_passphrase(&passphrase)?;
+
+    let result =
+        set_password(&fingerprint, &passphrase, settings.get_keyring_expiry());
+
+    if let Err(e) = result {
+        match e {
+            KeyringError::TooLong(_, length) => {
+                eprintln!("Password is too long to store in keyring");
+                eprintln!("Length: {}", length);
+                eprintln!("Continuing with generation...");
+            }
+            KeyringError::Invalid(_, _) => {
+                eprintln!("Password is invalid");
+                eprintln!("Continuing with generation...");
+            }
+            KeyringError::Ambiguous(c) => {
+                eprintln!(
+                    "Somehow there are multiple keys with the same fingerprint"
+                );
+                eprintln!("Keys: {:?}", c);
+                eprintln!(
+                    "Please submit a bug report at https://github.com/envx-project/cli/issues/new"
+                );
+                eprintln!("Continuing with generation...");
+            }
+            _ => {
+                eprintln!("Failed to set password in keyring");
+                eprintln!("{}", e);
+                eprintln!("Continuing with generation...");
+            }
+        }
+    }
 
     config.primary_key = Some(key);
 

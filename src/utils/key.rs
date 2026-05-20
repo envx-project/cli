@@ -114,6 +114,23 @@ impl Key {
             key: self,
         }
     }
+
+    pub fn verify_passphrase(&self, password: &str) -> Result<()> {
+        validate_passphrase_not_empty(password)?;
+
+        let secret = self
+            .signed_secret_key()
+            .context("Failed to load primary secret key")?;
+
+        secret
+            .primary_key
+            .unlock(&password.into(), |_public, _secret| Ok(()))
+            .context("password does not unlock primary key")?
+            .context("password does not unlock primary key")?;
+
+        Ok(())
+    }
+
     pub fn public_key_str(&self) -> Result<String, KeyError> {
         let key_location = get_vault_location()?
             .join(self.fingerprint.clone())
@@ -151,6 +168,14 @@ impl Key {
 
         Ok(seckey)
     }
+}
+
+pub fn validate_passphrase_not_empty(password: &str) -> Result<()> {
+    if password.trim().is_empty() {
+        bail!("password is empty");
+    }
+
+    Ok(())
 }
 
 impl TryInto<SignedSecretKey> for Key {
@@ -204,5 +229,17 @@ impl TryFrom<&UnlockedKey> for SignedPublicKey {
 impl Display for Key {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{} - ({})", self.fingerprint, self.primary_user_id)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn rejects_empty_or_whitespace_passphrases() {
+        assert!(validate_passphrase_not_empty("").is_err());
+        assert!(validate_passphrase_not_empty("   \t\n").is_err());
+        assert!(validate_passphrase_not_empty("passphrase").is_ok());
     }
 }

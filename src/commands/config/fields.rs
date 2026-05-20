@@ -153,6 +153,11 @@ pub fn set(config: &mut Config, field: &Field, raw: &str) -> Result<()> {
                 Some(parsed.to_string().trim_end_matches('/').to_string());
         }
         "primary_key_password" => {
+            if let Some(key) = &config.primary_key {
+                key.verify_passphrase(raw)?;
+            } else {
+                crate::utils::key::validate_passphrase_not_empty(raw)?;
+            }
             config.primary_key_password = Some(raw.to_string());
         }
         "primary_key_command" => {

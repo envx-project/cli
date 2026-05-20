@@ -6,7 +6,7 @@ use crate::utils::prompt::prompt_password;
 use super::key::{Key, UnlockedKey};
 use super::settings::Settings;
 use anyhow::anyhow;
-use anyhow::{Context, Result};
+use anyhow::{bail, Context, Result};
 use chrono::Utc;
 use colored::Colorize;
 use envx_sdk::apis::configuration::Configuration;
@@ -253,16 +253,40 @@ impl Config {
             Ok(p) => Ok(p),
             Err(e) => {
                 eprintln!("Failed to get password: {}", e);
-                println!("Enter password for key {}", key);
-                let password = prompt_password("Password: ")?;
-                let expiry = self.get_settings().get_keyring_expiry();
-                if let Err(e) =
-                    set_password(&key.fingerprint, &password, expiry)
-                {
-                    eprintln!("Failed to set password: {}", e);
+                let mut last_error = None;
+                for _ in 0..3 {
+                    println!("Enter password for key {}", key);
+                    let password = prompt_password("Password: ")?;
+
+                    match key.verify_passphrase(&password) {
+                        Ok(()) => {
+                            let expiry =
+                                self.get_settings().get_keyring_expiry();
+                            if let Err(e) = set_password(
+                                &key.fingerprint,
+                                &password,
+                                expiry,
+                            ) {
+                                eprintln!("Failed to set password: {}", e);
+                            }
+
+                            return Ok(password);
+                        }
+                        Err(e) => {
+                            eprintln!("Invalid password: {}", e);
+                            last_error = Some(e);
+                        }
+                    }
                 }
 
-                Ok(password)
+                if let Some(e) = last_error {
+                    bail!(
+                        "failed to unlock primary key after 3 attempts: {}",
+                        e
+                    );
+                }
+
+                bail!("failed to unlock primary key after 3 attempts")
             }
         }
     }
