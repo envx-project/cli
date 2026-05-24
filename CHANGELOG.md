@@ -1,5 +1,18 @@
 # Changelog
 
+## [2.14.0](https://github.com/envx-project/cli/compare/v2.13.0...v2.14.0) (2026-05-24)
+
+
+### Features
+
+* `envx set` reads KEY=VALUE pairs from stdin ([abf456a](https://github.com/envx-project/cli/commit/abf456aa13b84db15594377ebcf03bf99ad7034a))
+* add --json output to ID-emitting commands ([45fe352](https://github.com/envx-project/cli/commit/45fe352d5a7dc8748df76c2cd210de0d07773f47))
+* add --json output to list/get commands ([5814483](https://github.com/envx-project/cli/commit/58144830ced55406457c16cc82310c9ab85802ba))
+* add -f/--force to `envx set` with non-interactive guard ([1234ba2](https://github.com/envx-project/cli/commit/1234ba280d5f01521ce756a70ee693a7fb5175f3))
+* add -y/--yes + TTY guards to destructive commands ([bab0ad8](https://github.com/envx-project/cli/commit/bab0ad87f5a8b0b36168856eeacf9f1cc796fa86))
+* add is_interactive/require_interactive helpers and guard Choice picker ([9da6303](https://github.com/envx-project/cli/commit/9da63031774fe253be1072ae3ae987b42e18f580))
+* add TTY guards to commands that fall back to interactive prompts ([3b17286](https://github.com/envx-project/cli/commit/3b17286c4c63be18adfe54a1f0925e8905b71e93))
+
 ## [2.13.0](https://github.com/envx-project/cli/compare/v2.12.0...v2.13.0) (2026-04-19)
 
 
