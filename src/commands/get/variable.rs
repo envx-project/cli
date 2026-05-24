@@ -17,6 +17,10 @@ pub struct Args {
     /// Output the key/value pair as JSON
     #[arg(long)]
     json: bool,
+
+    /// Use locally cached variables instead of fetching from the server
+    #[arg(long)]
+    local: bool,
 }
 
 pub async fn command(args: Args, config: &mut Config) -> Result<()> {
@@ -24,7 +28,8 @@ pub async fn command(args: Args, config: &mut Config) -> Result<()> {
     let key = key.unlock(&config.primary_key_password()?);
     let project_id = Choice::try_project(args.project_id, &key).await?;
 
-    let kvpairs = get_variables_magic(&project_id, &key, false).await?;
+    let kvpairs =
+        get_variables_magic(&project_id, &key, false, args.local).await?;
 
     let kvpair = kvpairs.iter().find(|&kv| kv.key == args.key);
 

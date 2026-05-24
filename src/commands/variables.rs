@@ -25,6 +25,10 @@ pub struct Args {
     /// Output all variables (this project only)
     #[arg(short, long, default_value_t = false)]
     all: bool,
+
+    /// Use locally cached variables instead of fetching from the server
+    #[arg(long)]
+    local: bool,
 }
 
 pub async fn command(args: Args, config: &mut Config) -> Result<()> {
@@ -34,7 +38,8 @@ pub async fn command(args: Args, config: &mut Config) -> Result<()> {
     let key = key.unlock(&config.primary_key_password()?);
     let project_id = Choice::try_project(args.project_id, &key).await?;
 
-    let mut kvpairs = get_variables_magic(&project_id, &key, args.all).await?;
+    let mut kvpairs =
+        get_variables_magic(&project_id, &key, args.all, args.local).await?;
     if let Some(filter) = &args.filter {
         let re = Regex::new(filter)?;
         kvpairs.retain(|kv| re.is_match(&kv.key));

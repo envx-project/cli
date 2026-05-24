@@ -1,5 +1,6 @@
 pub mod auth_token;
 pub mod btreemap;
+pub mod cache;
 pub mod choice;
 mod compare_semver;
 pub use compare_semver::compare_semver;

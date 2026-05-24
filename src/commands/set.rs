@@ -6,6 +6,7 @@ use super::*;
 use crate::{
     sdk::SDK,
     utils::{
+        cache,
         choice::Choice,
         config::Config,
         kvpair::KVPair,
@@ -147,6 +148,27 @@ pub async fn command(args: Args, config: &mut Config) -> Result<()> {
     }
 
     let ids = SDK::set_many(kvpairs, &project_id, &key).await?;
+
+    // Re-fetch and update cache
+    if let Ok(fresh_vars) = SDK::get_variables(&project_id, &key).await {
+        if let Ok(projects) = SDK::list_projects(&key).await {
+            if let Some(proj) =
+                projects.iter().find(|p| p.project_id == project_id)
+            {
+                if let Err(e) = cache::write_cache(
+                    &project_id,
+                    &proj.project_name,
+                    &fresh_vars,
+                    &key,
+                ) {
+                    eprintln!(
+                        "warning: failed to update variable cache: {}",
+                        e
+                    );
+                }
+            }
+        }
+    }
 
     if args.json {
         println!("{}", serde_json::to_string(&ids)?);

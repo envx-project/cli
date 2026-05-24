@@ -17,6 +17,10 @@ pub struct Args {
     #[arg(short = 'e', long = "env", value_name = "KEY=VALUE")]
     env_override: Vec<String>,
 
+    /// Use locally cached variables instead of fetching from the server
+    #[arg(long)]
+    local: bool,
+
     /// Args to pass to the command
     #[arg(trailing_var_arg = true)]
     args: Vec<String>,
@@ -35,7 +39,8 @@ pub async fn command(args: Args, config: &mut Config) -> Result<()> {
     let mut all_variables = BTreeMap::<String, String>::new();
     all_variables.insert("IN_ENVX_SHELL".to_owned(), "true".to_owned());
 
-    let variables = get_variables_magic(&project_id, &key, false).await?;
+    let variables =
+        get_variables_magic(&project_id, &key, false, args.local).await?;
     let decrypted_count = variables.len();
 
     for variable in variables {

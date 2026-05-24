@@ -42,6 +42,10 @@ pub struct Args {
     /// Override or add environment variables (KEY=VALUE), repeatable
     #[arg(short = 'e', long = "env", value_name = "KEY=VALUE")]
     env_override: Vec<String>,
+
+    /// Use locally cached variables instead of fetching from the server
+    #[arg(long)]
+    local: bool,
 }
 
 pub async fn command(args: Args, config: &mut Config) -> Result<()> {
@@ -61,7 +65,8 @@ pub async fn command(args: Args, config: &mut Config) -> Result<()> {
     all_variables.insert("ENVX_PROJECT_ID".to_owned(), project_id.clone());
     all_variables.insert("ENVX_PROJECT_LABEL".to_owned(), project_label);
 
-    let variables = get_variables_magic(&project_id, &key, false).await?;
+    let variables =
+        get_variables_magic(&project_id, &key, false, args.local).await?;
 
     for variable in variables {
         all_variables.insert(variable.key, variable.value);

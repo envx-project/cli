@@ -285,6 +285,7 @@ impl SDK {
     /// Return variables as a list of kv pairs
     ///
     /// Sorted, and pruned of duplicates (by created_at date)
+    #[allow(dead_code)]
     pub async fn get_variables_pruned(
         project_id: &str,
         key: &UnlockedKey,

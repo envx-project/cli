@@ -1018,6 +1018,7 @@ dependencies = [
  "serde_json",
  "shlex",
  "smallvec",
+ "tempfile",
  "textwrap",
  "thiserror 1.0.69",
  "tokio",

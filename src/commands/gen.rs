@@ -3,6 +3,7 @@
 use super::*;
 use crate::constants::MINIMUM_PASSWORD_LENGTH;
 use crate::sdk::SDK;
+use crate::utils::cache;
 use crate::utils::config::Config;
 use crate::utils::key::{validate_passphrase_not_empty, Key};
 use crate::utils::keyring::set_password;
@@ -197,6 +198,10 @@ pub async fn command(args: Args, config: &mut Config) -> Result<()> {
     }
 
     config.primary_key = Some(key);
+
+    if let Err(e) = cache::wipe_all_caches() {
+        eprintln!("warning: failed to clear variable cache: {}", e);
+    }
 
     loud::say(
         config,

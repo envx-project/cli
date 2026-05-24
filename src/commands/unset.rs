@@ -1,6 +1,7 @@
 use anyhow::bail;
 
 use super::*;
+use crate::utils::cache;
 use crate::utils::choice::Choice;
 use crate::utils::prompt::{
     is_interactive, prompt_confirm_with_default, prompt_multi_options,
@@ -107,6 +108,29 @@ pub async fn command(args: Args, config: &mut Config) -> Result<()> {
 
     for variable in &variable_ids {
         SDK::delete_variable(variable, &key).await?;
+    }
+
+    // Re-fetch and update cache for the affected project
+    if let Some(pid) = &project_id {
+        if let Ok(fresh_vars) = SDK::get_variables(pid, &key).await {
+            if let Ok(projects) = SDK::list_projects(&key).await {
+                if let Some(proj) =
+                    projects.iter().find(|p| &p.project_id == pid)
+                {
+                    if let Err(e) = cache::write_cache(
+                        pid,
+                        &proj.project_name,
+                        &fresh_vars,
+                        &key,
+                    ) {
+                        eprintln!(
+                            "warning: failed to update variable cache: {}",
+                            e
+                        );
+                    }
+                }
+            }
+        }
     }
 
     println!("Deleted {} variable(s)", variable_ids.len());
