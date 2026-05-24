@@ -22,3 +22,4 @@ out/
 
 # envcli config file
 .envcli.json
+.claude/
