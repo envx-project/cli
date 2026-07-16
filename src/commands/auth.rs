@@ -14,6 +14,7 @@ pub struct Args {
 pub async fn command(args: Args, config: &mut Config) -> anyhow::Result<()> {
     let key = config.primary_key()?;
     let password = config.primary_key_password()?;
+    let fingerprint = key.fingerprint[..8].to_string();
 
     if key.uuid.is_none() {
         bail!("Key does not have a UUID, try `envx upload`");
@@ -24,7 +25,9 @@ pub async fn command(args: Args, config: &mut Config) -> anyhow::Result<()> {
     let client = reqwest::Client::new();
     let auth_token = key.auth_token()?;
 
-    println!("auth token:\n{}", auth_token.signature);
+    if args.debug {
+        println!("auth token:\n{}", auth_token.signature);
+    }
 
     let url = format!("{}test-auth", api_url());
 
@@ -45,12 +48,12 @@ pub async fn command(args: Args, config: &mut Config) -> anyhow::Result<()> {
     let status = res.status();
 
     if status.is_success() {
-        println!("success");
-        // print the text response
-
         let text = res.text().await?;
 
-        println!("{}", text);
+        println!("{} fingerprint: {}", "✓ authenticated".green(), fingerprint);
+        if args.debug {
+            println!("{}", text);
+        }
     } else {
         println!("status: {}", status);
         bail!("failed to auth")
