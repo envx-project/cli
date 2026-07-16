@@ -158,18 +158,22 @@ unpack() {
   return 1
 }
 
-elevate_priv() {
+try_elevate_priv() {
   if ! has sudo; then
     error 'Could not find the command "sudo", needed to get permissions for install.'
     info "If you are on Windows, please run your shell as an administrator, then"
     info "rerun this script. Otherwise, please run this script as root, or install"
     info "sudo."
-    exit 1
+    return 1
   fi
   if ! sudo -v; then
     error "Superuser not granted, aborting installation"
-    exit 1
+    return 1
   fi
+}
+
+elevate_priv() {
+  try_elevate_priv || exit 1
 }
 
 install() {
@@ -183,9 +187,21 @@ install() {
     msg="Installing envx, please wait…"
   else
     warn "Escalated permissions are required to install to ${BIN_DIR}"
-    elevate_priv
-    sudo="sudo"
-    msg="Installing envx as root, please wait…"
+    if [ "${BIN_DIR_EXPLICIT}" = 1 ]; then
+      elevate_priv
+      sudo="sudo"
+      msg="Installing envx as root, please wait…"
+    elif try_elevate_priv; then
+      sudo="sudo"
+      msg="Installing envx as root, please wait…"
+    else
+      warn "Couldn't write to ${BIN_DIR} without sudo; installing to ${HOME}/.local/bin instead"
+      BIN_DIR="${HOME}/.local/bin"
+      mkdir -p "${BIN_DIR}"
+      check_bin_dir "${BIN_DIR}"
+      sudo=""
+      msg="Installing envx, please wait…"
+    fi
   fi
   info "$msg"
 
@@ -337,6 +353,7 @@ is_build_available() {
 }
 UNINSTALL=0
 HELP=0
+BIN_DIR_EXPLICIT=0
 
 CARGOTOML="$(curl -fsSL https://raw.githubusercontent.com/env-store/rusty-cli/master/Cargo.toml)"
 ALL_VERSIONS="$(sed -n 's/.*version = "\([^"]*\)".*/\1/p' <<EOH
@@ -361,6 +378,9 @@ fi
 
 if [ -z "${ENVX_BIN_DIR-}" ]; then
   BIN_DIR=/usr/local/bin
+else
+  BIN_DIR="${ENVX_BIN_DIR}"
+  BIN_DIR_EXPLICIT=1
 fi
 
 if [ -z "${ENVX_ARCH-}" ]; then
@@ -380,6 +400,7 @@ while [ "$#" -gt 0 ]; do
     ;;
   -b | --bin-dir)
     BIN_DIR="$2"
+    BIN_DIR_EXPLICIT=1
     shift 2
     ;;
   -a | --arch)
@@ -413,6 +434,7 @@ while [ "$#" -gt 0 ]; do
     ;;
   -b=* | --bin-dir=*)
     BIN_DIR="${1#*=}"
+    BIN_DIR_EXPLICIT=1
     shift 1
     ;;
   -a=* | --arch=*)
