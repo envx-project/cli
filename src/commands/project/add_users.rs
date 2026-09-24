@@ -100,7 +100,7 @@ pub async fn command(args: Args, config: &mut Config) -> Result<()> {
     let client = reqwest::Client::new();
     let auth_token = key.auth_token()?.bearer();
 
-    let url = api_url().join("/variables/update-many")?;
+    let url = api_url()?.join("/variables/update-many")?;
 
     let res = client
         .post(url)

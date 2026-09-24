@@ -15,7 +15,8 @@ root = Path(tempfile.mkdtemp(prefix='envx-social-'))
 
 def run(user, *args, data=None, ok=True):
     env = {**os.environ, 'HOME': str(root / user), 'XDG_CONFIG_HOME': str(root / user / '.config')}
-    env.pop('DEV_MODE', None)
+    # An unrelated inherited development flag must not change the configured server.
+    env['DEV_MODE'] = '1'
     (root / user).mkdir(exist_ok=True)
     result = subprocess.run(command + list(args), input=data, text=True, capture_output=True, env=env, cwd=root / user)
     if ok and result.returncode:
@@ -32,7 +33,7 @@ def config(user):
 
 users = {}
 for user in ('alice', 'bob', 'charlie'):
-    run(user, 'gen', '--username', user, '--passphrase', 'fixture-password-not-real', '--no-upload', '--json')
+    doc(user, 'gen', '--username', user, '--passphrase', 'fixture-password-not-real', '--no-upload', '--json')
     value = json.loads(config(user).read_text())
     value['primary_key_password'] = 'fixture-password-not-real'
     value['sdk_url'] = server
@@ -94,7 +95,11 @@ assert run('alice', 'read', sent['id']).stdout == secret
 
 project = doc('bob', 'project', 'new', '--name', 'message-import', '--json')
 project_id = project['id'] if 'id' in project else project['project_id']
-run('bob', 'set', '--project-id', project_id, '--yes', data='TOKEN=old-value\nKEEP=untouched\n')
+doc('bob', 'set', '--project-id', project_id, '--yes', '--json', data='TOKEN=old-value\nKEEP=untouched\n')
+doc('bob', 'set', '--project-id', project_id, '--yes', '--json', data='TOKEN=old-value\n')
+bad_set = run('bob', 'set', '--project-id', project_id, '--yes', '--json', data='TOKEN=must-not-write\nprivate-malformed-input\n', ok=False)
+assert not bad_set.stdout and 'private-malformed-input' not in bad_set.stderr
+assert doc('bob', 'variables', '--project-id', project_id, '--all', '--json')['TOKEN'] == 'old-value'
 variables = doc('alice', 'send', 'bob', '--env', '--stdin', '--json', data='TOKEN=new-value\nNEW=added\n')
 preview = doc('bob', 'import', 'message', variables['id'], '--project-id', project_id, '--dry-run', '--json')
 assert preview['names'] == ['NEW', 'TOKEN'] and preview['conflicts'] == ['TOKEN']

@@ -1,9 +1,10 @@
 use super::key::UnlockedKey;
 use anyhow::{bail, Context, Ok, Result};
-use hex::ToHex;
 use rand::prelude::*;
 use rand::rngs::OsRng;
-use rayon::iter::{IntoParallelRefIterator, ParallelIterator};
+use rayon::iter::{
+    IndexedParallelIterator, IntoParallelRefIterator, ParallelIterator,
+};
 use smallvec::*;
 
 use pgp::{
@@ -75,37 +76,26 @@ pub fn encrypt<'a>(
     msg: &'a str,
     pubkeys: &'a [SignedPublicKey],
 ) -> Result<String> {
+    if pubkeys.is_empty() {
+        bail!("Cannot encrypt without a recipient public key");
+    }
     let mut rng = StdRng::from_entropy();
     let mut builder = MessageBuilder::from_bytes("", msg.as_bytes().to_vec())
         .seipd_v1(&mut rng, SymmetricKeyAlgorithm::AES256);
 
-    pubkeys.iter().for_each(|pk| {
-        builder.encrypt_to_key(&mut rng, pk).unwrap();
-    });
+    for (index, public_key) in pubkeys.iter().enumerate() {
+        public_key.verify().with_context(|| {
+            format!("Recipient public key {} is invalid", index + 1)
+        })?;
+        builder
+            .encrypt_to_key(&mut rng, public_key)
+            .with_context(|| {
+                format!("Cannot encrypt for recipient public key {}", index + 1)
+            })?;
+    }
 
     let armor = builder.to_armored_string(&mut rng, ArmorOptions::default())?;
     Ok(armor)
-}
-
-trait GetRecipients {
-    fn get_recipients(&self) -> Vec<&pgp::types::KeyId>;
-}
-
-impl GetRecipients for pgp::composed::Message<'_> {
-    fn get_recipients(&self) -> Vec<&pgp::types::KeyId> {
-        match self {
-            Message::Encrypted { esk, .. } => esk
-                .iter()
-                .filter_map(|e| match e {
-                    pgp::composed::Esk::PublicKeyEncryptedSessionKey(k) => {
-                        k.id().ok()
-                    }
-                    _ => None,
-                })
-                .collect::<Vec<&pgp::types::KeyId>>(),
-            _ => todo!(),
-        }
-    }
 }
 
 pub fn decrypt(
@@ -115,6 +105,10 @@ pub fn decrypt(
 ) -> Result<String> {
     let (msg, _) = Message::from_string(armored)
         .context("Failed to convert ascii armor message")?;
+
+    if !matches!(&msg, Message::Encrypted { .. }) {
+        bail!("Expected an encrypted OpenPGP message");
+    }
 
     let mut decrypted = msg
         .decrypt(&password.into(), seckey)
@@ -133,40 +127,66 @@ pub fn decrypt_full_many(
     messages: Vec<String>,
     key: &UnlockedKey,
 ) -> Result<Vec<String>> {
-    let first = if let Some(first) = messages.first() {
-        first
-    } else {
+    if messages.is_empty() {
         return Ok(vec![]);
-    };
-
-    let (msg, _) = Message::from_string(first.as_str())?;
-
-    let recipients: Vec<String> = msg
-        .get_recipients()
-        .iter()
-        .map(|e| e.encode_hex_upper())
-        .collect();
-
-    let last_16 = key
-        .key
-        .fingerprint
-        .chars()
-        .rev()
-        .take(16)
-        .collect::<Vec<_>>()
-        .into_iter()
-        .rev()
-        .collect::<String>()
-        .to_uppercase();
-    if !recipients.contains(&last_16) {
-        bail!("This message was not encrypted for your key.");
     }
 
     let ssk = SignedSecretKey::try_from(key)?;
+    decrypt_messages(&messages, &ssk, &key.password)
+}
+
+fn decrypt_messages(
+    messages: &[String],
+    secret: &SignedSecretKey,
+    password: &str,
+) -> Result<Vec<String>> {
     let decrypted = messages
         .par_iter()
-        .map(|m| decrypt(m, &ssk, &key.password))
+        .enumerate()
+        .map(|(index, message)| {
+            decrypt(message, secret, password).with_context(|| {
+                format!("Failed to decrypt variable {}", index + 1)
+            })
+        })
         .collect::<Result<Vec<String>>>()?;
 
     Ok(decrypted)
+}
+
+#[cfg(test)]
+mod boundary_tests {
+    use super::*;
+    use pgp::composed::{KeyType, SecretKeyParamsBuilder};
+
+    fn generate(kind: KeyType) -> SignedSecretKey {
+        SecretKeyParamsBuilder::default()
+            .key_type(kind)
+            .can_sign(true)
+            .primary_user_id("boundary-test".into())
+            .build()
+            .unwrap()
+            .generate(OsRng)
+            .unwrap()
+            .sign(OsRng, &"".into())
+            .unwrap()
+    }
+    #[test]
+    fn crypto_boundaries_fail_closed_without_panicking() {
+        let secret = generate(KeyType::Rsa(2048));
+        let public = SignedPublicKey::from(secret.clone());
+        let encrypted = encrypt("valid secret", &[public]).unwrap();
+        assert_eq!(decrypt(&encrypted, &secret, "").unwrap(), "valid secret");
+        let plain = MessageBuilder::from_bytes("", b"not encrypted".to_vec())
+            .to_armored_string(OsRng, ArmorOptions::default())
+            .unwrap();
+        assert!(decrypt(&plain, &secret, "")
+            .unwrap_err()
+            .to_string()
+            .contains("Expected an encrypted"));
+        assert!(decrypt("malformed armor", &secret, "").is_err());
+        assert!(decrypt_messages(&[encrypted, plain], &secret, "").is_err());
+        assert!(encrypt("secret", &[]).is_err());
+        let signing_only = SignedPublicKey::from(generate(KeyType::Ed25519));
+        assert!(encrypt("secret", &[signing_only]).is_err());
+    }
 }

@@ -54,7 +54,7 @@ pub async fn command(args: Args, config: &mut Config) -> Result<()> {
         if !args.force {
             bail!("A primary key already exists. Use --force to overwrite it.");
         } else {
-            println!("Overwriting primary key...");
+            eprintln!("Overwriting primary key...");
         }
     }
 
@@ -67,15 +67,17 @@ pub async fn command(args: Args, config: &mut Config) -> Result<()> {
         );
     }
 
-    println!("For your username, do not use your real name, or anything that could be used to identify you.");
-    println!("Don't even reuse your username from other services.");
-    let username = args
-        .username
-        .unwrap_or_else(|| prompt_text("Set a username for the key").unwrap());
+    eprintln!("For your username, do not use your real name, or anything that could be used to identify you.");
+    eprintln!("Don't even reuse your username from other services.");
+    let username = match args.username {
+        Some(username) => username,
+        None => prompt_text("Set a username for the key")?,
+    };
 
-    let passphrase = args
-        .passphrase
-        .unwrap_or_else(|| prompt_password("password").unwrap());
+    let passphrase = match args.passphrase {
+        Some(passphrase) => passphrase,
+        None => prompt_password("password")?,
+    };
     validate_passphrase_not_empty(&passphrase)?;
 
     if settings.warn_on_short_passwords
@@ -87,17 +89,17 @@ pub async fn command(args: Args, config: &mut Config) -> Result<()> {
     }
 
     let key_pair = generate_key_pair(&username, passphrase.to_owned())
-        .expect("Failed to generate key pair");
+        .context("Failed to generate key pair")?;
 
     let priv_key = key_pair
         .secret_key
         .to_armored_string(ArmorOptions::default())
-        .expect("Failed to convert private key to armored ASCII string");
+        .context("Failed to convert private key to armored ASCII string")?;
 
     let pub_key = key_pair
         .public_key
         .to_armored_string(ArmorOptions::default())
-        .expect("Failed to convert public key to armored ASCII string");
+        .context("Failed to convert public key to armored ASCII string")?;
 
     let fingerprint = key_pair.secret_key.fingerprint().as_bytes().to_hex();
 

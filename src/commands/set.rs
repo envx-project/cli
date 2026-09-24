@@ -53,7 +53,7 @@ fn read_stdin_kvpairs() -> anyhow::Result<Vec<String>> {
         if trimmed.is_empty() || trimmed.starts_with('#') {
             continue;
         }
-        out.push(trimmed.to_string());
+        out.push(line.trim_start().to_owned());
     }
     Ok(out)
 }
@@ -72,6 +72,9 @@ pub async fn command(args: Args, config: &mut Config) -> Result<()> {
         );
     }
 
+    // Reject the whole batch before writing; malformed lines may themselves be secrets.
+    let kvpairs = parse_inputs(&all_inputs)?;
+
     let key = config.primary_key()?;
     let key = key.unlock(&config.primary_key_password()?);
 
@@ -79,25 +82,6 @@ pub async fn command(args: Args, config: &mut Config) -> Result<()> {
 
     if project_id.is_empty() {
         return Err(anyhow::anyhow!("No project ID provided"));
-    }
-
-    let (kvpairs, errors): (Vec<KVPair>, Vec<String>) = all_inputs.iter().fold(
-        (Vec::new(), Vec::new()),
-        |(mut ok, mut err), k| {
-            match k.split_once('=') {
-                Some((key, value)) => {
-                    ok.push(KVPair::new(key.to_uppercase(), value.into()))
-                }
-                None => err.push(format!("Invalid KVPair: {}", k)),
-            }
-            (ok, err)
-        },
-    );
-
-    errors.iter().for_each(|e| println!("Skipping {}", e));
-
-    if kvpairs.is_empty() {
-        return Err(anyhow::anyhow!("No valid KV pairs provided"));
     }
 
     let variables = SDK::get_variables(&project_id, &key).await?;
@@ -112,9 +96,13 @@ pub async fn command(args: Args, config: &mut Config) -> Result<()> {
         .collect::<Vec<_>>();
 
     if !existing_keys.is_empty() {
-        println!("The following variables already exist:");
+        eprintln!("The following variables already exist:");
         for key in &existing_keys {
-            println!("{} - {}", key.id.green(), key.value.key.blue());
+            eprintln!(
+                "{} - {}",
+                key.id.green(),
+                crate::utils::messaging::safe(&key.value.key).blue()
+            );
         }
 
         if !args.yes {
@@ -130,12 +118,15 @@ pub async fn command(args: Args, config: &mut Config) -> Result<()> {
                 prompt_confirm("Do you want to override existing variables?")?;
 
             if !overwrite {
-                println!("Aborting...");
+                eprintln!("Aborting...");
+                if args.json {
+                    println!("[]");
+                }
                 return Ok(());
             }
         }
 
-        println!("Overwriting existing variables...");
+        eprintln!("Overwriting existing variables...");
     }
 
     let replace_ids = existing_keys.iter().map(|v| v.id.clone()).collect();
@@ -171,4 +162,44 @@ pub async fn command(args: Args, config: &mut Config) -> Result<()> {
     }
 
     Ok(())
+}
+
+fn parse_inputs(inputs: &[String]) -> Result<Vec<KVPair>> {
+    let mut names = std::collections::HashSet::new();
+    inputs
+        .iter()
+        .enumerate()
+        .map(|(index, input)| {
+            let (name, value) = input.split_once('=').with_context(|| {
+                format!("Input {} must be KEY=VALUE", index + 1)
+            })?;
+            if name.is_empty() || name.chars().any(char::is_control) {
+                bail!("Input {} has an invalid variable name", index + 1);
+            }
+            let name = name.to_uppercase();
+            if !names.insert(name.clone()) {
+                bail!("Input {} repeats a variable name", index + 1);
+            }
+            Ok(KVPair::new(name, value.into()))
+        })
+        .collect()
+}
+
+#[cfg(test)]
+mod boundary_tests {
+    use super::*;
+    #[test]
+    fn set_input_fails_closed_without_echoing_secrets() {
+        let error = parse_inputs(&[
+            "GOOD=public".into(),
+            "private-token-without-equals".into(),
+        ])
+        .unwrap_err()
+        .to_string();
+        assert!(error.contains("Input 2"));
+        assert!(!error.contains("private-token"));
+        assert!(parse_inputs(&["A=one".into(), "a=two".into()]).is_err());
+        let pair = parse_inputs(&["TOKEN= keeps spaces ".into()]).unwrap();
+        assert_eq!(pair[0].value, " keeps spaces ");
+    }
 }
