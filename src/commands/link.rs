@@ -46,7 +46,7 @@ pub async fn command(args: Args, config: &mut Config) -> Result<()> {
 
     let project_id = match args.project_id {
         Some(p) => p,
-        None => Choice::choose_project(&config.projects, &key).await?,
+        None => Choice::choose_project(config, &config.projects, &key).await?,
     };
 
     config.link_project(&project_id)?;

@@ -17,7 +17,7 @@ pub struct Args {
 pub async fn command(args: Args, config: &mut Config) -> Result<()> {
     let key = config.unlocked_primary_key()?;
     let client = Client::new(config, &key)?;
-    let project_id = Choice::try_project(args.project_id, &key).await?;
+    let project_id = Choice::try_project(config, args.project_id, &key).await?;
     let snapshot = client.snapshot(&project_id, &[]).await?;
     let variables = project_snapshot::decrypt(&snapshot, &key)?;
     let payload = InvitePayload {

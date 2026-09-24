@@ -28,10 +28,11 @@ impl fmt::Display for DisplayProject<'_> {
 pub struct Choice {}
 impl Choice {
     pub async fn choose_project(
+        config: &Config,
         projects: &[Project],
         key: &UnlockedKey,
     ) -> Result<String> {
-        let all_projects = SDK::list_projects(key).await?;
+        let all_projects = SDK::list_projects(config, key).await?;
 
         let project_name_map: HashMap<_, _> = all_projects
             .iter()
@@ -81,18 +82,21 @@ impl Choice {
     }
 
     pub async fn try_project(
+        config: &Config,
         project_id: Option<String>,
         key: &UnlockedKey,
     ) -> Result<String> {
         match project_id {
             Some(p) => Ok(p),
             None => {
-                let config = Config::get();
                 let project = config.get_project();
 
                 match project {
                     Ok(p) => Ok(p.project_id.clone()),
-                    Err(_) => Self::choose_project(&config.projects, key).await,
+                    Err(_) => {
+                        Self::choose_project(config, &config.projects, key)
+                            .await
+                    }
                 }
             }
         }

@@ -78,13 +78,13 @@ pub async fn command(args: Args, config: &mut Config) -> Result<()> {
     let key = config.primary_key()?;
     let key = key.unlock(&config.primary_key_password()?);
 
-    let project_id = Choice::try_project(args.project_id, &key).await?;
+    let project_id = Choice::try_project(config, args.project_id, &key).await?;
 
     if project_id.is_empty() {
         return Err(anyhow::anyhow!("No project ID provided"));
     }
 
-    let variables = SDK::get_variables(&project_id, &key).await?;
+    let variables = SDK::get_variables(config, &project_id, &key).await?;
 
     let existing_keys = variables
         .iter()
@@ -131,15 +131,18 @@ pub async fn command(args: Args, config: &mut Config) -> Result<()> {
 
     let replace_ids = existing_keys.iter().map(|v| v.id.clone()).collect();
     let ids =
-        SDK::replace_many(kvpairs, &project_id, &key, replace_ids).await?;
+        SDK::replace_many(config, kvpairs, &project_id, &key, replace_ids)
+            .await?;
 
     // Re-fetch and update cache
-    if let Ok(fresh_vars) = SDK::get_variables(&project_id, &key).await {
-        if let Ok(projects) = SDK::list_projects(&key).await {
+    if let Ok(fresh_vars) = SDK::get_variables(config, &project_id, &key).await
+    {
+        if let Ok(projects) = SDK::list_projects(config, &key).await {
             if let Some(proj) =
                 projects.iter().find(|p| p.project_id == project_id)
             {
                 if let Err(e) = cache::write_cache(
+                    config,
                     &project_id,
                     &proj.project_name,
                     &fresh_vars,

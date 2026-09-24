@@ -40,7 +40,9 @@ pub async fn command(args: Args, config: &mut Config) -> Result<()> {
     let key = key.unlock(&config.primary_key_password()?);
     let project_id = match args.all {
         true => None,
-        false => Some(Choice::try_project(args.project_id, &key).await?),
+        false => {
+            Some(Choice::try_project(config, args.project_id, &key).await?)
+        }
     };
 
     let mut named: Vec<String> = args.variables;
@@ -50,8 +52,8 @@ pub async fn command(args: Args, config: &mut Config) -> Result<()> {
 
     let variable_ids: Vec<String> = if !named.is_empty() {
         let all_vars = match &project_id {
-            Some(pid) => SDK::get_variables(pid, &key).await?,
-            None => SDK::get_all_variables(&key).await?,
+            Some(pid) => SDK::get_variables(config, pid, &key).await?,
+            None => SDK::get_all_variables(config, &key).await?,
         };
         let wanted: std::collections::HashSet<String> =
             named.iter().map(|s| s.to_uppercase()).collect();
@@ -95,8 +97,8 @@ pub async fn command(args: Args, config: &mut Config) -> Result<()> {
         }
 
         let mut variables = match &project_id {
-            Some(pid) => SDK::get_variables(pid, &key).await?,
-            None => SDK::get_all_variables(&key).await?,
+            Some(pid) => SDK::get_variables(config, pid, &key).await?,
+            None => SDK::get_all_variables(config, &key).await?,
         };
 
         variables.sort_by(|a, b| a.value.key.cmp(&b.value.key));
@@ -107,17 +109,18 @@ pub async fn command(args: Args, config: &mut Config) -> Result<()> {
     };
 
     for variable in &variable_ids {
-        SDK::delete_variable(variable, &key).await?;
+        SDK::delete_variable(config, variable, &key).await?;
     }
 
     // Re-fetch and update cache for the affected project
     if let Some(pid) = &project_id {
-        if let Ok(fresh_vars) = SDK::get_variables(pid, &key).await {
-            if let Ok(projects) = SDK::list_projects(&key).await {
+        if let Ok(fresh_vars) = SDK::get_variables(config, pid, &key).await {
+            if let Ok(projects) = SDK::list_projects(config, &key).await {
                 if let Some(proj) =
                     projects.iter().find(|p| &p.project_id == pid)
                 {
                     if let Err(e) = cache::write_cache(
+                        config,
                         pid,
                         &proj.project_name,
                         &fresh_vars,

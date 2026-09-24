@@ -13,8 +13,8 @@ use rand::rngs::StdRng;
 use rand::SeedableRng;
 use serde::{Deserialize, Serialize};
 
-use super::key::UnlockedKey;
 use super::variable::DecryptedVariable;
+use super::{config::Config, key::UnlockedKey};
 
 #[derive(Serialize, Deserialize)]
 struct CacheEnvelope {
@@ -22,13 +22,26 @@ struct CacheEnvelope {
     variables: Vec<DecryptedVariable>,
 }
 
-fn store(key: &UnlockedKey) -> Result<super::state::StateStore> {
-    let mut config = super::config::Config::get();
-    config.primary_key = Some(key.key.clone());
-    super::state::StateStore::open(&config)
+fn store(
+    config: &Config,
+    key: &UnlockedKey,
+) -> Result<super::state::StateStore> {
+    let configured = config
+        .primary_key
+        .as_ref()
+        .context("No primary key in operation context")?;
+    if configured.fingerprint != key.key.fingerprint
+        || configured.uuid != key.key.uuid
+    {
+        anyhow::bail!(
+            "Cache account does not match the captured operation context"
+        );
+    }
+    super::state::StateStore::open(config)
 }
 
 pub fn write_cache(
+    config: &Config,
     project_id: &str,
     _project_name: &str,
     variables: &[DecryptedVariable],
@@ -53,7 +66,7 @@ pub fn write_cache(
 
     let encrypted = builder.to_vec(&mut rng)?;
 
-    store(key)?.put_bytes("cache", project_id, &encrypted)?;
+    store(config, key)?.put_bytes("cache", project_id, &encrypted)?;
 
     Ok(())
 }
@@ -64,11 +77,14 @@ pub struct CachedVariables {
 }
 
 pub fn read_cache(
+    config: &Config,
     project_id: &str,
     _project_name: Option<&str>,
     key: &UnlockedKey,
 ) -> Result<CachedVariables> {
-    let data = store(key)?.get_bytes("cache", project_id)?.context(
+    let data = store(config, key)?
+        .get_bytes("cache", project_id)?
+        .context(
         "No cache for this project, account and server; fetch it online first",
     )?;
 
@@ -100,14 +116,12 @@ pub fn read_cache(
 }
 
 #[allow(dead_code)]
-pub fn wipe_cache_for_project(project_id: &str) -> Result<()> {
-    super::state::StateStore::open(&super::config::Config::get())?
-        .delete("cache", project_id)
+pub fn wipe_cache_for_project(config: &Config, project_id: &str) -> Result<()> {
+    super::state::StateStore::open(config)?.delete("cache", project_id)
 }
 
-pub fn wipe_all_caches() -> Result<()> {
-    super::state::StateStore::open(&super::config::Config::get())?
-        .clear("cache")
+pub fn wipe_all_caches(config: &Config) -> Result<()> {
+    super::state::StateStore::open(config)?.clear("cache")
 }
 
 #[cfg(test)]
@@ -116,6 +130,12 @@ mod tests {
     use crate::utils::key::Key;
     use crate::utils::rpgp::generate_key_pair;
     use pgp::types::KeyDetails;
+
+    fn context(key: &UnlockedKey) -> Config {
+        let mut config = Config::default();
+        config.primary_key = Some(key.key.clone());
+        config
+    }
 
     fn test_key() -> (UnlockedKey, Key) {
         let password = "test-password-123".to_string();
@@ -154,9 +174,6 @@ mod tests {
             pubkey_only: None,
             uuid: Some("test-uuid".to_string()),
         };
-        let mut config = crate::utils::config::Config::get();
-        config.primary_key = Some(key.clone());
-        config.write().unwrap();
         let unlocked = key.clone().unlock(&password);
         (unlocked, key)
     }
@@ -187,8 +204,11 @@ mod tests {
         let (key, _) = test_key();
         let vars = make_vars();
 
-        write_cache("proj-1", "my-project", &vars, &key).unwrap();
-        let cached = read_cache("proj-1", Some("my-project"), &key).unwrap();
+        write_cache(&context(&key), "proj-1", "my-project", &vars, &key)
+            .unwrap();
+        let cached =
+            read_cache(&context(&key), "proj-1", Some("my-project"), &key)
+                .unwrap();
 
         assert_eq!(cached.variables.len(), 2);
         assert_eq!(cached.variables[0].value.key, "DATABASE_URL");
@@ -196,7 +216,7 @@ mod tests {
         assert!(cached.cached_at <= Utc::now());
 
         // cleanup
-        wipe_cache_for_project("proj-1").unwrap();
+        wipe_cache_for_project(&context(&key), "proj-1").unwrap();
     }
 
     #[test]
@@ -204,15 +224,26 @@ mod tests {
         let (key, _) = test_key();
         let vars = make_vars();
 
-        write_cache("proj-1", "my-project", &vars, &key).unwrap();
-        write_cache("proj-2", "other-project", &vars, &key).unwrap();
+        write_cache(&context(&key), "proj-1", "my-project", &vars, &key)
+            .unwrap();
+        write_cache(&context(&key), "proj-2", "other-project", &vars, &key)
+            .unwrap();
 
-        wipe_cache_for_project("proj-1").unwrap();
+        wipe_cache_for_project(&context(&key), "proj-1").unwrap();
 
-        assert!(read_cache("proj-1", Some("my-project"), &key).is_err());
-        assert!(read_cache("proj-2", Some("other-project"), &key).is_ok());
+        assert!(
+            read_cache(&context(&key), "proj-1", Some("my-project"), &key)
+                .is_err()
+        );
+        assert!(read_cache(
+            &context(&key),
+            "proj-2",
+            Some("other-project"),
+            &key
+        )
+        .is_ok());
 
-        wipe_cache_for_project("proj-2").unwrap();
+        wipe_cache_for_project(&context(&key), "proj-2").unwrap();
     }
 
     #[test]
@@ -220,19 +251,33 @@ mod tests {
         let (key, _) = test_key();
         let vars = make_vars();
 
-        write_cache("proj-1", "my-project", &vars, &key).unwrap();
-        write_cache("proj-2", "other-project", &vars, &key).unwrap();
+        write_cache(&context(&key), "proj-1", "my-project", &vars, &key)
+            .unwrap();
+        write_cache(&context(&key), "proj-2", "other-project", &vars, &key)
+            .unwrap();
 
-        wipe_all_caches().unwrap();
+        wipe_all_caches(&context(&key)).unwrap();
 
-        assert!(read_cache("proj-1", Some("my-project"), &key).is_err());
-        assert!(read_cache("proj-2", Some("other-project"), &key).is_err());
+        assert!(
+            read_cache(&context(&key), "proj-1", Some("my-project"), &key)
+                .is_err()
+        );
+        assert!(read_cache(
+            &context(&key),
+            "proj-2",
+            Some("other-project"),
+            &key
+        )
+        .is_err());
     }
 
     #[test]
     fn read_nonexistent_cache_fails() {
         let (key, _) = test_key();
-        assert!(read_cache("nonexistent", Some("fake"), &key).is_err());
+        assert!(
+            read_cache(&context(&key), "nonexistent", Some("fake"), &key)
+                .is_err()
+        );
     }
 
     #[test]
@@ -240,7 +285,8 @@ mod tests {
         let (key1, _) = test_key();
         let vars = make_vars();
 
-        write_cache("proj-wrong-key", "test", &vars, &key1).unwrap();
+        write_cache(&context(&key1), "proj-wrong-key", "test", &vars, &key1)
+            .unwrap();
 
         let password2 = "different-password".to_string();
         let kp2 = generate_key_pair("other-user", password2.clone()).unwrap();
@@ -274,23 +320,29 @@ mod tests {
 
         // Bypass account isolation deliberately to prove the ciphertext itself
         // still rejects a different private key.
-        let ciphertext = store(&key1)
+        let ciphertext = store(&context(&key1), &key1)
             .unwrap()
             .get_bytes("cache", "proj-wrong-key")
             .unwrap()
             .unwrap();
-        store(&unlocked2)
+        store(&context(&unlocked2), &unlocked2)
             .unwrap()
             .put_bytes("cache", "proj-wrong-key", &ciphertext)
             .unwrap();
-        assert!(read_cache("proj-wrong-key", Some("test"), &unlocked2).is_err());
-        store(&unlocked2)
+        assert!(read_cache(
+            &context(&unlocked2),
+            "proj-wrong-key",
+            Some("test"),
+            &unlocked2
+        )
+        .is_err());
+        store(&context(&unlocked2), &unlocked2)
             .unwrap()
             .delete("cache", "proj-wrong-key")
             .unwrap();
 
         // cleanup
-        wipe_cache_for_project("proj-wrong-key").unwrap();
+        wipe_cache_for_project(&context(&key1), "proj-wrong-key").unwrap();
         let _ = fs::remove_dir_all(&key_dir2);
     }
 
@@ -299,12 +351,15 @@ mod tests {
         let (key, _) = test_key();
         let vars: Vec<DecryptedVariable> = vec![];
 
-        write_cache("proj-empty", "empty", &vars, &key).unwrap();
-        let cached = read_cache("proj-empty", Some("empty"), &key).unwrap();
+        write_cache(&context(&key), "proj-empty", "empty", &vars, &key)
+            .unwrap();
+        let cached =
+            read_cache(&context(&key), "proj-empty", Some("empty"), &key)
+                .unwrap();
 
         assert_eq!(cached.variables.len(), 0);
 
-        wipe_cache_for_project("proj-empty").unwrap();
+        wipe_cache_for_project(&context(&key), "proj-empty").unwrap();
     }
 
     #[test]
@@ -319,7 +374,8 @@ mod tests {
             created_at: "2026-01-01T00:00:00Z".into(),
         }];
 
-        write_cache("proj-ow", "overwrite-test", &vars1, &key).unwrap();
+        write_cache(&context(&key), "proj-ow", "overwrite-test", &vars1, &key)
+            .unwrap();
 
         let vars2 = vec![DecryptedVariable {
             id: "v2".into(),
@@ -328,14 +384,16 @@ mod tests {
             created_at: "2026-01-02T00:00:00Z".into(),
         }];
 
-        write_cache("proj-ow", "overwrite-test", &vars2, &key).unwrap();
+        write_cache(&context(&key), "proj-ow", "overwrite-test", &vars2, &key)
+            .unwrap();
 
         let cached =
-            read_cache("proj-ow", Some("overwrite-test"), &key).unwrap();
+            read_cache(&context(&key), "proj-ow", Some("overwrite-test"), &key)
+                .unwrap();
         assert_eq!(cached.variables.len(), 1);
         assert_eq!(cached.variables[0].value.key, "NEW");
 
-        wipe_cache_for_project("proj-ow").unwrap();
+        wipe_cache_for_project(&context(&key), "proj-ow").unwrap();
     }
 
     #[test]
@@ -355,16 +413,18 @@ mod tests {
             })
             .collect();
 
-        write_cache("proj-large", "large-test", &vars, &key).unwrap();
+        write_cache(&context(&key), "proj-large", "large-test", &vars, &key)
+            .unwrap();
         let cached =
-            read_cache("proj-large", Some("large-test"), &key).unwrap();
+            read_cache(&context(&key), "proj-large", Some("large-test"), &key)
+                .unwrap();
 
         assert_eq!(cached.variables.len(), 500);
         for (i, v) in cached.variables.iter().enumerate() {
             assert_eq!(v.value.key, format!("KEY_{}", i));
         }
 
-        wipe_cache_for_project("proj-large").unwrap();
+        wipe_cache_for_project(&context(&key), "proj-large").unwrap();
     }
 
     #[test]
@@ -372,12 +432,14 @@ mod tests {
         let (key, _) = test_key();
         let vars = make_vars();
 
-        write_cache("proj-prefix", "some-name", &vars, &key).unwrap();
-        let cached = read_cache("proj-prefix", None, &key).unwrap();
+        write_cache(&context(&key), "proj-prefix", "some-name", &vars, &key)
+            .unwrap();
+        let cached =
+            read_cache(&context(&key), "proj-prefix", None, &key).unwrap();
 
         assert_eq!(cached.variables.len(), 2);
         assert_eq!(cached.variables[0].value.key, "DATABASE_URL");
 
-        wipe_cache_for_project("proj-prefix").unwrap();
+        wipe_cache_for_project(&context(&key), "proj-prefix").unwrap();
     }
 }

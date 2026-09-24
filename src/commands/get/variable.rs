@@ -26,10 +26,11 @@ pub struct Args {
 pub async fn command(args: Args, config: &mut Config) -> Result<()> {
     let key = config.primary_key()?;
     let key = key.unlock(&config.primary_key_password()?);
-    let project_id = Choice::try_project(args.project_id, &key).await?;
+    let project_id = Choice::try_project(config, args.project_id, &key).await?;
 
     let kvpairs =
-        get_variables_magic(&project_id, &key, false, args.local).await?;
+        get_variables_magic(config, &project_id, &key, false, args.local)
+            .await?;
 
     let kvpair = kvpairs.iter().find(|&kv| kv.key == args.key);
 

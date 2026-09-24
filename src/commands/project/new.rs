@@ -47,7 +47,7 @@ pub async fn command(args: Args, config: &mut Config) -> Result<()> {
         }
     };
 
-    let new_project_id = SDK::new_project(&key, &name).await?;
+    let new_project_id = SDK::new_project(config, &key, &name).await?;
     if !args.json {
         println!("Created new project with ID: {}", new_project_id);
     }

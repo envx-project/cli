@@ -52,7 +52,7 @@ pub async fn command(args: Args, config: &mut Config) -> anyhow::Result<()> {
     let key = config.unlocked_primary_key()?;
     let sdk_config = config.sdk_configuration(&key)?;
 
-    let project_id = Choice::try_project(args.project_id, &key).await?;
+    let project_id = Choice::try_project(config, args.project_id, &key).await?;
     let project_info = envx_sdk::apis::project_api::get_project_info_v2(
         &sdk_config,
         &project_id,
@@ -121,7 +121,7 @@ pub async fn command(args: Args, config: &mut Config) -> anyhow::Result<()> {
         }
     }
 
-    let variables = SDK::get_variables(&project_id, &key).await?;
+    let variables = SDK::get_variables(config, &project_id, &key).await?;
     let kvpairs = variables.to_kvpair();
 
     let pubkeys = project_info
@@ -155,7 +155,7 @@ pub async fn command(args: Args, config: &mut Config) -> anyhow::Result<()> {
     let client = reqwest::Client::new();
     let auth_token = key.auth_token()?.bearer();
 
-    let url = api_url()?.join("/variables/update-many")?;
+    let url = api_url(config)?.join("/variables/update-many")?;
 
     let res = client
         .post(url)

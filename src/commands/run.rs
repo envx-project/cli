@@ -30,7 +30,7 @@ pub async fn command(args: Args, config: &mut Config) -> Result<()> {
     let key = config.primary_key()?;
     let key = key.unlock(&config.primary_key_password()?);
 
-    let project_id = Choice::try_project(args.project_id, &key).await?;
+    let project_id = Choice::try_project(config, args.project_id, &key).await?;
 
     if project_id.is_empty() {
         return Err(anyhow::anyhow!("No project ID provided"));
@@ -40,7 +40,8 @@ pub async fn command(args: Args, config: &mut Config) -> Result<()> {
     all_variables.insert("IN_ENVX_SHELL".to_owned(), "true".to_owned());
 
     let variables =
-        get_variables_magic(&project_id, &key, false, args.local).await?;
+        get_variables_magic(config, &project_id, &key, false, args.local)
+            .await?;
     let decrypted_count = variables.len();
 
     for variable in variables {

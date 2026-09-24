@@ -27,7 +27,7 @@ pub async fn command(args: Args, config: &mut Config) -> Result<()> {
 
     let key = key.unlock(&password);
 
-    let project_id = Choice::try_project(args.project, &key).await?;
+    let project_id = Choice::try_project(config, args.project, &key).await?;
 
     if !args.yes {
         if !is_interactive() {
@@ -49,7 +49,7 @@ pub async fn command(args: Args, config: &mut Config) -> Result<()> {
         }
     }
 
-    SDK::delete_project(&key, &project_id).await?;
+    SDK::delete_project(config, &key, &project_id).await?;
 
     config.delete_project(&project_id)?;
     println!("Project {} deleted", &project_id);

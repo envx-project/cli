@@ -8,13 +8,14 @@ use super::{
 };
 
 pub async fn get_variables_magic(
+    config: &super::config::Config,
     project_id: &str,
     key: &UnlockedKey,
     all: bool,
     local: bool,
 ) -> anyhow::Result<Vec<KVPair>> {
     if local {
-        let cached = read_cache(project_id, None, key)?;
+        let cached = read_cache(config, project_id, None, key)?;
         let vars = if all {
             cached.variables.to_kvpair()
         } else {
@@ -23,10 +24,10 @@ pub async fn get_variables_magic(
         return Ok(vars);
     }
 
-    match fetch_and_cache(project_id, key, all).await {
+    match fetch_and_cache(config, project_id, key, all).await {
         Ok(kvpairs) => Ok(kvpairs),
         Err(fetch_err) if !allows_cache_fallback(&fetch_err) => Err(fetch_err),
-        Err(fetch_err) => match read_cache(project_id, None, key) {
+        Err(fetch_err) => match read_cache(config, project_id, None, key) {
             Ok(cached) => {
                 let age = chrono::Utc::now() - cached.cached_at;
                 eprintln!(
@@ -47,13 +48,14 @@ pub async fn get_variables_magic(
 }
 
 async fn fetch_and_cache(
+    config: &super::config::Config,
     project_id: &str,
     key: &UnlockedKey,
     all: bool,
 ) -> anyhow::Result<Vec<KVPair>> {
-    let variables = SDK::get_variables(project_id, key).await?;
+    let variables = SDK::get_variables(config, project_id, key).await?;
 
-    let project_name = match SDK::list_projects(key).await {
+    let project_name = match SDK::list_projects(config, key).await {
         Ok(projects) => projects
             .iter()
             .find(|p| p.project_id == project_id)
@@ -62,7 +64,9 @@ async fn fetch_and_cache(
         Err(_) => "unknown".to_string(),
     };
 
-    if let Err(e) = write_cache(project_id, &project_name, &variables, key) {
+    if let Err(e) =
+        write_cache(config, project_id, &project_name, &variables, key)
+    {
         eprintln!("warning: failed to write variable cache: {}", e);
     }
 
