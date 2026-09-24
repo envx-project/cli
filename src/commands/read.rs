@@ -2,7 +2,10 @@ use super::*;
 use crate::utils::{
     config::Config, messaging::Client, messaging_crypto::Payload,
 };
-use std::{io::Write, path::PathBuf};
+use std::{
+    io::{IsTerminal, Write},
+    path::PathBuf,
+};
 
 /// Explicitly decrypt and reveal a message after signature and trust verification
 #[derive(Parser, Debug)]
@@ -37,7 +40,23 @@ pub async fn command(args: Args, config: &mut Config) -> Result<()> {
         }
         options.open(path)?.write_all(&bytes)?;
     } else {
-        std::io::stdout().lock().write_all(&bytes)?;
+        if std::io::stdout().is_terminal() && !args.json {
+            // Secrets may contain terminal escape sequences; redirected output is exact.
+            let text = String::from_utf8(bytes)?;
+            let visible: String = text
+                .chars()
+                .map(|c| {
+                    if c.is_control() && c != '\n' && c != '\t' {
+                        c.escape_default().to_string()
+                    } else {
+                        c.to_string()
+                    }
+                })
+                .collect();
+            std::io::stdout().lock().write_all(visible.as_bytes())?;
+        } else {
+            std::io::stdout().lock().write_all(&bytes)?;
+        }
         if args.json {
             println!();
         }

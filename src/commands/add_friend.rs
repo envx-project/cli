@@ -34,6 +34,15 @@ pub async fn command(args: Args, config: &mut Config) -> Result<()> {
     if messaging::normalized_origin(&code.server)? != client.origin {
         anyhow::bail!("Friend code belongs to another server; select that server explicitly before redeeming");
     }
+    client.check_alias(&code.creator_id, args.alias.as_deref())?;
+    if let Some(pin) = client
+        .state
+        .get::<messaging::Pin>("friend", &code.creator_id)?
+    {
+        if pin.fingerprint != code.creator_fingerprint {
+            anyhow::bail!("Creator key changed; verify and accept it before redeeming this code");
+        }
+    }
     if code.creator_id == client.user_id() {
         anyhow::bail!("You cannot add yourself");
     }

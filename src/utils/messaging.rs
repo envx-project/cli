@@ -168,14 +168,12 @@ impl Client {
         }
         Ok(all)
     }
-    pub fn pin(
+    pub fn check_alias(
         &self,
-        identity: &Identity,
-        mut alias: Option<String>,
-        replace: bool,
-    ) -> Result<Pin> {
-        validate_identity(identity)?;
-        if let Some(alias) = &alias {
+        user_id: &str,
+        alias: Option<&str>,
+    ) -> Result<()> {
+        if let Some(alias) = alias {
             if alias.trim().is_empty()
                 || alias.len() > 100
                 || alias.chars().any(char::is_control)
@@ -184,13 +182,23 @@ impl Client {
                 bail!("Alias must be 1–100 characters, contain no controls, and not be a UUID");
             }
             for (_, pin) in self.state.list::<Pin>("friend")? {
-                if pin.user_id != identity.id
-                    && pin.alias.as_ref() == Some(alias)
+                if pin.user_id != user_id && pin.alias.as_deref() == Some(alias)
                 {
                     bail!("Alias already belongs to another friend");
                 }
             }
         }
+        Ok(())
+    }
+    pub fn pin(
+        &self,
+        identity: &Identity,
+        mut alias: Option<String>,
+        replace: bool,
+    ) -> Result<Pin> {
+        validate_identity(identity)?;
+        self.state.with_write_lock(|_| {
+        self.check_alias(&identity.id, alias.as_deref())?;
         if let Some(old) = self.state.get::<Pin>("friend", &identity.id)? {
             if alias.is_none() {
                 alias = old.alias.clone();
@@ -213,6 +221,7 @@ impl Client {
             &pin,
         )?;
         Ok(pin)
+        })
     }
     pub fn trusted(&self, identity: &Identity) -> Result<Pin> {
         validate_identity(identity)?;
@@ -296,6 +305,15 @@ impl Client {
             (&message.sender_id, &sender_fp)
         };
         // Historical pins permit reading retained messages after removing a friend.
+        if self
+            .state
+            .get::<Pin>("friend-key", &format!("{peer_id}:{peer_fp}"))?
+            .is_none()
+        {
+            for friend in self.friends().await? {
+                self.learn_from_receipt(&friend)?;
+            }
+        }
         let _: Pin = self
             .state
             .get("friend-key", &format!("{peer_id}:{peer_fp}"))?
@@ -384,8 +402,14 @@ pub fn expires(value: &str) -> Result<DateTime<Utc>> {
     if seconds <= 0 {
         bail!("Expiry must be in the future");
     }
-    Utc::now()
-        .checked_add_signed(chrono::Duration::seconds(seconds))
+    let duration =
+        chrono::Duration::try_seconds(seconds).context("Duration too large")?;
+    let expiry = Utc::now()
+        .checked_add_signed(duration)
+        .context("Duration too large")?;
+    // PostgreSQL timestamps have microsecond precision; sign whole seconds so
+    // serialization through the server cannot change the authenticated value.
+    DateTime::from_timestamp(expiry.timestamp(), 0)
         .context("Duration too large")
 }
 
