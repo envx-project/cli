@@ -6,7 +6,7 @@ use super::{
     variable::{DecryptedVariable, EncryptedVariable},
 };
 use anyhow::{bail, Context, Result};
-use pgp::composed::{Deserializable, SignedPublicKey};
+use pgp::{composed::SignedPublicKey, types::KeyDetails};
 use rayon::prelude::*;
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use serde_json::Value;
@@ -153,22 +153,13 @@ pub fn rewrap(
         .as_deref()
         .context("Key has not been uploaded")?;
     let own_public = key.key.public_key_str()?;
-    if !recipients
-        .iter()
-        .any(|r| r.id == own_id && r.public_key == own_public)
-    {
-        bail!("Recipient snapshot does not contain your current public key.");
-    }
+    let pubkeys = recipient_keys(recipients, own_id, &own_public)?;
     let mut seen = HashSet::new();
     for variable in variables {
         if variable.project_id != project || !seen.insert(&variable.id) {
             bail!("Invitation contains inconsistent variable identities; regenerate it.");
         }
     }
-    let pubkeys = recipients
-        .iter()
-        .map(|r| Ok(SignedPublicKey::from_string(&r.public_key)?.0))
-        .collect::<Result<Vec<_>>>()?;
     variables
         .par_iter()
         .map(|variable| {
@@ -178,4 +169,78 @@ pub fn rewrap(
             })
         })
         .collect()
+}
+
+fn recipient_keys(
+    recipients: &[Recipient],
+    own_id: &str,
+    own_public: &str,
+) -> Result<Vec<SignedPublicKey>> {
+    let own = super::messaging_crypto::public_key(own_public)?.fingerprint();
+    let keys = recipients
+        .iter()
+        .map(|recipient| {
+            super::messaging_crypto::public_key(&recipient.public_key)
+        })
+        .collect::<Result<Vec<_>>>()?;
+    if !recipients.iter().zip(&keys).any(|(recipient, key)| {
+        recipient.id == own_id && key.fingerprint() == own
+    }) {
+        bail!("Recipient snapshot does not contain your current public key.");
+    }
+    Ok(keys)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use pgp::composed::{ArmorOptions, KeyType, SecretKeyParamsBuilder};
+    #[test]
+    fn recipient_identity_uses_verified_key_not_armor_formatting() {
+        let generate = || {
+            let secret = SecretKeyParamsBuilder::default()
+                .key_type(KeyType::Ed25519)
+                .can_sign(true)
+                .primary_user_id("snapshot-test".into())
+                .build()
+                .unwrap()
+                .generate(rand::rngs::OsRng)
+                .unwrap()
+                .sign(rand::rngs::OsRng, &"".into())
+                .unwrap();
+            SignedPublicKey::from(secret)
+                .to_armored_string(ArmorOptions::default())
+                .unwrap()
+        };
+        let own = generate();
+        let formatted = own.replace('\n', "\r\n");
+        assert_ne!(own, formatted);
+        assert!(recipient_keys(
+            &[Recipient {
+                id: "stable-id".into(),
+                public_key: formatted
+            }],
+            "stable-id",
+            &own
+        )
+        .is_ok());
+        assert!(recipient_keys(
+            &[Recipient {
+                id: "stable-id".into(),
+                public_key: generate()
+            }],
+            "stable-id",
+            &own
+        )
+        .is_err());
+        assert!(recipient_keys(
+            &[Recipient {
+                id: "other-id".into(),
+                public_key: own.clone()
+            }],
+            "stable-id",
+            &own
+        )
+        .is_err());
+    }
 }
