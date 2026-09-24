@@ -17,3 +17,11 @@ for case in ['malformed','future','readonly']:
   os.close(master)
  assert snapshot(home)==before,case
 print('PASS: PTY help/version/subcommandhelp/usage exit before malformed config, future DB, read-only HOME; no profile writes, network disabled')
+
+# Exercise the public completion command, not just its parser construction.
+home=pathlib.Path(tempfile.mkdtemp())
+for shell in ['bash', 'zsh']:
+    output=subprocess.check_output(binary+['completion', shell], env=dict(os.environ, HOME=str(home)), text=True)
+    for command in ['friend-link', 'add-friend', 'inbox', 'project', 'variables']:
+        assert command in output, (shell, command)
+print('PASS: actual bash/zsh completion commands contain root subcommands')

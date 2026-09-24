@@ -100,37 +100,43 @@ async fn main() -> Result<()> {
         Ok(args) => args,
         Err(error) => error.exit(),
     };
-    let mut config = Config::load()?;
-
-    let check_updates_handle = if std::io::stdout().is_terminal() {
-        let update = StateStore::open(&config)
-            .and_then(|store| store.update_check())
-            .unwrap_or_default();
-
-        if let Some(latest_version) = update.latest_version {
-            if matches!(
-                compare_semver(env!("CARGO_PKG_VERSION"), &latest_version),
-                Ordering::Less
-            ) {
-                println!(
-                    "{} {}: v{} -> v{}",
-                    "info!".bold(),
-                    "Update available".green().bold(),
-                    env!("CARGO_PKG_VERSION").yellow(),
-                    latest_version.bright_yellow(),
-                );
-                println!(
-                    "{} Run `{}` to update\n",
-                    "info!".bold(),
-                    "curl -fsSL https://get.envx.sh | sh".green()
-                );
-            }
-        }
-
-        Some(spawn_update_task())
+    let settings_command = matches!(&cli.command, Commands::Config(_));
+    let mut config = if settings_command {
+        Config::load_settings()?
     } else {
-        None
+        Config::load()?
     };
+
+    let check_updates_handle =
+        if !settings_command && std::io::stdout().is_terminal() {
+            let update = StateStore::open(&config)
+                .and_then(|store| store.update_check())
+                .unwrap_or_default();
+
+            if let Some(latest_version) = update.latest_version {
+                if matches!(
+                    compare_semver(env!("CARGO_PKG_VERSION"), &latest_version),
+                    Ordering::Less
+                ) {
+                    println!(
+                        "{} {}: v{} -> v{}",
+                        "info!".bold(),
+                        "Update available".green().bold(),
+                        env!("CARGO_PKG_VERSION").yellow(),
+                        latest_version.bright_yellow(),
+                    );
+                    println!(
+                        "{} Run `{}` to update\n",
+                        "info!".bold(),
+                        "curl -fsSL https://get.envx.sh | sh".green()
+                    );
+                }
+            }
+
+            Some(spawn_update_task())
+        } else {
+            None
+        };
 
     let exec_result = {
         let exec_result = Commands::exec(cli, &mut config).await;
