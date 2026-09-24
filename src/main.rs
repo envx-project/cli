@@ -31,6 +31,12 @@ pub struct Args {
 // Specify the modules you want to include in the commands_enum! macro
 commands_enum!(
     auth,
+    friends,
+    add_friend,
+    friend_link,
+    send,
+    inbox,
+    read,
     completion,
     export,
     gen,
