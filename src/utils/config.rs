@@ -308,21 +308,18 @@ impl Config {
     }
 
     pub fn delete_project(&mut self, project_id: &str) -> Result<()> {
-        if self.projects.is_empty() {
-            return Err(anyhow!("No projects to delete".red()));
-        }
-        if !self.projects.iter().any(|p| p.project_id == *project_id) {
-            return Err(anyhow!("Project not found".red()));
-        }
         let store = super::state::StateStore::open(self)?;
-        for project in
-            self.projects.iter().filter(|p| p.project_id == project_id)
-        {
-            store.delete(
-                "projects",
-                project.path.to_str().context("Project path is not UTF-8")?,
-            )?;
-        }
+        // Remote deletion may target an unlinked project. Read current links under
+        // the write lock so a stale Config snapshot cannot leave a link behind.
+        store.with_write_lock(|store| {
+            for (path, project) in store.list::<Project>("projects")? {
+                if project.project_id == project_id {
+                    store.delete("projects", &path)?;
+                }
+            }
+            store.delete("cache", project_id)?;
+            Ok(())
+        })?;
         self.projects.retain(|p| p.project_id != project_id);
         Ok(())
     }
