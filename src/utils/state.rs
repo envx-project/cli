@@ -18,7 +18,7 @@ pub struct StateStore {
 
 impl StateStore {
     pub fn open(config: &Config) -> Result<Self> {
-        let dir = home::home_dir()
+        let dir = crate::utils::paths::home_dir()
             .context("Failed to get home directory")?
             .join(".config/envx");
         Self::open_at(&dir, config)

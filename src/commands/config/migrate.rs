@@ -48,7 +48,8 @@ fn copy_preserving(source: &Path, destination: &Path) -> Result<()> {
 }
 
 pub async fn command(args: Args, config: &mut Config) -> Result<()> {
-    let home = home::home_dir().context("Failed to get home directory")?;
+    let home = crate::utils::paths::home_dir()
+        .context("Failed to get home directory")?;
     let old = home.join(".config/envcli");
     let new = home.join(".config/envx");
     if !old.join("config.json").exists() {

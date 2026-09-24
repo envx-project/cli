@@ -64,7 +64,7 @@ pub async fn command(args: Args, config: &mut Config) -> Result<()> {
 }
 
 fn tilde_path(p: &std::path::Path) -> String {
-    if let Some(home) = home::home_dir() {
+    if let Some(home) = crate::utils::paths::home_dir() {
         if let Ok(rel) = p.strip_prefix(&home) {
             return format!("~/{}", rel.display());
         }

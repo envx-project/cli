@@ -21,7 +21,7 @@ pub struct KeyPair {
 }
 
 pub(crate) fn get_vault_location() -> anyhow::Result<std::path::PathBuf> {
-    let path = home::home_dir()
+    let path = crate::utils::paths::home_dir()
         .context("Failed to get home directory")?
         .join(".config")
         .join("envx")

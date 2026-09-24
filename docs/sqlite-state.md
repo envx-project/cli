@@ -19,3 +19,7 @@ Do not sync a live SQLite file between machines. For a consistent backup, stop e
 ## Verification
 
 Run `tests/state-migration-docker.sh`. Compilation runs on the host; every executable test runs inside a disposable network-disabled Docker container with a synthetic HOME. The suite covers real CLI first launch for historical fixtures, concurrent migration/fresh initialization, repeated starts after unlink, retained unknown fields and original files, future schema rejection, killed-writer rollback, malformed configuration, legacy envcli retry, encrypted cache round trips, scoped records, and SQLite full-database rollback.
+
+Unit tests also isolate profiles internally: the shared home-directory helper uses a separate temporary directory per test thread, independent of HOME or USERPROFILE. Production builds continue to resolve the normal OS home. Concurrency-test subprocesses explicitly share only their synthetic profile; tests do not mutate process-wide home environment variables.
+
+`tests/test-home-isolation-docker.sh` verifies this boundary by running the actual `cargo test --locked --offline -- --test-threads=8` command inside Docker with a seeded HOME/USERPROFILE. It checks every sentinel file remains byte-identical, including settings, keys, and a database, and fails on any test failure or profile mutation. It mounts the Rust toolchain and registry cache, never the host profile or credentials.
