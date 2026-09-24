@@ -114,12 +114,7 @@ pub async fn command(args: Args, config: &mut Config) -> Result<()> {
     if !existing_keys.is_empty() {
         println!("The following variables already exist:");
         for key in &existing_keys {
-            println!(
-                "{} - {}={}",
-                key.id.green(),
-                key.value.key.blue(),
-                key.value.value.yellow()
-            );
+            println!("{} - {}", key.id.green(), key.value.key.blue());
         }
 
         if !args.yes {
@@ -141,13 +136,11 @@ pub async fn command(args: Args, config: &mut Config) -> Result<()> {
         }
 
         println!("Overwriting existing variables...");
-        for k in existing_keys {
-            let id = k.id.clone();
-            SDK::delete_variable(&id, &key).await?;
-        }
     }
 
-    let ids = SDK::set_many(kvpairs, &project_id, &key).await?;
+    let replace_ids = existing_keys.iter().map(|v| v.id.clone()).collect();
+    let ids =
+        SDK::replace_many(kvpairs, &project_id, &key, replace_ids).await?;
 
     // Re-fetch and update cache
     if let Ok(fresh_vars) = SDK::get_variables(&project_id, &key).await {
