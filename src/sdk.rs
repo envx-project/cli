@@ -18,25 +18,8 @@ use serde_json::json;
 use url::Url;
 use utils::variable::DeDupe;
 
-pub fn api_url() -> Url {
-    fn try_get_url() -> Result<Url> {
-        let dev_mode = std::env::var("DEV_MODE").is_ok();
-        if dev_mode {
-            return Ok(Url::parse("http://localhost:3000")?);
-        }
-        let url = Config::get()
-            .sdk_url
-            .clone()
-            .unwrap_or("https://api.envx.sh".into());
-        let url = Url::parse(&url)?;
-        Ok(url)
-    }
-    match try_get_url() {
-        Ok(u) => u,
-        Err(_) => Url::parse("http://localhost:3000")
-            .context("Failed to parse URL, this should literally never happen")
-            .unwrap(),
-    }
+pub fn api_url() -> Result<Url> {
+    Config::load()?.sdk_url()
 }
 
 #[allow(clippy::upper_case_acronyms)]
@@ -51,7 +34,7 @@ impl SDK {
             "public_key": public_key
         });
 
-        let url = api_url().join("/user/new")?;
+        let url = api_url()?.join("/user/new")?;
         let response = client
             .post(url)
             .json(&body)
@@ -69,7 +52,7 @@ impl SDK {
         // GET /v2/project/:id
         let client = reqwest::Client::new();
 
-        let url = api_url().join("v2/project/")?.join(project_id)?;
+        let url = api_url()?.join("v2/project/")?.join(project_id)?;
 
         let project_info = client
             .get(url)
@@ -127,7 +110,7 @@ impl SDK {
         } else {
             "/variables/replace-many"
         };
-        let url = api_url().join(endpoint)?;
+        let url = api_url()?.join(endpoint)?;
 
         let res = client
             .post(url)
@@ -154,7 +137,7 @@ impl SDK {
     ) -> Result<Vec<DecryptedVariable>> {
         let client = reqwest::Client::new();
 
-        let mut url = api_url();
+        let mut url = api_url()?;
         url.set_path(&format!(
             "/user/{}/variables",
             key.key
@@ -212,7 +195,7 @@ impl SDK {
         let client = reqwest::Client::new();
 
         let url =
-            api_url().join(&format!("/project/{}/variables", project_id))?;
+            api_url()?.join(&format!("/project/{}/variables", project_id))?;
 
         let response = client
             .get(url)
@@ -278,7 +261,7 @@ impl SDK {
         let client = reqwest::Client::new();
 
         let url =
-            api_url().join(&format!("/v2/project/{}/delete", project_id))?;
+            api_url()?.join(&format!("/v2/project/{}/delete", project_id))?;
 
         client
             .delete(url)
@@ -297,7 +280,7 @@ impl SDK {
         // url: DELETE /variables/:id
         let client = reqwest::Client::new();
 
-        let url = api_url().join("variables/")?.join(variable_id)?;
+        let url = api_url()?.join("variables/")?.join(variable_id)?;
 
         client
             .delete(url)
@@ -313,7 +296,7 @@ impl SDK {
         // GET /v2/projects
         let client = reqwest::Client::new();
 
-        let url = api_url().join("v2/projects")?;
+        let url = api_url()?.join("v2/projects")?;
 
         let res = client
             .get(url)
@@ -351,7 +334,7 @@ impl SDK {
         });
 
         let res = client
-            .post(api_url().join("v2/projects/new")?)
+            .post(api_url()?.join("v2/projects/new")?)
             .header(header::AUTHORIZATION, key.auth_token()?.bearer())
             .json(&body)
             .send()

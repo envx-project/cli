@@ -82,12 +82,19 @@ impl Config {
     }
 
     pub fn sdk_url(&self) -> Result<Url> {
-        let dev_mode = std::env::var("DEV_MODE").is_ok();
-        if dev_mode {
-            return Ok(Url::parse("http://localhost:3000")?);
+        let url = Url::parse(
+            self.sdk_url.as_deref().unwrap_or("https://api.envx.sh"),
+        )
+        .context("Invalid configured API URL")?;
+        if !matches!(url.scheme(), "http" | "https")
+            || url.host_str().is_none()
+            || !url.username().is_empty()
+            || url.password().is_some()
+            || url.query().is_some()
+            || url.fragment().is_some()
+        {
+            bail!("API URL must use HTTP(S) with a host and no credentials, query, or fragment");
         }
-        let url = self.sdk_url.clone().unwrap_or("https://api.envx.sh".into());
-        let url = Url::parse(&url)?;
         Ok(url)
     }
 
@@ -340,7 +347,7 @@ impl Config {
                 eprintln!("Failed to get password: {}", e);
                 let mut last_error = None;
                 for _ in 0..3 {
-                    println!("Enter password for key {}", key);
+                    eprintln!("Enter password for key {}", key);
                     let password = prompt_password("Password: ")?;
 
                     match key.verify_passphrase(&password) {
@@ -574,5 +581,31 @@ mod state_tests {
         config.primary_key_password = None;
         config.write().unwrap();
         assert!(Config::load().unwrap().primary_key_password.is_none());
+    }
+}
+
+#[cfg(test)]
+mod boundary_tests {
+    use super::*;
+    #[test]
+    fn configured_api_origin_never_falls_back() {
+        let mut config = Config::default();
+        for invalid in [
+            "not a URL",
+            "file:///tmp/api",
+            "https://user:password@example.com",
+            "https://example.com?token=x",
+            "https://example.com#fragment",
+        ] {
+            config.sdk_url = Some(invalid.into());
+            assert!(config.sdk_url().is_err());
+        }
+        config.sdk_url = Some("http://localhost:3000".into());
+        assert_eq!(
+            config.sdk_url().unwrap().as_str(),
+            "http://localhost:3000/"
+        );
+        config.sdk_url = Some("https://example.com".into());
+        assert_eq!(config.sdk_url().unwrap().as_str(), "https://example.com/");
     }
 }
