@@ -13,5 +13,8 @@ p=run('config','set','sdk_url','https://api.envx.sh');assert p.returncode==0,p.s
 current=json.loads(path.read_text());assert current['sdk_url']=='https://api.envx.sh'
 for field in ['salt','projects','primary_key_password','custom']:assert current[field]==config[field]
 assert (directory/'config.pre-sqlite.json').read_text()==original
-conn=sqlite3.connect(directory/'state.sqlite');assert conn.execute("SELECT COUNT(*) FROM records WHERE namespace='projects'").fetchone()[0]==1
-print('PASS invalid URL rejects operational command, settings read/repair succeeds, legacy links and unknown/private fields preserved with original backup')
+conn=sqlite3.connect(directory/'state.sqlite');assert conn.execute("SELECT COUNT(*) FROM records WHERE namespace='projects'").fetchone()[0]==0
+assert 'envx link' in p.stderr
+p=run('version');assert p.returncode==0,p.stderr
+assert conn.execute("SELECT COUNT(*) FROM records WHERE namespace='projects'").fetchone()[0]==0
+print('PASS invalid URL repair preserves unknown/private fields and original links in JSON+backup without assigning unknown-origin links to the repaired server')
