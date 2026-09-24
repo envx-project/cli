@@ -11,6 +11,8 @@ pub mod keyring;
 pub mod kvpair;
 pub mod loud;
 pub mod magic_variables;
+pub mod messaging;
+pub mod messaging_crypto;
 pub mod prompt;
 pub mod rpgp;
 pub mod settings;
@@ -18,3 +20,5 @@ pub mod symmetric;
 pub mod table;
 pub mod variable;
 pub mod vecu8;
+
+pub mod state;

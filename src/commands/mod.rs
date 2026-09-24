@@ -27,3 +27,11 @@ pub mod upload;
 pub mod variables;
 pub mod version;
 pub mod whoami;
+
+pub mod add_friend;
+pub mod friend_link;
+pub mod friends;
+pub mod import_message;
+pub mod inbox;
+pub mod read;
+pub mod send;

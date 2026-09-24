@@ -1,8 +1,8 @@
 use std::cmp::Ordering;
 use std::process::Stdio;
 
+use crate::utils::state::StateStore;
 use anyhow::bail;
-use home::home_dir;
 
 use crate::utils::compare_semver;
 use crate::utils::config::Config;
@@ -34,16 +34,8 @@ struct GithubApiRelease {
 }
 
 pub async fn check_update(force: bool) -> anyhow::Result<String> {
-    let home = home_dir().context("Failed to get home directory")?;
-    let path = home.join(".config/envx/version.json");
-    let update = if !path.exists() {
-        UpdateCheck::default()
-    } else {
-        let contents = std::fs::read_to_string(&path)
-            .context("Failed to read update check file")?;
-        serde_json::from_str::<UpdateCheck>(&contents)
-            .context("Failed to parse update check file")?
-    };
+    let store = StateStore::open(&Config::get())?;
+    let update = store.update_check()?;
 
     if let Some(last_update_check) = update.last_update_check {
         if !force
@@ -62,22 +54,10 @@ pub async fn check_update(force: bool) -> anyhow::Result<String> {
     let response = response.json::<GithubApiRelease>().await?;
     let latest_version = response.tag_name.trim_start_matches('v');
 
-    if crate::utils::compare_semver(env!("CARGO_PKG_VERSION"), latest_version)
-        == Ordering::Less
-    {
-        let nanos = chrono::Utc::now().timestamp_nanos_opt().unwrap();
-        let pid = std::process::id();
-        let tmp_path =
-            path.with_extension(format!("tmp.{}-{}.json", pid, nanos));
-        let update = UpdateCheck {
-            last_update_check: Some(chrono::Utc::now()),
-            latest_version: Some(latest_version.to_owned()),
-        };
-        let contents = serde_json::to_string_pretty(&update)?;
-        // need to use tokio fs so the function actually waits for the file to be written
-        tokio::fs::write(&tmp_path, contents).await?;
-        tokio::fs::rename(&tmp_path, &path).await?;
-    }
+    store.save_update_check(&UpdateCheck {
+        last_update_check: Some(chrono::Utc::now()),
+        latest_version: Some(latest_version.to_owned()),
+    })?;
 
     Ok(latest_version.to_string())
 }

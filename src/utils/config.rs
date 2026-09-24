@@ -12,7 +12,7 @@ use colored::Colorize;
 use envx_sdk::apis::configuration::Configuration;
 use home::home_dir;
 use serde::{Deserialize, Serialize};
-use std::fs::{self, File, OpenOptions};
+use std::fs::{self, OpenOptions};
 use std::io::{BufWriter, Write};
 use std::path::PathBuf;
 use url::Url;
@@ -21,6 +21,8 @@ use url::Url;
 pub struct Config {
     /// TODO: rethink Salting hashes
     pub salt: String,
+    #[serde(skip)]
+    original: Option<serde_json::Value>,
     /// The fingerprint of the primary signing key
     pub primary_key: Option<Key>,
     /// Custom URL for the SDK
@@ -28,6 +30,7 @@ pub struct Config {
     /// Settings that apply to all environments
     pub settings: Option<Settings>,
     /// Projects
+    #[serde(default)]
     pub projects: Vec<Project>,
     /// Password for the primary key
     pub primary_key_password: Option<String>,
@@ -62,6 +65,7 @@ impl Default for Config {
         let salt = hex::encode(rand::random::<[u8; 32]>());
         Self {
             salt,
+            original: None,
             primary_key: None,
             sdk_url: Some("https://api.envx.sh".into()),
             settings: None,
@@ -74,7 +78,7 @@ impl Default for Config {
 
 impl Config {
     pub fn get() -> Self {
-        Config::priv_get().unwrap()
+        Config::load().unwrap()
     }
 
     pub fn sdk_url(&self) -> Result<Url> {
@@ -82,10 +86,7 @@ impl Config {
         if dev_mode {
             return Ok(Url::parse("http://localhost:3000")?);
         }
-        let url = Config::get()
-            .sdk_url
-            .clone()
-            .unwrap_or("https://api.envx.sh".into());
+        let url = self.sdk_url.clone().unwrap_or("https://api.envx.sh".into());
         let url = Url::parse(&url)?;
         Ok(url)
     }
@@ -104,29 +105,45 @@ impl Config {
         Ok(configuration)
     }
 
-    fn priv_get() -> Result<Self> {
+    pub fn load() -> Result<Self> {
         let path =
             get_config_file_path().context("Failed to get config path")?;
         let contents =
             fs::read_to_string(path).context("Failed to read config file")?;
 
-        let out = serde_json::from_str::<Config>(&contents)
-            .context("Failed to parse config file");
-
-        match out {
-            Ok(c) => Ok(c),
-            Err(e) => {
-                if std::env::var("ENVX_DEBUG").is_ok() {
-                    println!("Failed to parse config file: {}", e);
-                    println!("Contents: {}", contents);
-                };
-                Err(e)
-            }
-        }
+        let mut config = Self::decode(&contents)?;
+        config.original = Some(serde_json::to_value(&config)?);
+        config.projects =
+            super::state::StateStore::open(&config)?.projects()?;
+        Ok(config)
     }
 
-    // NEVER call this function EVER
-    pub fn write(&self) -> Result<()> {
+    pub fn decode(contents: &str) -> Result<Self> {
+        let mut value: serde_json::Value = serde_json::from_str(contents)
+            .context("Failed to parse config file")?;
+        // v2.0 stored a fingerprint plus a keys array; later releases store Key.
+        if let Some(fingerprint) = value
+            .get("primary_key")
+            .and_then(|v| v.as_str())
+            .map(str::to_owned)
+        {
+            let key = if fingerprint.is_empty() {
+                serde_json::Value::Null
+            } else {
+                value.get("keys").and_then(|v| v.as_array())
+                    .and_then(|keys| keys.iter().find(|key| key.get("fingerprint").and_then(|v| v.as_str()) == Some(&fingerprint)))
+                    .cloned().context("Legacy primary key is missing from keys; original config preserved")?
+            };
+            value["primary_key"] = key;
+        }
+        let config: Config = serde_json::from_value(value)
+            .context("Failed to parse config file")?;
+        Ok(config)
+    }
+
+    pub fn write(&mut self) -> Result<()> {
+        let mut store = super::state::StateStore::open(self)?;
+        let _guard = store.lock_settings()?;
         let path =
             get_config_file_path().context("Failed to get config path")?;
 
@@ -137,11 +154,38 @@ impl Config {
         temp_path.set_extension(format!("tmp.{}-{}.json", pid, nanos));
 
         // Serialize to JSON
-        let contents = serde_json::to_string_pretty(self)
-            .context("Failed to serialize config to JSON string")?;
+        // Preserve unknown fields and the legacy projects snapshot for downgrade
+        // recovery. Operational changes are only written through StateStore.
+        let original = fs::read_to_string(&path)?;
+        let mut merged: serde_json::Value = serde_json::from_str(&original)?;
+        let mut current = serde_json::to_value(&*self)?;
+        current
+            .as_object_mut()
+            .context("Invalid config")?
+            .remove("projects");
+        let mut baseline =
+            self.original.clone().unwrap_or(serde_json::Value::Null);
+        // Older profiles can omit the entire settings object. Compare against
+        // effective defaults so independent first settings edits still merge.
+        if baseline.get("settings").map_or(true, |v| v.is_null())
+            && current.get("settings").is_some_and(|v| v.is_object())
+        {
+            baseline["settings"] = serde_json::to_value(Settings::default())?;
+        }
+        merge_changed_fields(&mut merged, &current, &baseline);
+        if merged == serde_json::from_str::<serde_json::Value>(&original)? {
+            return Ok(());
+        }
+        let contents = serde_json::to_string_pretty(&merged)?;
 
         // Write to the temp file
-        let file = OpenOptions::new()
+        let mut options = OpenOptions::new();
+        #[cfg(unix)]
+        {
+            use std::os::unix::fs::OpenOptionsExt;
+            options.mode(0o600);
+        }
+        let file = options
             .write(true)
             // atomically create tmp file, panic if it already exists (should never happen)
             .create_new(true)
@@ -164,6 +208,7 @@ impl Config {
         // Atomically replace the old file
         fs::rename(&temp_path, &path)
             .context("Failed to atomically rename temp file")?;
+        self.original = Some(serde_json::to_value(&*self)?);
 
         Ok(())
     }
@@ -203,6 +248,15 @@ impl Config {
             path,
         };
 
+        super::state::StateStore::open(self)?.put(
+            "projects",
+            new_project
+                .path
+                .to_str()
+                .context("Project path is not UTF-8")?,
+            &new_project,
+        )?;
+        self.projects.retain(|p| p.path != new_project.path);
         self.projects.push(new_project);
         Ok(())
     }
@@ -220,6 +274,10 @@ impl Config {
             return Err(anyhow!("No project set in this directory".red()));
         }
 
+        super::state::StateStore::open(self)?.delete(
+            "projects",
+            path.to_str().context("Project path is not UTF-8")?,
+        )?;
         self.projects.retain(|p| p.path != path);
         Ok(matching)
     }
@@ -230,6 +288,15 @@ impl Config {
         }
         if !self.projects.iter().any(|p| p.project_id == *project_id) {
             return Err(anyhow!("Project not found".red()));
+        }
+        let store = super::state::StateStore::open(self)?;
+        for project in
+            self.projects.iter().filter(|p| p.project_id == project_id)
+        {
+            store.delete(
+                "projects",
+                project.path.to_str().context("Project path is not UTF-8")?,
+            )?;
         }
         self.projects.retain(|p| p.project_id != project_id);
         Ok(())
@@ -292,6 +359,33 @@ impl Config {
     }
 }
 
+fn merge_changed_fields(
+    existing: &mut serde_json::Value,
+    current: &serde_json::Value,
+    baseline: &serde_json::Value,
+) {
+    if current == baseline {
+        return;
+    }
+    if let Some(fields) = current.as_object() {
+        if !existing.is_object() {
+            *existing = if baseline.is_object() {
+                baseline.clone()
+            } else {
+                serde_json::json!({})
+            };
+        }
+        for (key, value) in fields {
+            let old = baseline.get(key).unwrap_or(&serde_json::Value::Null);
+            if old != value {
+                merge_changed_fields(&mut existing[key], value, old);
+            }
+        }
+    } else {
+        *existing = current.clone();
+    }
+}
+
 /// Get the configuration path ~/.config/envx/config.json
 pub fn get_config_file_path() -> Result<PathBuf> {
     let mut path = home_dir().context("Failed to get home directory")?;
@@ -303,8 +397,133 @@ pub fn get_config_file_path() -> Result<PathBuf> {
         let parent_path =
             path.parent().context("Failed to get parent directory")?;
         fs::create_dir_all(parent_path)?;
-        let mut file = File::create(&path)?;
+        let temp = parent_path.join(format!(
+            "config.init.{}.{}",
+            std::process::id(),
+            rand::random::<u64>()
+        ));
+        let mut options = OpenOptions::new();
+        options.write(true).create_new(true);
+        #[cfg(unix)]
+        {
+            use std::os::unix::fs::OpenOptionsExt;
+            options.mode(0o600);
+        }
+        let mut file = options.open(&temp)?;
         file.write_all(default.as_ref())?;
+        file.sync_all()?;
+        let published = fs::hard_link(&temp, &path);
+        fs::remove_file(&temp)?;
+        match published {
+            Ok(()) => {}
+            Err(e) if e.kind() == std::io::ErrorKind::AlreadyExists => {}
+            Err(e) => return Err(e.into()),
+        }
     }
     Ok(path)
+}
+
+#[cfg(test)]
+mod state_tests {
+    use super::*;
+
+    #[test]
+    fn concurrent_writer_worker() {
+        let Ok(field) = std::env::var("ENVX_TEST_WRITE_FIELD") else {
+            return;
+        };
+        let barrier =
+            PathBuf::from(std::env::var("ENVX_TEST_BARRIER").unwrap());
+        let mut config = Config::load().unwrap();
+        let mut settings = config.get_settings();
+        if field == "loud" {
+            settings.loud = Some(true);
+        } else {
+            settings.warn_on_short_passwords = true;
+        }
+        config.settings = Some(settings);
+        fs::write(barrier.join(&field), b"ready").unwrap();
+        while !barrier.join("go").exists() {
+            std::thread::sleep(std::time::Duration::from_millis(5));
+        }
+        config.write().unwrap();
+    }
+
+    #[test]
+    fn simultaneous_process_settings_edits_merge() {
+        let home = tempfile::tempdir().unwrap();
+        let barrier = tempfile::tempdir().unwrap();
+        let executable = std::env::current_exe().unwrap();
+        let mut children = Vec::new();
+        for field in ["loud", "warn"] {
+            children.push(
+                std::process::Command::new(&executable)
+                    .args([
+                        "--exact",
+                        "utils::config::state_tests::concurrent_writer_worker",
+                        "--test-threads=1",
+                    ])
+                    .env("HOME", home.path())
+                    .env("ENVX_TEST_WRITE_FIELD", field)
+                    .env("ENVX_TEST_BARRIER", barrier.path())
+                    .spawn()
+                    .unwrap(),
+            );
+        }
+        let deadline =
+            std::time::Instant::now() + std::time::Duration::from_secs(10);
+        while !barrier.path().join("loud").exists()
+            || !barrier.path().join("warn").exists()
+        {
+            assert!(
+                std::time::Instant::now() < deadline,
+                "writer failed to reach barrier"
+            );
+            std::thread::sleep(std::time::Duration::from_millis(5));
+        }
+        fs::write(barrier.path().join("go"), b"go").unwrap();
+        for mut child in children {
+            assert!(child.wait().unwrap().success());
+        }
+        let config = Config::decode(
+            &fs::read_to_string(home.path().join(".config/envx/config.json"))
+                .unwrap(),
+        )
+        .unwrap();
+        assert!(config.get_settings().is_loud());
+        assert!(config.get_settings().warn_on_short_passwords);
+    }
+
+    #[test]
+    fn unchanged_loaded_config_does_not_overwrite_concurrent_settings() {
+        let mut config = Config::load().unwrap();
+        let path = get_config_file_path().unwrap();
+        let mut value: serde_json::Value =
+            serde_json::from_slice(&fs::read(&path).unwrap()).unwrap();
+        value["unknown_setting"] = serde_json::json!({"keep": true});
+        value["sdk_url"] = serde_json::json!("https://changed.example");
+        let bytes = serde_json::to_vec(&value).unwrap();
+        fs::write(&path, &bytes).unwrap();
+        config.write().unwrap();
+        assert_eq!(fs::read(&path).unwrap(), bytes);
+    }
+
+    #[test]
+    fn settings_write_keeps_unknown_fields_and_private_permissions() {
+        let mut config = Config::load().unwrap();
+        config.primary_key_password = Some("synthetic-test-secret".into());
+        config.write().unwrap();
+        let path = get_config_file_path().unwrap();
+        #[cfg(unix)]
+        {
+            use std::os::unix::fs::PermissionsExt;
+            assert_eq!(
+                fs::metadata(&path).unwrap().permissions().mode() & 0o777,
+                0o600
+            );
+        }
+        config.primary_key_password = None;
+        config.write().unwrap();
+        assert!(Config::load().unwrap().primary_key_password.is_none());
+    }
 }
