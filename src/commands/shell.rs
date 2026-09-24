@@ -168,11 +168,26 @@ export PS1="(envx:${ENVX_SHORT}) $PS1"
         let zshrc = temp_dir.path.join(".zshrc");
         std::fs::write(
             &zshrc,
-            r#"[ -f "${ENVX_ORIG_ZDOTDIR:-$HOME}/.zshrc" ] && . "${ENVX_ORIG_ZDOTDIR:-$HOME}/.zshrc"
+            r#"if [ "$ENVX_ORIG_ZDOTDIR_SET" = 1 ]; then
+    export ZDOTDIR="$ENVX_ORIG_ZDOTDIR"
+else
+    unset ZDOTDIR
+fi
+unset ENVX_ORIG_ZDOTDIR ENVX_ORIG_ZDOTDIR_SET
+[ -f "${ZDOTDIR:-$HOME}/.zshrc" ] && . "${ZDOTDIR:-$HOME}/.zshrc"
 PROMPT="(envx:${ENVX_SHORT}) $PROMPT"
 "#,
         )
         .context("Failed to write envx zshrc")?;
+        env.insert(
+            "ENVX_ORIG_ZDOTDIR_SET".to_owned(),
+            if std::env::var_os("ZDOTDIR").is_some() {
+                "1"
+            } else {
+                "0"
+            }
+            .to_owned(),
+        );
         let orig_zdotdir = std::env::var("ZDOTDIR")
             .or_else(|_| std::env::var("HOME"))
             .unwrap_or_default();
@@ -383,7 +398,7 @@ mod tests {
         let zdotdir = setup.env.get("ZDOTDIR").unwrap();
         let zshrc = PathBuf::from(zdotdir).join(".zshrc");
         let contents = std::fs::read_to_string(zshrc).unwrap();
-        assert!(contents.contains(r#"${ENVX_ORIG_ZDOTDIR:-$HOME}/.zshrc"#));
+        assert!(contents.contains(r#"${ZDOTDIR:-$HOME}/.zshrc"#));
         assert!(contents.contains(r#"PROMPT="(envx:${ENVX_SHORT}) $PROMPT""#));
     }
 

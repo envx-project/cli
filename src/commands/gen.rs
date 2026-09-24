@@ -125,12 +125,32 @@ pub async fn command(args: Args, config: &mut Config) -> Result<()> {
 
     let key_dir = get_vault_location()?.join(fingerprint.clone());
 
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::{DirBuilderExt, PermissionsExt};
+        fs::DirBuilder::new()
+            .recursive(true)
+            .mode(0o700)
+            .create(&key_dir)
+            .context("Failed to create key directory")?;
+        fs::set_permissions(&key_dir, fs::Permissions::from_mode(0o700))?;
+    }
+    #[cfg(not(unix))]
     fs::create_dir_all(&key_dir).context("Failed to create key directory")?;
 
-    fs::write(key_dir.join("private.key"), &priv_key)
-        .expect("Failed to write private key to file");
+    let mut options = fs::OpenOptions::new();
+    options.write(true).create_new(true);
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::OpenOptionsExt;
+        options.mode(0o600);
+    }
+    let mut file = options
+        .open(key_dir.join("private.key"))
+        .context("Failed to create private key file")?;
+    std::io::Write::write_all(&mut file, priv_key.as_bytes())?;
     fs::write(key_dir.join("public.key"), &pub_key)
-        .expect("Failed to write public key to file");
+        .context("Failed to write public key to file")?;
 
     let uuid = if !args.no_upload {
         match SDK::new_user(&username, &pub_key).await {

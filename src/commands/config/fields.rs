@@ -103,7 +103,7 @@ pub fn current_display(config: &Config, field: &Field) -> String {
             None => "<unset>".to_string(),
         },
         "primary_key_command" => match &config.primary_key_command {
-            Some(cmd) => cmd.join(" "),
+            Some(_) => "<set>".to_owned(),
             None => "<unset>".to_string(),
         },
         "settings.warn_on_short_passwords" => config
@@ -133,12 +133,14 @@ pub fn current_display(config: &Config, field: &Field) -> String {
 pub fn current_json(config: &Config, field: &Field) -> serde_json::Value {
     match field.path {
         "sdk_url" => serde_json::to_value(&config.sdk_url).unwrap(),
-        "primary_key_password" => {
-            serde_json::to_value(&config.primary_key_password).unwrap()
-        }
-        "primary_key_command" => {
-            serde_json::to_value(&config.primary_key_command).unwrap()
-        }
+        "primary_key_password" => serde_json::to_value(
+            config.primary_key_password.as_ref().map(|_| "<redacted>"),
+        )
+        .unwrap(),
+        "primary_key_command" => serde_json::to_value(
+            config.primary_key_command.as_ref().map(|_| "<redacted>"),
+        )
+        .unwrap(),
         "settings.warn_on_short_passwords" => serde_json::Value::Bool(
             config
                 .settings

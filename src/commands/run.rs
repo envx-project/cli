@@ -79,10 +79,39 @@ pub async fn command(args: Args, config: &mut Config) -> Result<()> {
         .status()
         .await?;
 
-    if let Some(code) = exit_status.code() {
-        // If there is an exit code (process not terminated by signal), exit with that code
-        std::process::exit(code);
-    }
+    std::process::exit(child_exit_code(exit_status));
+}
 
-    Ok(())
+fn child_exit_code(status: std::process::ExitStatus) -> i32 {
+    if let Some(code) = status.code() {
+        return code;
+    }
+    #[cfg(unix)]
+    {
+        use std::os::unix::process::ExitStatusExt;
+        if let Some(signal) = status.signal() {
+            return 128 + signal;
+        }
+    }
+    1
+}
+
+#[cfg(all(test, unix))]
+mod tests {
+    use super::*;
+    use std::os::unix::process::ExitStatusExt;
+
+    #[test]
+    fn preserves_exit_codes_and_signal_failures() {
+        assert_eq!(child_exit_code(std::process::ExitStatus::from_raw(0)), 0);
+        assert_eq!(
+            child_exit_code(std::process::ExitStatus::from_raw(7 << 8)),
+            7
+        );
+        assert_eq!(
+            child_exit_code(std::process::ExitStatus::from_raw(15)),
+            143
+        );
+        assert_eq!(child_exit_code(std::process::ExitStatus::from_raw(2)), 130);
+    }
 }

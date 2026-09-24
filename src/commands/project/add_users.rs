@@ -104,10 +104,11 @@ pub async fn command(args: Args, config: &mut Config) -> Result<()> {
 
     let res = client
         .post(url)
-        .header(header::AUTHORIZATION, format!("Bearer {}", auth_token))
+        .header(header::AUTHORIZATION, auth_token)
         .json(&body)
         .send()
         .await?
+        .error_for_status()?
         .json::<Vec<String>>()
         .await?;
 

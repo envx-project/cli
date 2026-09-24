@@ -30,7 +30,7 @@ pub struct Args {
 
     /// User ID to add to project
     #[arg(short, long)]
-    user_id: Option<String>,
+    user_id: Option<uuid::Uuid>,
 
     /// Skip confirmation prompt
     #[arg(short, long)]
@@ -61,6 +61,7 @@ pub async fn command(args: Args, config: &mut Config) -> anyhow::Result<()> {
 
     let (selected, selected_ids) = match args.user_id {
         Some(uid) => {
+            let uid = uid.to_string();
             let user = project_info
                 .users
                 .clone()
@@ -158,10 +159,11 @@ pub async fn command(args: Args, config: &mut Config) -> anyhow::Result<()> {
 
     let res = client
         .post(url)
-        .header(header::AUTHORIZATION, format!("Bearer {}", auth_token))
+        .header(header::AUTHORIZATION, auth_token)
         .json(&body)
         .send()
         .await?
+        .error_for_status()?
         .json::<Vec<String>>()
         .await?;
 
@@ -191,4 +193,20 @@ pub async fn command(args: Args, config: &mut Config) -> anyhow::Result<()> {
     }
 
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn rejects_invalid_user_id_before_loading_identity() {
+        assert!(Args::try_parse_from([
+            "remove-user",
+            "--user-id",
+            "not-a-uuid",
+            "--yes"
+        ])
+        .is_err());
+    }
 }
