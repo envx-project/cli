@@ -29,8 +29,8 @@ pub async fn command(_args: Args, config: &mut Config) -> Result<()> {
     let nanos = Utc::now().timestamp_nanos_opt().unwrap();
     let pid = std::process::id();
     temp_path.set_extension(format!("edit.{}-{}.json", pid, nanos));
-    fs::write(&temp_path, &original)
-        .context("Failed to write temp edit buffer")?;
+    write_private_buffer(&temp_path, &original)?;
+    let _cleanup = EditBuffer(temp_path.clone());
 
     loop {
         let status = Command::new(&editor)
@@ -69,5 +69,49 @@ pub async fn command(_args: Args, config: &mut Config) -> Result<()> {
                 }
             }
         }
+    }
+}
+
+struct EditBuffer(std::path::PathBuf);
+impl Drop for EditBuffer {
+    fn drop(&mut self) {
+        let _ = fs::remove_file(&self.0);
+    }
+}
+
+fn write_private_buffer(path: &std::path::Path, contents: &str) -> Result<()> {
+    use std::io::Write;
+    let mut options = fs::OpenOptions::new();
+    options.write(true).create_new(true);
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::OpenOptionsExt;
+        options.mode(0o600);
+    }
+    options
+        .open(path)
+        .context("Failed to create private edit buffer")?
+        .write_all(contents.as_bytes())
+        .context("Failed to write edit buffer")?;
+    Ok(())
+}
+
+#[cfg(all(test, unix))]
+mod tests {
+    use super::*;
+    use std::os::unix::fs::PermissionsExt;
+    #[test]
+    fn edit_buffer_is_private_and_cannot_overwrite_existing_files() {
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("edit.json");
+        write_private_buffer(&path, "secret").unwrap();
+        assert_eq!(
+            fs::metadata(&path).unwrap().permissions().mode() & 0o777,
+            0o600
+        );
+        assert!(write_private_buffer(&path, "replacement").is_err());
+        assert_eq!(fs::read_to_string(&path).unwrap(), "secret");
+        drop(EditBuffer(path.clone()));
+        assert!(!path.exists());
     }
 }
