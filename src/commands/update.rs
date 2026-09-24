@@ -20,7 +20,7 @@ pub async fn command(_args: Args, _config: &mut Config) -> Result<()> {
     eprintln!("Self-update is not supported on Windows");
     eprintln!("Read the installation instructions at https://github.com/envx-project/cli/blob/main/windows-installation.md");
 
-    Ok(())
+    bail!("Self-update is not supported on Windows")
 }
 
 #[derive(Default, serde::Serialize, serde::Deserialize)]
@@ -34,7 +34,7 @@ struct GithubApiRelease {
 }
 
 pub async fn check_update(force: bool) -> anyhow::Result<String> {
-    let store = StateStore::open(&Config::get())?;
+    let store = StateStore::open(&Config::load()?)?;
     let update = store.update_check()?;
 
     if let Some(last_update_check) = update.last_update_check {
@@ -45,12 +45,16 @@ pub async fn check_update(force: bool) -> anyhow::Result<String> {
         }
     }
 
-    let client = reqwest::Client::new();
+    let client = reqwest::Client::builder()
+        .connect_timeout(std::time::Duration::from_secs(3))
+        .timeout(std::time::Duration::from_secs(5))
+        .build()?;
     let response = client
         .get("https://api.github.com/repos/envx-project/cli/releases/latest")
         .header("User-Agent", "envx")
         .send()
-        .await?;
+        .await?
+        .error_for_status()?;
     let response = response.json::<GithubApiRelease>().await?;
     let latest_version = response.tag_name.trim_start_matches('v');
 
@@ -83,21 +87,50 @@ pub async fn command(_args: Args, _config: &mut Config) -> Result<()> {
         return Ok(());
     }
 
+    // Fetch separately so a download failure cannot be hidden by a successful shell.
+    let script = reqwest::Client::builder()
+        .connect_timeout(std::time::Duration::from_secs(3))
+        .timeout(std::time::Duration::from_secs(15))
+        .build()?
+        .get("https://get.envx.sh")
+        .send()
+        .await?
+        .error_for_status()?
+        .text()
+        .await?;
+    run_installer(&script).await
+}
+
+#[cfg(not(target_os = "windows"))]
+async fn run_installer(script: &str) -> Result<()> {
+    use tokio::io::AsyncWriteExt;
     let mut output = tokio::process::Command::new("sh")
-        .arg("-c")
-        .arg("curl -fsSL https://get.envx.sh | sh")
         .stdout(Stdio::inherit())
         .stderr(Stdio::inherit())
-        .stdin(Stdio::inherit())
+        .stdin(Stdio::piped())
         .spawn()?;
 
+    let mut stdin =
+        output.stdin.take().context("Installer stdin unavailable")?;
+    stdin.write_all(script.as_bytes()).await?;
+    drop(stdin);
     let status = output.wait().await?;
 
     if status.success() {
         println!("Command executed successfully.");
     } else {
-        eprintln!("Command failed with status: {:?}", status);
+        bail!("Update command failed with status: {}", status);
     }
 
     Ok(())
+}
+
+#[cfg(all(test, not(target_os = "windows")))]
+mod tests {
+    use super::*;
+    #[tokio::test]
+    async fn installer_failure_is_a_command_failure() {
+        assert!(run_installer("exit 23\n").await.is_err());
+        assert!(run_installer("exit 0\n").await.is_ok());
+    }
 }
