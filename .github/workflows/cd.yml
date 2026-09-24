@@ -138,6 +138,18 @@ jobs:
           tar czvf ../../../envx-${{ needs.release-please.outputs.envx_version }}-${{ matrix.target }}.tar.gz envx
           cd -
 
+      - name: Create release SHA256 sidecars
+        shell: bash
+        run: |
+          for archive in envx-${{ needs.release-please.outputs.envx_version }}-${{ matrix.target }}.*; do
+            case "$archive" in *.tar.gz|*.zip) ;; *) continue ;; esac
+            if command -v sha256sum >/dev/null 2>&1; then
+              sha256sum "$archive" > "$archive.sha256"
+            else
+              shasum -a 256 "$archive" > "$archive.sha256"
+            fi
+          done
+
       - name: Upload release archive
         uses: softprops/action-gh-release@v1
         env:
