@@ -3,7 +3,6 @@ use crate::utils::{
     config::Config,
     messaging::{self, Client, Message},
     messaging_crypto::{self as crypto, Envelope, Payload},
-    prompt::prompt_password,
 };
 use reqwest::Method;
 use serde_json::{json, Value};
@@ -16,6 +15,7 @@ use std::{
 /// Send a signed, encrypted secret to a friend; values never go in arguments
 #[derive(Parser, Debug)]
 pub struct Args {
+    #[arg(required_unless_present = "retry")]
     pub friend: Option<String>,
     #[arg(long, conflicts_with = "stdin")]
     pub file: Option<PathBuf>,
@@ -138,7 +138,14 @@ fn input(file: Option<PathBuf>, stdin: bool) -> Result<String> {
             .take(65537)
             .read_to_end(&mut bytes)?;
     } else {
-        return prompt_password("Secret: ");
+        return inquire::Password::new("Secret:")
+            .without_confirmation()
+            .with_render_config(crate::utils::prompt::get_render_config())
+            .with_help_message(
+                "Hidden input. Use --stdin or --file for multiline secrets.",
+            )
+            .prompt()
+            .context("Failed to read secret");
     }
     if bytes.len() > 65536 {
         anyhow::bail!("Secret input exceeds 64 KiB");
