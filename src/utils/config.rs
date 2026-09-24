@@ -142,6 +142,8 @@ impl Config {
     }
 
     pub fn write(&mut self) -> Result<()> {
+        let mut store = super::state::StateStore::open(self)?;
+        let _guard = store.lock_settings()?;
         let path =
             get_config_file_path().context("Failed to get config path")?;
 
@@ -161,11 +163,16 @@ impl Config {
             .as_object_mut()
             .context("Invalid config")?
             .remove("projects");
-        for (key, value) in current.as_object().context("Invalid config")? {
-            if self.original.as_ref().and_then(|v| v.get(key)) != Some(value) {
-                merged[key] = value.clone();
-            }
+        let mut baseline =
+            self.original.clone().unwrap_or(serde_json::Value::Null);
+        // Older profiles can omit the entire settings object. Compare against
+        // effective defaults so independent first settings edits still merge.
+        if baseline.get("settings").map_or(true, |v| v.is_null())
+            && current.get("settings").is_some_and(|v| v.is_object())
+        {
+            baseline["settings"] = serde_json::to_value(Settings::default())?;
         }
+        merge_changed_fields(&mut merged, &current, &baseline);
         if merged == serde_json::from_str::<serde_json::Value>(&original)? {
             return Ok(());
         }
@@ -352,6 +359,33 @@ impl Config {
     }
 }
 
+fn merge_changed_fields(
+    existing: &mut serde_json::Value,
+    current: &serde_json::Value,
+    baseline: &serde_json::Value,
+) {
+    if current == baseline {
+        return;
+    }
+    if let Some(fields) = current.as_object() {
+        if !existing.is_object() {
+            *existing = if baseline.is_object() {
+                baseline.clone()
+            } else {
+                serde_json::json!({})
+            };
+        }
+        for (key, value) in fields {
+            let old = baseline.get(key).unwrap_or(&serde_json::Value::Null);
+            if old != value {
+                merge_changed_fields(&mut existing[key], value, old);
+            }
+        }
+    } else {
+        *existing = current.clone();
+    }
+}
+
 /// Get the configuration path ~/.config/envx/config.json
 pub fn get_config_file_path() -> Result<PathBuf> {
     let mut path = home_dir().context("Failed to get home directory")?;
@@ -392,6 +426,73 @@ pub fn get_config_file_path() -> Result<PathBuf> {
 #[cfg(test)]
 mod state_tests {
     use super::*;
+
+    #[test]
+    fn concurrent_writer_worker() {
+        let Ok(field) = std::env::var("ENVX_TEST_WRITE_FIELD") else {
+            return;
+        };
+        let barrier =
+            PathBuf::from(std::env::var("ENVX_TEST_BARRIER").unwrap());
+        let mut config = Config::load().unwrap();
+        let mut settings = config.get_settings();
+        if field == "loud" {
+            settings.loud = Some(true);
+        } else {
+            settings.warn_on_short_passwords = true;
+        }
+        config.settings = Some(settings);
+        fs::write(barrier.join(&field), b"ready").unwrap();
+        while !barrier.join("go").exists() {
+            std::thread::sleep(std::time::Duration::from_millis(5));
+        }
+        config.write().unwrap();
+    }
+
+    #[test]
+    fn simultaneous_process_settings_edits_merge() {
+        let home = tempfile::tempdir().unwrap();
+        let barrier = tempfile::tempdir().unwrap();
+        let executable = std::env::current_exe().unwrap();
+        let mut children = Vec::new();
+        for field in ["loud", "warn"] {
+            children.push(
+                std::process::Command::new(&executable)
+                    .args([
+                        "--exact",
+                        "utils::config::state_tests::concurrent_writer_worker",
+                        "--test-threads=1",
+                    ])
+                    .env("HOME", home.path())
+                    .env("ENVX_TEST_WRITE_FIELD", field)
+                    .env("ENVX_TEST_BARRIER", barrier.path())
+                    .spawn()
+                    .unwrap(),
+            );
+        }
+        let deadline =
+            std::time::Instant::now() + std::time::Duration::from_secs(10);
+        while !barrier.path().join("loud").exists()
+            || !barrier.path().join("warn").exists()
+        {
+            assert!(
+                std::time::Instant::now() < deadline,
+                "writer failed to reach barrier"
+            );
+            std::thread::sleep(std::time::Duration::from_millis(5));
+        }
+        fs::write(barrier.path().join("go"), b"go").unwrap();
+        for mut child in children {
+            assert!(child.wait().unwrap().success());
+        }
+        let config = Config::decode(
+            &fs::read_to_string(home.path().join(".config/envx/config.json"))
+                .unwrap(),
+        )
+        .unwrap();
+        assert!(config.get_settings().is_loud());
+        assert!(config.get_settings().warn_on_short_passwords);
+    }
 
     #[test]
     fn unchanged_loaded_config_does_not_overwrite_concurrent_settings() {

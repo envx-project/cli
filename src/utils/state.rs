@@ -7,6 +7,10 @@ use std::{fs, path::Path, time::Duration};
 
 const SCHEMA_VERSION: i64 = 1;
 
+pub struct SettingsWriteGuard<'a> {
+    _transaction: rusqlite::Transaction<'a>,
+}
+
 pub struct StateStore {
     conn: Connection,
     scope: String,
@@ -136,13 +140,31 @@ impl StateStore {
             .as_ref()
             .map(|k| k.fingerprint.to_lowercase())
             .unwrap_or_else(|| "anonymous".into());
-        format!("{}|{}", url.as_str().trim_end_matches('/'), fingerprint)
+        let account = config
+            .primary_key
+            .as_ref()
+            .and_then(|key| key.uuid.as_deref())
+            .unwrap_or("unregistered");
+        format!(
+            "{}|{}|{}",
+            url.as_str().trim_end_matches('/'),
+            account,
+            fingerprint
+        )
     }
 
     fn scope(config: &Config) -> Result<String> {
         let mut url = config.sdk_url()?;
         url.set_fragment(None);
         Ok(Self::scope_for(&url, config))
+    }
+
+    pub fn lock_settings(&mut self) -> Result<SettingsWriteGuard<'_>> {
+        Ok(SettingsWriteGuard {
+            _transaction: self
+                .conn
+                .transaction_with_behavior(TransactionBehavior::Immediate)?,
+        })
     }
 
     pub fn get<T: DeserializeOwned>(
@@ -341,6 +363,39 @@ mod tests {
             .get::<String>("pins", "friend")
             .unwrap()
             .is_some());
+    }
+
+    #[test]
+    fn account_scope_isolates_uuid_and_key_changes() {
+        let dir = tempfile::tempdir().unwrap();
+        let mut config = Config::default();
+        config.primary_key = Some(super::super::key::Key {
+            fingerprint: "ABC123".into(),
+            note: "test".into(),
+            primary_user_id: "test".into(),
+            pubkey_only: None,
+            uuid: None,
+        });
+        let first = StateStore::open_at(dir.path(), &config).unwrap();
+        first.put("pins", "friend", &"trusted").unwrap();
+        config.primary_key.as_mut().unwrap().uuid =
+            Some("registered-user".into());
+        assert!(StateStore::open_at(dir.path(), &config)
+            .unwrap()
+            .get::<String>("pins", "friend")
+            .unwrap()
+            .is_none());
+        config.primary_key.as_mut().unwrap().fingerprint = "different".into();
+        assert!(StateStore::open_at(dir.path(), &config)
+            .unwrap()
+            .get::<String>("pins", "friend")
+            .unwrap()
+            .is_none());
+        let expiry = std::time::SystemTime::now();
+        first.set_session_expiry("ABC123", Some(expiry)).unwrap();
+        assert_eq!(first.session_expiry("ABC123").unwrap(), Some(expiry));
+        first.set_session_expiry("ABC123", None).unwrap();
+        assert!(first.session_expiry("ABC123").unwrap().is_none());
     }
 
     #[test]
