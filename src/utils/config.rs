@@ -53,7 +53,7 @@ pub struct Config {
 // }
 //
 // TODO: add project name
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
 pub struct Project {
     // TODO: make this a UUID
     pub project_id: String,
@@ -82,12 +82,19 @@ impl Config {
     }
 
     pub fn sdk_url(&self) -> Result<Url> {
-        let dev_mode = std::env::var("DEV_MODE").is_ok();
-        if dev_mode {
-            return Ok(Url::parse("http://localhost:3000")?);
+        let url = Url::parse(
+            self.sdk_url.as_deref().unwrap_or("https://api.envx.sh"),
+        )
+        .context("Invalid configured API URL")?;
+        if !matches!(url.scheme(), "http" | "https")
+            || url.host_str().is_none()
+            || !url.username().is_empty()
+            || url.password().is_some()
+            || url.query().is_some()
+            || url.fragment().is_some()
+        {
+            bail!("API URL must use HTTP(S) with a host and no credentials, query, or fragment");
         }
-        let url = self.sdk_url.clone().unwrap_or("https://api.envx.sh".into());
-        let url = Url::parse(&url)?;
         Ok(url)
     }
 
@@ -139,6 +146,24 @@ impl Config {
         let config: Config = serde_json::from_value(value)
             .context("Failed to parse config file")?;
         Ok(config)
+    }
+
+    pub fn apply_edited(
+        &mut self,
+        mut edited: Self,
+        original: &str,
+    ) -> Result<()> {
+        let baseline = Self::decode(original)?;
+        if edited.projects != baseline.projects {
+            bail!("Project links are managed in SQLite; use `envx link` or `envx unlink` instead of editing projects in config.json");
+        }
+        // The editor opens the retained JSON snapshot, whose project list can
+        // differ from current SQLite links. Keep those live links, and diff
+        // settings against the exact buffer the user started editing.
+        edited.original = Some(serde_json::to_value(&baseline)?);
+        edited.projects = self.projects.clone();
+        *self = edited;
+        Ok(())
     }
 
     pub fn write(&mut self) -> Result<()> {
@@ -322,7 +347,7 @@ impl Config {
                 eprintln!("Failed to get password: {}", e);
                 let mut last_error = None;
                 for _ in 0..3 {
-                    println!("Enter password for key {}", key);
+                    eprintln!("Enter password for key {}", key);
                     let password = prompt_password("Password: ")?;
 
                     match key.verify_passphrase(&password) {
@@ -428,6 +453,37 @@ mod state_tests {
     use super::*;
 
     #[test]
+    fn editor_preserves_baseline_and_rejects_legacy_project_edits() {
+        let mut config = Config::load().unwrap();
+        let path = get_config_file_path().unwrap();
+        let original = fs::read_to_string(&path).unwrap();
+        let mut edited = Config::decode(&original).unwrap();
+        edited.settings = Some(Settings {
+            loud: Some(true),
+            ..edited.get_settings()
+        });
+        let mut concurrent: serde_json::Value =
+            serde_json::from_str(&original).unwrap();
+        concurrent["sdk_url"] =
+            serde_json::json!("https://editor-concurrent.example");
+        fs::write(&path, serde_json::to_vec(&concurrent).unwrap()).unwrap();
+        config.apply_edited(edited, &original).unwrap();
+        config.write().unwrap();
+        let loaded = Config::load().unwrap();
+        assert_eq!(
+            loaded.sdk_url.as_deref(),
+            Some("https://editor-concurrent.example")
+        );
+        assert!(loaded.get_settings().is_loud());
+        let mut edited = Config::decode(&original).unwrap();
+        edited.projects.push(Project {
+            project_id: "attempted-json-link".into(),
+            path: PathBuf::from("/project"),
+        });
+        assert!(config.apply_edited(edited, &original).is_err());
+    }
+
+    #[test]
     fn concurrent_writer_worker() {
         let Ok(field) = std::env::var("ENVX_TEST_WRITE_FIELD") else {
             return;
@@ -525,5 +581,31 @@ mod state_tests {
         config.primary_key_password = None;
         config.write().unwrap();
         assert!(Config::load().unwrap().primary_key_password.is_none());
+    }
+}
+
+#[cfg(test)]
+mod boundary_tests {
+    use super::*;
+    #[test]
+    fn configured_api_origin_never_falls_back() {
+        let mut config = Config::default();
+        for invalid in [
+            "not a URL",
+            "file:///tmp/api",
+            "https://user:password@example.com",
+            "https://example.com?token=x",
+            "https://example.com#fragment",
+        ] {
+            config.sdk_url = Some(invalid.into());
+            assert!(config.sdk_url().is_err());
+        }
+        config.sdk_url = Some("http://localhost:3000".into());
+        assert_eq!(
+            config.sdk_url().unwrap().as_str(),
+            "http://localhost:3000/"
+        );
+        config.sdk_url = Some("https://example.com".into());
+        assert_eq!(config.sdk_url().unwrap().as_str(), "https://example.com/");
     }
 }
