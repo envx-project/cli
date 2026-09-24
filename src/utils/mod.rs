@@ -13,6 +13,7 @@ pub mod loud;
 pub mod magic_variables;
 pub mod messaging;
 pub mod messaging_crypto;
+pub mod paths;
 pub mod project_snapshot;
 pub mod prompt;
 pub mod rpgp;

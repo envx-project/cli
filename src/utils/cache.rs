@@ -139,7 +139,7 @@ mod tests {
 
         let fingerprint = hex::encode(kp.public_key.fingerprint());
 
-        let key_dir = home::home_dir()
+        let key_dir = crate::utils::paths::home_dir()
             .unwrap()
             .join(".config/envx/keys")
             .join(&fingerprint);
@@ -246,7 +246,7 @@ mod tests {
         let kp2 = generate_key_pair("other-user", password2.clone()).unwrap();
 
         let fp2 = hex::encode(kp2.public_key.fingerprint());
-        let key_dir2 = home::home_dir()
+        let key_dir2 = crate::utils::paths::home_dir()
             .unwrap()
             .join(".config/envx/keys")
             .join(&fp2);

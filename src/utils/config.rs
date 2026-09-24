@@ -5,12 +5,12 @@ use crate::utils::prompt::prompt_password;
 
 use super::key::{Key, UnlockedKey};
 use super::settings::Settings;
+use crate::utils::paths::home_dir;
 use anyhow::anyhow;
 use anyhow::{bail, Context, Result};
 use chrono::Utc;
 use colored::Colorize;
 use envx_sdk::apis::configuration::Configuration;
-use home::home_dir;
 use serde::{Deserialize, Serialize};
 use std::fs::{self, OpenOptions};
 use std::io::{BufWriter, Write};
@@ -490,19 +490,22 @@ mod state_tests {
         };
         let barrier =
             PathBuf::from(std::env::var("ENVX_TEST_BARRIER").unwrap());
-        let mut config = Config::load().unwrap();
-        let mut settings = config.get_settings();
-        if field == "loud" {
-            settings.loud = Some(true);
-        } else {
-            settings.warn_on_short_passwords = true;
-        }
-        config.settings = Some(settings);
-        fs::write(barrier.join(&field), b"ready").unwrap();
-        while !barrier.join("go").exists() {
-            std::thread::sleep(std::time::Duration::from_millis(5));
-        }
-        config.write().unwrap();
+        let shared = PathBuf::from(std::env::var("ENVX_TEST_HOME").unwrap());
+        crate::utils::paths::with_test_home(&shared, || {
+            let mut config = Config::load().unwrap();
+            let mut settings = config.get_settings();
+            if field == "loud" {
+                settings.loud = Some(true);
+            } else {
+                settings.warn_on_short_passwords = true;
+            }
+            config.settings = Some(settings);
+            fs::write(barrier.join(&field), b"ready").unwrap();
+            while !barrier.join("go").exists() {
+                std::thread::sleep(std::time::Duration::from_millis(5));
+            }
+            config.write().unwrap();
+        });
     }
 
     #[test]
@@ -519,7 +522,7 @@ mod state_tests {
                         "utils::config::state_tests::concurrent_writer_worker",
                         "--test-threads=1",
                     ])
-                    .env("HOME", home.path())
+                    .env("ENVX_TEST_HOME", home.path())
                     .env("ENVX_TEST_WRITE_FIELD", field)
                     .env("ENVX_TEST_BARRIER", barrier.path())
                     .spawn()
