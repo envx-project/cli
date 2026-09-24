@@ -23,7 +23,7 @@ pub async fn command(args: Args, config: &mut Config) -> Result<()> {
 
     if let Some(id) = &key.uuid {
         let unlocked = config.unlocked_primary_key()?;
-        SDK::list_projects(&unlocked).await.context(
+        SDK::list_projects(config, &unlocked).await.context(
             "Existing identity could not authenticate; refusing to replace it",
         )?;
         println!("Already registered: {}", id);
@@ -43,7 +43,7 @@ pub async fn command(args: Args, config: &mut Config) -> Result<()> {
         }
     };
 
-    let id = SDK::new_user(&username, &key.public_key_str()?).await?;
+    let id = SDK::new_user(config, &username, &key.public_key_str()?).await?;
     println!("UUID: {}", &id);
 
     config.set_uuid(&key.fingerprint, &id)?;

@@ -14,7 +14,7 @@ pub async fn command(args: Args, config: &mut Config) -> Result<()> {
     let key = key.unlock(&password);
 
     let local_projects = config.projects.clone();
-    let remote_projects = SDK::list_projects(&key)
+    let remote_projects = SDK::list_projects(config, &key)
         .await
         .context("Failed to get projects from server".red())?;
 

@@ -36,10 +36,11 @@ pub async fn command(args: Args, config: &mut Config) -> Result<()> {
 
     let key = config.primary_key()?;
     let key = key.unlock(&config.primary_key_password()?);
-    let project_id = Choice::try_project(args.project_id, &key).await?;
+    let project_id = Choice::try_project(config, args.project_id, &key).await?;
 
     let mut kvpairs =
-        get_variables_magic(&project_id, &key, args.all, args.local).await?;
+        get_variables_magic(config, &project_id, &key, args.all, args.local)
+            .await?;
     if let Some(filter) = &args.filter {
         let re = Regex::new(filter)?;
         kvpairs.retain(|kv| re.is_match(&kv.key));

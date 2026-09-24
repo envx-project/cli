@@ -52,7 +52,7 @@ pub async fn command(args: Args, config: &mut Config) -> Result<()> {
     let key = config.primary_key()?;
     let key = key.unlock(&config.primary_key_password()?);
 
-    let project_id = Choice::try_project(args.project_id, &key).await?;
+    let project_id = Choice::try_project(config, args.project_id, &key).await?;
 
     if project_id.is_empty() {
         return Err(anyhow::anyhow!("No project ID provided"));
@@ -66,7 +66,8 @@ pub async fn command(args: Args, config: &mut Config) -> Result<()> {
     all_variables.insert("ENVX_PROJECT_LABEL".to_owned(), project_label);
 
     let variables =
-        get_variables_magic(&project_id, &key, false, args.local).await?;
+        get_variables_magic(config, &project_id, &key, false, args.local)
+            .await?;
 
     for variable in variables {
         all_variables.insert(variable.key, variable.value);

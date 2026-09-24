@@ -155,7 +155,7 @@ pub async fn command(args: Args, config: &mut Config) -> Result<()> {
         .context("Failed to write public key to file")?;
 
     let uuid = if !args.no_upload {
-        match SDK::new_user(&username, &pub_key).await {
+        match SDK::new_user(config, &username, &pub_key).await {
             Ok(id) => {
                 if !args.json {
                     println!("User ID: {}", id);
@@ -219,11 +219,11 @@ pub async fn command(args: Args, config: &mut Config) -> Result<()> {
         }
     }
 
-    config.primary_key = Some(key);
-
-    if let Err(e) = cache::wipe_all_caches() {
+    // Clear the previous account's cache before switching the captured account.
+    if let Err(e) = cache::wipe_all_caches(config) {
         eprintln!("warning: failed to clear variable cache: {}", e);
     }
+    config.primary_key = Some(key);
 
     loud::say(
         config,

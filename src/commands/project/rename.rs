@@ -22,7 +22,7 @@ pub async fn command(args: Args, config: &mut Config) -> Result<()> {
     let key = config.primary_key()?;
     let key = key.unlock(&config.primary_key_password()?);
 
-    let project_id = Choice::try_project(args.project_id, &key).await?;
+    let project_id = Choice::try_project(config, args.project_id, &key).await?;
     let new_name = match args.name {
         Some(n) => n,
         None => {

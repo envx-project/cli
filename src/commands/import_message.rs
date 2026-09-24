@@ -43,8 +43,9 @@ pub async fn command(args: Args, config: &mut Config) -> Result<()> {
     {
         anyhow::bail!("Message contains no variables or an invalid environment variable name");
     }
-    let project_id = Choice::try_project(args.project_id, &client.key).await?;
-    let existing = SDK::get_variables(&project_id, &client.key).await?;
+    let project_id =
+        Choice::try_project(config, args.project_id, &client.key).await?;
+    let existing = SDK::get_variables(config, &project_id, &client.key).await?;
     let mut replace_ids = Vec::new();
     let mut conflicts = Vec::new();
     for variable in &existing {
@@ -93,9 +94,16 @@ pub async fn command(args: Args, config: &mut Config) -> Result<()> {
         .into_iter()
         .map(|(key, value)| KVPair::new(key, value))
         .collect();
-    let ids = SDK::replace_many(values, &project_id, &client.key, replace_ids)
-        .await?;
-    if let Err(error) = crate::utils::cache::wipe_cache_for_project(&project_id)
+    let ids = SDK::replace_many(
+        config,
+        values,
+        &project_id,
+        &client.key,
+        replace_ids,
+    )
+    .await?;
+    if let Err(error) =
+        crate::utils::cache::wipe_cache_for_project(config, &project_id)
     {
         eprintln!("Import succeeded, but invalidating the local cache failed: {error}");
     }

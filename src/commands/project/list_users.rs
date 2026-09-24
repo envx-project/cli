@@ -28,8 +28,8 @@ pub async fn command(args: Args, config: &mut Config) -> Result<()> {
     let key = config.primary_key()?;
     let password = config.primary_key_password()?;
     let key = key.unlock(&password);
-    let project_id = Choice::try_project(args.project_id, &key).await?;
-    let project_info = SDK::get_project_info(&project_id, &key).await?;
+    let project_id = Choice::try_project(config, args.project_id, &key).await?;
+    let project_info = SDK::get_project_info(config, &project_id, &key).await?;
 
     if args.json && args.all {
         println!("{}", serde_json::to_string(&project_info.users)?);

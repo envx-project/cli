@@ -18,15 +18,19 @@ use serde_json::json;
 use url::Url;
 use utils::variable::DeDupe;
 
-pub fn api_url() -> Result<Url> {
-    Config::load()?.sdk_url()
+pub fn api_url(config: &Config) -> Result<Url> {
+    config.sdk_url()
 }
 
 #[allow(clippy::upper_case_acronyms)]
 pub(crate) struct SDK {}
 impl SDK {
     // TODO: remove username entirely
-    pub async fn new_user(username: &str, public_key: &str) -> Result<String> {
+    pub async fn new_user(
+        config: &Config,
+        username: &str,
+        public_key: &str,
+    ) -> Result<String> {
         let client = reqwest::Client::new();
 
         let body = json!({
@@ -34,7 +38,7 @@ impl SDK {
             "public_key": public_key
         });
 
-        let url = api_url()?.join("/user/new")?;
+        let url = api_url(config)?.join("/user/new")?;
         let response = client
             .post(url)
             .json(&body)
@@ -46,13 +50,14 @@ impl SDK {
     }
 
     pub async fn get_project_info(
+        config: &Config,
         project_id: &str,
         key: &UnlockedKey,
     ) -> Result<ProjectInfo> {
         // GET /v2/project/:id
         let client = reqwest::Client::new();
 
-        let url = api_url()?.join("v2/project/")?.join(project_id)?;
+        let url = api_url(config)?.join("v2/project/")?.join(project_id)?;
 
         let project_info = client
             .get(url)
@@ -69,6 +74,7 @@ impl SDK {
     }
 
     pub async fn replace_many(
+        config: &Config,
         kvpairs: Vec<KVPair>,
         project_id: &str,
         key: &UnlockedKey,
@@ -76,7 +82,8 @@ impl SDK {
     ) -> Result<Vec<String>> {
         let client = reqwest::Client::new();
 
-        let project_info = Self::get_project_info(project_id, key).await?;
+        let project_info =
+            Self::get_project_info(config, project_id, key).await?;
 
         let recipients = project_info
             .users
@@ -110,7 +117,7 @@ impl SDK {
         } else {
             "/variables/replace-many"
         };
-        let url = api_url()?.join(endpoint)?;
+        let url = api_url(config)?.join(endpoint)?;
 
         let res = client
             .post(url)
@@ -133,11 +140,12 @@ impl SDK {
     }
 
     pub async fn get_all_variables(
+        config: &Config,
         key: &UnlockedKey,
     ) -> Result<Vec<DecryptedVariable>> {
         let client = reqwest::Client::new();
 
-        let mut url = api_url()?;
+        let mut url = api_url(config)?;
         url.set_path(&format!(
             "/user/{}/variables",
             key.key
@@ -188,14 +196,15 @@ impl SDK {
 
     /// You're probably looking for `get_variables_pruned` instead
     pub async fn get_variables(
+        config: &Config,
         project_id: &str,
         key: &UnlockedKey,
     ) -> Result<Vec<DecryptedVariable>> {
         // url : /project/:id/variables
         let client = reqwest::Client::new();
 
-        let url =
-            api_url()?.join(&format!("/project/{}/variables", project_id))?;
+        let url = api_url(config)?
+            .join(&format!("/project/{}/variables", project_id))?;
 
         let response = client
             .get(url)
@@ -242,10 +251,11 @@ impl SDK {
     /// Sorted, and pruned of duplicates (by created_at date)
     #[allow(dead_code)]
     pub async fn get_variables_pruned(
+        config: &Config,
         project_id: &str,
         key: &UnlockedKey,
     ) -> Result<Vec<KVPair>> {
-        let variables = Self::get_variables(project_id, key)
+        let variables = Self::get_variables(config, project_id, key)
             .await
             .context("Failed to get variables")?;
 
@@ -254,14 +264,15 @@ impl SDK {
     }
 
     pub async fn delete_project(
+        config: &Config,
         key: &UnlockedKey,
         project_id: &str,
     ) -> Result<()> {
         // url: /project/:id
         let client = reqwest::Client::new();
 
-        let url =
-            api_url()?.join(&format!("/v2/project/{}/delete", project_id))?;
+        let url = api_url(config)?
+            .join(&format!("/v2/project/{}/delete", project_id))?;
 
         client
             .delete(url)
@@ -274,13 +285,14 @@ impl SDK {
     }
 
     pub async fn delete_variable(
+        config: &Config,
         variable_id: &str,
         key: &UnlockedKey,
     ) -> Result<()> {
         // url: DELETE /variables/:id
         let client = reqwest::Client::new();
 
-        let url = api_url()?.join("variables/")?.join(variable_id)?;
+        let url = api_url(config)?.join("variables/")?.join(variable_id)?;
 
         client
             .delete(url)
@@ -292,11 +304,14 @@ impl SDK {
         Ok(())
     }
 
-    pub async fn list_projects(key: &UnlockedKey) -> Result<Vec<ListProjects>> {
+    pub async fn list_projects(
+        config: &Config,
+        key: &UnlockedKey,
+    ) -> Result<Vec<ListProjects>> {
         // GET /v2/projects
         let client = reqwest::Client::new();
 
-        let url = api_url()?.join("v2/projects")?;
+        let url = api_url(config)?.join("v2/projects")?;
 
         let res = client
             .get(url)
@@ -323,6 +338,7 @@ impl SDK {
     }
 
     pub async fn new_project(
+        config: &Config,
         key: &UnlockedKey,
         project_name: &str,
     ) -> Result<String> {
@@ -334,7 +350,7 @@ impl SDK {
         });
 
         let res = client
-            .post(api_url()?.join("v2/projects/new")?)
+            .post(api_url(config)?.join("v2/projects/new")?)
             .header(header::AUTHORIZATION, key.auth_token()?.bearer())
             .json(&body)
             .send()
