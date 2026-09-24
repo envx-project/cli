@@ -1,5 +1,4 @@
 use super::*;
-use crate::utils::btreemap::ToBTreeMap;
 use crate::utils::config::Config;
 use crate::utils::table::Table;
 use anyhow::Context;
@@ -15,6 +14,10 @@ pub struct Args {
 
     #[arg(long)]
     json: bool,
+
+    /// Include stored passwords and password commands in output
+    #[arg(long)]
+    reveal: bool,
 }
 
 pub async fn command(args: Args, config: &mut Config) -> Result<()> {
@@ -39,14 +42,31 @@ pub async fn command(args: Args, config: &mut Config) -> Result<()> {
         return Ok(());
     }
 
+    let mut display = serde_json::to_value(&*config)?;
+    if !args.reveal {
+        for field in ["primary_key_password", "primary_key_command"] {
+            if !display[field].is_null() {
+                display[field] = serde_json::json!("<redacted>");
+            }
+        }
+    }
     if args.json {
-        let json = serde_json::to_string_pretty(&config)
+        let json = serde_json::to_string_pretty(&display)
             .context("Failed to serialize")?;
         println!("{}", json);
         return Ok(());
     };
 
-    Table::new("Configuration".into(), config.to_btreemap()?).print()?;
+    Table::new(
+        "Configuration".into(),
+        display
+            .as_object()
+            .context("Invalid config shape")?
+            .iter()
+            .map(|(k, v)| (k.clone(), v.to_string()))
+            .collect(),
+    )
+    .print()?;
 
     Ok(())
 }

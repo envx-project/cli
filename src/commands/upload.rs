@@ -21,6 +21,15 @@ pub struct Args {
 pub async fn command(args: Args, config: &mut Config) -> Result<()> {
     let key = config.primary_key()?;
 
+    if let Some(id) = &key.uuid {
+        let unlocked = config.unlocked_primary_key()?;
+        SDK::list_projects(&unlocked).await.context(
+            "Existing identity could not authenticate; refusing to replace it",
+        )?;
+        println!("Already registered: {}", id);
+        return Ok(());
+    }
+
     let username = match args.username {
         Some(u) => u,
         None => {

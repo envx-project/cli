@@ -24,8 +24,6 @@ pub async fn command(args: Args, config: &mut Config) -> anyhow::Result<()> {
     let client = reqwest::Client::new();
     let auth_token = key.auth_token()?;
 
-    println!("auth token:\n{}", auth_token.signature);
-
     let url = format!("{}test-auth", api_url());
 
     if args.debug {

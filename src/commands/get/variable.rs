@@ -47,7 +47,7 @@ pub async fn command(args: Args, config: &mut Config) -> Result<()> {
             }
 
             let mut stdout = std::io::stdout();
-            stdout.write_all(kvpair.key.as_bytes())?;
+            stdout.write_all(kvpair.value.as_bytes())?;
             if stdout.is_terminal() {
                 stdout.write_all(b"\n")?;
             }
