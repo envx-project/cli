@@ -17,7 +17,9 @@ impl Table {
         Self { name, rows }
     }
     pub fn get_string(&self) -> Result<String> {
-        let title_str = self.name.to_string();
+        let title_str =
+            console::truncate_str(&self.name, MAX_BOX_WIDTH - 2, "…")
+                .into_owned();
         let title_width = console::measure_text_width(title_str.as_str());
 
         let max_right_content = self
@@ -39,7 +41,8 @@ impl Table {
                 .map(|name| console::measure_text_width(name))
                 .max()
                 .unwrap_or(0),
-        );
+        )
+        .min((MAX_BOX_WIDTH - 7) / 2);
 
         let edge = format!("{} ", box_drawing::double::VERTICAL);
         let edge_width = console::measure_text_width(edge.as_str());
@@ -152,47 +155,51 @@ fn print_row(
     let right_edge = left_edge.chars().rev().collect::<String>();
 
     let list_lines = textwrap::wrap(content, textwrap_opts);
-    let mut output = format!(
-        "{}{}{}{}{}",
-        left_edge.cyan().dimmed(),
-        console::pad_str(
-            title,
-            first_column_width,
-            console::Alignment::Left,
-            None
+    let title_lines = textwrap::wrap(title, first_column_width);
+    (0..list_lines.len().max(title_lines.len()).max(1))
+        .map(|index| {
+            format!(
+                "{}{}{}{}{}",
+                left_edge.cyan().dimmed(),
+                console::pad_str(
+                    title_lines.get(index).map(|s| s.as_ref()).unwrap_or(""),
+                    first_column_width,
+                    console::Alignment::Left,
+                    None
+                )
+                .bold(),
+                middle,
+                console::pad_str(
+                    list_lines.get(index).map(|s| s.as_ref()).unwrap_or(""),
+                    second_column_width,
+                    console::Alignment::Left,
+                    None
+                ),
+                right_edge.cyan().dimmed(),
+            )
+        })
+        .collect::<Vec<_>>()
+        .join("\n")
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    #[test]
+    fn long_names_and_titles_stay_bounded() {
+        let rendered = Table::new(
+            "title".repeat(100),
+            BTreeMap::from([
+                ("A".repeat(100), "value".repeat(100)),
+                ("empty".into(), String::new()),
+            ]),
         )
-        .bold(),
-        middle,
-        console::pad_str(
-            &list_lines[0],
-            second_column_width,
-            console::Alignment::Left,
-            None
-        ),
-        right_edge.cyan().dimmed()
-    );
-
-    for line in list_lines.iter().skip(1) {
-        output = format!(
-            "{}\n{}{}{}{}{}",
-            output,
-            left_edge.cyan().dimmed(),
-            console::pad_str(
-                "",
-                first_column_width,
-                console::Alignment::Left,
-                None
-            ),
-            middle,
-            console::pad_str(
-                line,
-                second_column_width,
-                console::Alignment::Left,
-                None
-            ),
-            right_edge.cyan().dimmed()
-        );
+        .get_string()
+        .unwrap();
+        assert!(rendered.len() < 10_000);
+        assert!(rendered
+            .lines()
+            .all(|line| console::measure_text_width(line) <= MAX_BOX_WIDTH));
+        assert!(rendered.contains("empty"));
     }
-
-    output
 }
