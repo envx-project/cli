@@ -277,7 +277,8 @@ impl SDK {
         // url: /project/:id
         let client = reqwest::Client::new();
 
-        let url = api_url().join(&format!("/project/{}", project_id))?;
+        let url =
+            api_url().join(&format!("/v2/project/{}/delete", project_id))?;
 
         client
             .delete(url)

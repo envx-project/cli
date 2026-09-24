@@ -1,6 +1,6 @@
 use super::kvpair::KVPair;
 use serde::{Deserialize, Serialize};
-use std::{collections::HashMap, fmt::Display};
+use std::{collections::BTreeMap, fmt::Display};
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct EncryptedVariable {
@@ -25,9 +25,18 @@ pub trait DeDupe {
 impl DeDupe for Vec<DecryptedVariable> {
     fn dedupe(&self) -> Self {
         let mut sorted_vec = self.clone();
-        sorted_vec.sort_by(|a, b| b.created_at.cmp(&a.created_at));
+        sorted_vec.sort_by_cached_key(|variable| {
+            std::cmp::Reverse((
+                variable
+                    .created_at
+                    .parse::<chrono::DateTime<chrono::Utc>>()
+                    .ok(),
+                variable.created_at.clone(),
+                variable.id.clone(),
+            ))
+        });
 
-        let mut seen: HashMap<String, DecryptedVariable> = HashMap::new();
+        let mut seen: BTreeMap<String, DecryptedVariable> = BTreeMap::new();
 
         for variable in sorted_vec {
             let key = variable.value.key.clone();
@@ -55,5 +64,34 @@ impl Display for DecryptedVariable {
             self.id, self.value, self.project_id
         ))?;
         Ok(())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    fn variable(id: &str, value: &str, time: &str) -> DecryptedVariable {
+        DecryptedVariable {
+            id: id.into(),
+            project_id: "project".into(),
+            value: KVPair {
+                key: "KEY".into(),
+                value: value.into(),
+            },
+            created_at: time.into(),
+        }
+    }
+    #[test]
+    fn newest_instant_wins_across_timezone_offsets() {
+        let old = variable("z", "old", "2026-09-24T10:00:00+02:00");
+        let new = variable("a", "new", "2026-09-24T09:00:00Z");
+        assert_eq!(vec![old, new].dedupe()[0].value.value, "new");
+    }
+    #[test]
+    fn equal_timestamps_use_stable_id_tiebreaker() {
+        let a = variable("a", "a", "2026-09-24T09:00:00Z");
+        let b = variable("b", "b", "2026-09-24T09:00:00Z");
+        assert_eq!(vec![a.clone(), b.clone()].dedupe()[0].id, "b");
+        assert_eq!(vec![b, a].dedupe()[0].id, "b");
     }
 }
