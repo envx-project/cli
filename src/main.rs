@@ -3,7 +3,7 @@ use std::{cmp::Ordering, io::IsTerminal};
 use anyhow::{bail, Result};
 use clap::{error::ErrorKind, Parser, Subcommand};
 use commands::*;
-use home::home_dir;
+use utils::state::StateStore;
 use utils::{compare_semver, config::Config};
 
 mod commands;
@@ -90,16 +90,8 @@ async fn handle_update_task(
 #[tokio::main]
 async fn main() -> Result<()> {
     let check_updates_handle = if std::io::stdout().is_terminal() {
-        let home = home_dir().context("Failed to get home directory")?;
-        let base_path = home.join(".config/envx/version.json");
-        let update = if !base_path.exists() {
-            update::UpdateCheck::default()
-        } else {
-            let contents = std::fs::read_to_string(&base_path)
-                .context("Failed to read update check file")?;
-            serde_json::from_str::<update::UpdateCheck>(&contents)
-                .context("Failed to parse update check file")?
-        };
+        let store = StateStore::open(&Config::load()?)?;
+        let update = store.update_check()?;
 
         if let Some(latest_version) = update.latest_version {
             if matches!(
@@ -119,17 +111,6 @@ async fn main() -> Result<()> {
                     "curl -fsSL https://get.envx.sh | sh".green()
                 );
             }
-            let nanos = chrono::Utc::now().timestamp_nanos_opt().unwrap();
-            let pid = std::process::id();
-            let path =
-                base_path.with_extension(format!("tmp.{}-{}.json", pid, nanos));
-            let update = update::UpdateCheck {
-                last_update_check: Some(chrono::Utc::now()),
-                latest_version: None,
-            };
-            let contents = serde_json::to_string_pretty(&update)?;
-            std::fs::write(&path, contents)?;
-            std::fs::rename(path, base_path)?;
         }
 
         Some(spawn_update_task())
@@ -178,7 +159,7 @@ async fn main() -> Result<()> {
     };
 
     let exec_result = {
-        let mut config = Config::get();
+        let mut config = Config::load()?;
         let exec_result = Commands::exec(cli, &mut config).await;
         config.write()?;
         exec_result

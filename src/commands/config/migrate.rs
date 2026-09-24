@@ -1,173 +1,106 @@
-use std::path::PathBuf;
-
-use home::home_dir;
-
-use crate::utils::config::Config;
-
 use super::*;
+use crate::utils::{
+    config::{Config, Project},
+    state::StateStore,
+};
+use anyhow::bail;
+use std::{fs, io::Write, path::Path};
 
+/// Import the old ~/.config/envcli profile, preserving its source files.
 #[derive(Parser)]
 pub struct Args {
     #[arg(short, long, default_value_t = false)]
     verbose: bool,
 }
 
-fn envx_dir() -> Result<PathBuf> {
-    let mut home_dir =
-        home_dir().ok_or(anyhow!("Failed to get home directory"))?;
-    home_dir.push(".config/envx");
-    Ok(home_dir)
-}
-
-fn envcli_dir() -> Result<PathBuf> {
-    let mut home_dir =
-        home_dir().ok_or(anyhow!("Failed to get home directory"))?;
-    home_dir.push(".config/envcli");
-    Ok(home_dir)
-}
-
-pub async fn command(args: Args, _config: &mut Config) -> Result<()> {
-    println!("Migrating config file... Please do not interrupt this process.");
-
-    let old_config_dir = envcli_dir()?;
-
-    if !old_config_dir.exists() {
-        println!(
-            "Config file not found at {}. Skipping migration.",
-            old_config_dir
-                .to_str()
-                .ok_or(anyhow!("Failed to get path"))?
-        );
+fn copy_preserving(source: &Path, destination: &Path) -> Result<()> {
+    if destination.exists() {
+        if fs::read(source)? != fs::read(destination)? {
+            bail!(
+                "Destination already contains different data: {}",
+                destination.display()
+            );
+        }
         return Ok(());
     }
+    let temporary = destination.with_extension(format!(
+        "import.{}.{}",
+        std::process::id(),
+        rand::random::<u64>()
+    ));
+    let result = (|| -> Result<()> {
+        let mut options = fs::OpenOptions::new();
+        options.write(true).create_new(true);
+        #[cfg(unix)]
+        {
+            use std::os::unix::fs::OpenOptionsExt;
+            options.mode(0o600);
+        }
+        let mut file = options.open(&temporary)?;
+        file.write_all(&fs::read(source)?)?;
+        file.sync_all()?;
+        fs::hard_link(&temporary, destination)?;
+        Ok(())
+    })();
+    let _ = fs::remove_file(temporary);
+    result?;
+    Ok(())
+}
 
-    let new_config_dir = envx_dir()?;
-    if !new_config_dir.exists() {
-        std::fs::create_dir_all(&new_config_dir)?;
+pub async fn command(args: Args, config: &mut Config) -> Result<()> {
+    let home = home::home_dir().context("Failed to get home directory")?;
+    let old = home.join(".config/envcli");
+    let new = home.join(".config/envx");
+    if !old.join("config.json").exists() {
+        println!("No legacy envcli config found; SQLite state migrates automatically.");
+        return Ok(());
     }
-
+    // Never overwrite an established profile. Retrying a completed import is safe.
+    let original = fs::read(old.join("config.json"))?;
+    let already_copied = fs::read(new.join("config.json"))? == original;
+    if !already_copied
+        && (config.primary_key.is_some() || !config.projects.is_empty())
     {
-        let old_config_path = old_config_dir.join("config.json");
-        let new_config_path = new_config_dir.join("config.json");
-        if args.verbose {
-            println!(
-                "Copying {} to {}",
-                old_config_path
-                    .to_str()
-                    .ok_or(anyhow!("Failed to get path"))?,
-                new_config_path
-                    .to_str()
-                    .ok_or(anyhow!("Failed to get path"))?
-            );
-        }
-
-        std::fs::copy(old_config_path, new_config_path)?;
+        bail!("An envx profile already exists; legacy files were preserved. Use a separate HOME to import it.");
     }
-
-    let mut old_key_dir = envcli_dir()?;
-    old_key_dir.push("keys");
-    let mut new_key_dir = envx_dir()?;
-    new_key_dir.push("keys");
-
-    if !old_key_dir.exists() {
-        println!(
-            "Key directory not found at {}. Skipping migration.",
-            old_key_dir.to_str().ok_or(anyhow!("Failed to get path"))?
-        );
-        return Ok(());
-    }
-
-    // mkdir at ~/.config/envx/keys
-    if !new_key_dir.exists() {
-        if args.verbose {
-            println!(
-                "Creating key directory at {}",
-                new_key_dir.to_str().ok_or(anyhow!("Failed to get path"))?
-            );
-        }
-        std::fs::create_dir_all(new_key_dir.clone())?;
-    }
-
-    // copy all files from old key dir to new key dir
-    for entry in std::fs::read_dir(old_key_dir)? {
-        let entry = entry?;
-        if entry.file_type()?.is_dir() {
-            let old_path = entry.path();
-            let new_dir_path = new_key_dir.join(
-                old_path
-                    .file_name()
-                    .ok_or(anyhow!("Failed to get file name"))?,
-            );
-
-            if !new_dir_path.exists() {
-                if args.verbose {
-                    println!(
-                        "Creating key directory at {}",
-                        new_dir_path
-                            .to_str()
-                            .ok_or(anyhow!("Failed to get path"))?
-                    );
-                }
-                std::fs::create_dir_all(new_dir_path.clone())?;
-            }
-
-            for file in std::fs::read_dir(entry.path())? {
-                let file = file?;
-                if !file.file_type()?.is_file() {
-                    continue;
-                }
-                let old_path = file.path();
-                let new_path = new_dir_path.join(
-                    old_path
-                        .file_name()
-                        .ok_or(anyhow!("Failed to get file name"))?,
+    Config::decode(std::str::from_utf8(&original)?)?;
+    let value: serde_json::Value = serde_json::from_slice(&original)
+        .context("Invalid legacy config; source preserved")?;
+    let projects: Vec<Project> = serde_json::from_value(
+        value
+            .get("projects")
+            .cloned()
+            .unwrap_or_else(|| serde_json::json!([])),
+    )?;
+    if old.join("keys").exists() {
+        for entry in walkdir::WalkDir::new(old.join("keys")) {
+            let entry = entry?;
+            let destination = new.join(entry.path().strip_prefix(&old)?);
+            if entry.file_type().is_symlink() {
+                bail!(
+                    "Refusing legacy key symlink: {}",
+                    entry.path().display()
                 );
-                if args.verbose {
-                    println!(
-                        "Copying {} to {}",
-                        old_path
-                            .to_str()
-                            .ok_or(anyhow!("Failed to get path"))?,
-                        new_path
-                            .to_str()
-                            .ok_or(anyhow!("Failed to get path"))?
-                    );
-                }
-
-                if !old_path
-                    .to_str()
-                    .ok_or(anyhow!("Failed to get path"))?
-                    .contains("private.key")
-                    && !old_path
-                        .to_str()
-                        .ok_or(anyhow!("Failed to get path"))?
-                        .contains("public.key")
-                {
-                    println!("{}", "Extraneous file found, copying anyway. Please make sure you have the correct files in your key directory.".red());
-                    println!(
-                        "File: {}",
-                        old_path
-                            .to_str()
-                            .ok_or(anyhow!("Failed to get path"))?
-                            .red()
-                    );
-                }
-
-                let result = std::fs::copy(old_path, new_path);
-
-                match result {
-                    Ok(_) => {}
-                    Err(e) => {
-                        println!("Failed to copy file: {}", e);
-                    }
-                }
+            }
+            if entry.file_type().is_dir() {
+                fs::create_dir_all(destination)?;
+            } else {
+                copy_preserving(entry.path(), &destination)?;
             }
         }
     }
-
-    std::fs::remove_dir_all(old_config_dir)?;
-
-    println!("{}", "Migration complete. Try running `envx variables` to see if everything worked.".green());
-
+    let staging =
+        new.join(format!("config.migrate.{}.json", std::process::id()));
+    copy_preserving(&old.join("config.json"), &staging)?;
+    fs::rename(staging, new.join("config.json"))?;
+    let migrated = Config::load()?;
+    StateStore::open(&migrated)?.import_projects("envcli-v1", &projects)?;
+    *config = Config::load()?;
+    if args.verbose {
+        println!("Original profile preserved at {}", old.display());
+    }
+    println!(
+        "Migration complete. Original config and keys have been preserved."
+    );
     Ok(())
 }

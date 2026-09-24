@@ -1,6 +1,6 @@
+#[cfg(test)]
 use std::fs;
 use std::io::{BufReader, Cursor};
-use std::path::PathBuf;
 
 use anyhow::{Context, Result};
 use chrono::{DateTime, Utc};
@@ -22,38 +22,18 @@ struct CacheEnvelope {
     variables: Vec<DecryptedVariable>,
 }
 
-fn cache_dir() -> Result<PathBuf> {
-    let path = home::home_dir()
-        .context("Failed to get home directory")?
-        .join(".config")
-        .join("envx")
-        .join("cache");
-    Ok(path)
-}
-
-fn cache_file_path(project_id: &str, project_name: &str) -> Result<PathBuf> {
-    let sanitized_name = project_name
-        .chars()
-        .map(|c| {
-            if c.is_alphanumeric() || c == '-' {
-                c
-            } else {
-                '_'
-            }
-        })
-        .collect::<String>();
-    Ok(cache_dir()?.join(format!("{}_{}.envx", project_id, sanitized_name)))
+fn store(key: &UnlockedKey) -> Result<super::state::StateStore> {
+    let mut config = super::config::Config::get();
+    config.primary_key = Some(key.key.clone());
+    super::state::StateStore::open(&config)
 }
 
 pub fn write_cache(
     project_id: &str,
-    project_name: &str,
+    _project_name: &str,
     variables: &[DecryptedVariable],
     key: &UnlockedKey,
 ) -> Result<()> {
-    let dir = cache_dir()?;
-    fs::create_dir_all(&dir).context("Failed to create cache directory")?;
-
     let envelope = CacheEnvelope {
         cached_at: Utc::now(),
         variables: variables.to_vec(),
@@ -73,16 +53,7 @@ pub fn write_cache(
 
     let encrypted = builder.to_vec(&mut rng)?;
 
-    let path = cache_file_path(project_id, project_name)?;
-
-    let nanos = Utc::now().timestamp_nanos_opt().unwrap_or(0);
-    let pid = std::process::id();
-    let tmp_path = path.with_extension(format!("tmp.{}-{}", pid, nanos));
-
-    fs::write(&tmp_path, &encrypted)
-        .context("Failed to write cache temp file")?;
-    fs::rename(&tmp_path, &path)
-        .context("Failed to atomically rename cache file")?;
+    store(key)?.put_bytes("cache", project_id, &encrypted)?;
 
     Ok(())
 }
@@ -92,30 +63,14 @@ pub struct CachedVariables {
     pub cached_at: DateTime<Utc>,
 }
 
-fn find_cache_file(project_id: &str) -> Result<PathBuf> {
-    let dir = cache_dir()?;
-    let prefix = format!("{}_", project_id);
-    for entry in fs::read_dir(&dir).context("Cache directory not found")? {
-        let entry = entry?;
-        if let Some(name) = entry.file_name().to_str() {
-            if name.starts_with(&prefix) && name.ends_with(".envx") {
-                return Ok(entry.path());
-            }
-        }
-    }
-    anyhow::bail!("No cache file found for project {}", project_id)
-}
-
 pub fn read_cache(
     project_id: &str,
-    project_name: Option<&str>,
+    _project_name: Option<&str>,
     key: &UnlockedKey,
 ) -> Result<CachedVariables> {
-    let path = match project_name {
-        Some(name) => cache_file_path(project_id, name)?,
-        None => find_cache_file(project_id)?,
-    };
-    let data = fs::read(&path).context("Failed to read cache file")?;
+    let data = store(key)?.get_bytes("cache", project_id)?.context(
+        "No cache for this project, account and server; fetch it online first",
+    )?;
 
     let seckey =
         SignedSecretKey::try_from(key).map_err(|e| anyhow::anyhow!("{}", e))?;
@@ -146,34 +101,13 @@ pub fn read_cache(
 
 #[allow(dead_code)]
 pub fn wipe_cache_for_project(project_id: &str) -> Result<()> {
-    let dir = match cache_dir() {
-        Ok(d) => d,
-        Err(_) => return Ok(()),
-    };
-    if !dir.exists() {
-        return Ok(());
-    }
-    let prefix = format!("{}_", project_id);
-    for entry in fs::read_dir(&dir)? {
-        let entry = entry?;
-        if let Some(name) = entry.file_name().to_str() {
-            if name.starts_with(&prefix) && name.ends_with(".envx") {
-                let _ = fs::remove_file(entry.path());
-            }
-        }
-    }
-    Ok(())
+    super::state::StateStore::open(&super::config::Config::get())?
+        .delete("cache", project_id)
 }
 
 pub fn wipe_all_caches() -> Result<()> {
-    let dir = match cache_dir() {
-        Ok(d) => d,
-        Err(_) => return Ok(()),
-    };
-    if dir.exists() {
-        fs::remove_dir_all(&dir).context("Failed to remove cache directory")?;
-    }
-    Ok(())
+    super::state::StateStore::open(&super::config::Config::get())?
+        .clear("cache")
 }
 
 #[cfg(test)]
@@ -220,6 +154,9 @@ mod tests {
             pubkey_only: None,
             uuid: Some("test-uuid".to_string()),
         };
+        let mut config = crate::utils::config::Config::get();
+        config.primary_key = Some(key.clone());
+        config.write().unwrap();
         let unlocked = key.clone().unlock(&password);
         (unlocked, key)
     }
@@ -340,13 +277,6 @@ mod tests {
         // cleanup
         wipe_cache_for_project("proj-wrong-key").unwrap();
         let _ = fs::remove_dir_all(&key_dir2);
-    }
-
-    #[test]
-    fn cache_file_naming() {
-        let path = cache_file_path("abc-123", "My Cool Project").unwrap();
-        let name = path.file_name().unwrap().to_str().unwrap();
-        assert_eq!(name, "abc-123_My_Cool_Project.envx");
     }
 
     #[test]
