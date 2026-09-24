@@ -13,12 +13,12 @@ pub mod loud;
 pub mod magic_variables;
 pub mod messaging;
 pub mod messaging_crypto;
+pub mod project_snapshot;
 pub mod prompt;
 pub mod rpgp;
 pub mod settings;
+pub mod state;
 pub mod symmetric;
 pub mod table;
 pub mod variable;
 pub mod vecu8;
-
-pub mod state;

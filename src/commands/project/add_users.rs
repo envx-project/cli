@@ -1,21 +1,12 @@
-use anyhow::bail;
-
 use super::*;
-use crate::{
-    sdk::{api_url, SDK},
-    utils::{
-        choice::Choice,
-        config::Config,
-        prompt::{is_interactive, prompt_text},
-        rpgp::encrypt,
-        variable::{EncryptedVariable, ToKVPair},
-    },
+use crate::utils::{
+    choice::Choice,
+    config::Config,
+    project_snapshot::{self, Client, VERSION},
+    prompt::{is_interactive, prompt_text},
 };
-use pgp::composed::{Deserializable, SignedPublicKey};
-use rayon::iter::{IntoParallelRefIterator, ParallelIterator};
-use reqwest::header;
+use anyhow::bail;
 use serde_json::json;
-use std::collections::HashSet;
 use uuid::Uuid;
 
 /// Add a user to a project
@@ -48,90 +39,29 @@ pub async fn command(args: Args, config: &mut Config) -> Result<()> {
     };
 
     let key = config.unlocked_primary_key()?;
-    let sdk_config = config.sdk_configuration(&key)?;
-
+    let client = Client::new(config, &key)?;
     let project_id = Choice::try_project(args.project_id, &key).await?;
-    let project_info = envx_sdk::apis::project_api::get_project_info_v2(
-        &sdk_config,
+    let snapshot = client.snapshot(&project_id, &user_ids).await?;
+    let variables = project_snapshot::decrypt(&snapshot, &key)?;
+    let encrypted = project_snapshot::rewrap(
+        &variables,
         &project_id,
-    )
-    .await?;
-
-    let variables = SDK::get_variables(&project_id, &key).await?;
-    let kvpairs = variables.to_kvpair();
-
-    let users =
-        envx_sdk::apis::user_api::get_many_users(&sdk_config, user_ids.clone())
-            .await?;
-
-    let mut recipients = project_info
-        .users
-        .iter()
-        .map(|e| e.public_key.clone())
-        .collect::<HashSet<String>>();
-    recipients.extend(users.into_iter().map(|u| u.public_key));
-    recipients.insert(key.key.public_key_str()?);
-
-    let pubkeys = recipients
-        .par_iter()
-        .map(|k| Ok(SignedPublicKey::from_string(k)?.0))
-        .collect::<Result<Vec<SignedPublicKey>>>()?;
-
-    let messages = kvpairs
-        .par_iter()
-        .map(|k| encrypt(&k.to_json()?, &pubkeys))
-        .collect::<Result<Vec<String>>>()?;
-
-    let encrypted: Vec<EncryptedVariable> = messages
-        .into_iter()
-        .zip(variables.into_iter())
-        .map(|(m, k)| EncryptedVariable {
-            id: k.id,
-            value: m,
-            project_id: k.project_id,
-            created_at: k.created_at,
-        })
-        .collect();
-
-    let body = json!({
-        "variables": encrypted,
-    });
-
-    let client = reqwest::Client::new();
-    let auth_token = key.auth_token()?.bearer();
-
-    let url = api_url()?.join("/variables/update-many")?;
-
-    let res = client
-        .post(url)
-        .header(header::AUTHORIZATION, auth_token)
-        .json(&body)
-        .send()
-        .await?
-        .error_for_status()?
-        .json::<Vec<String>>()
-        .await?;
-
-    envx_sdk::apis::project_api::add_user(
-        &sdk_config,
-        &project_id,
-        user_ids.clone(),
-    )
-    .await?;
-
+        &snapshot.users,
+        &key,
+    )?;
+    client.post(&format!("/v2/project/{project_id}/rewrap"),&json!({"protocol_version":VERSION,"snapshot":snapshot.snapshot,"variables":encrypted,"add_user_ids":user_ids})).await?;
+    let updated: Vec<_> = variables.iter().map(|v| &v.id).collect();
     if args.json {
         println!(
             "{}",
-            json!({
-                "project_id": project_id,
-                "added_user_ids": user_ids,
-                "updated_variable_ids": res,
-            })
+            json!({"project_id":project_id,"added_user_ids":user_ids,"updated_variable_ids":updated})
         );
     } else {
-        println!("Updated {} variables", res.len());
-        println!("IDs: {:?}", res);
+        println!(
+            "Added {} users and rewrapped {} variables",
+            user_ids.len(),
+            updated.len()
+        );
     }
-
     Ok(())
 }
