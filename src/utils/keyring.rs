@@ -1,18 +1,16 @@
 use super::config::Config;
+use super::state::StateStore;
 use crate::utils::settings::KeyringExpiry;
-use anyhow::bail;
+use anyhow::{bail, Context};
 use keyring::{Entry as Keyring, Result as KeyringResult};
-use std::{
-    fs,
-    io::Write,
-    path::PathBuf,
-    time::{Duration, SystemTime},
-};
+use std::time::{Duration, SystemTime};
 
 const SERVICE: &str = "envx";
 
-fn get_session_path(fingerprint: &str) -> PathBuf {
-    std::env::temp_dir().join(format!("envx-{}", fingerprint))
+fn state() -> KeyringResult<StateStore> {
+    Config::load()
+        .and_then(|config| StateStore::open(&config))
+        .map_err(|error| keyring::Error::PlatformFailure(error.into()))
 }
 
 pub fn set_password(
@@ -22,23 +20,19 @@ pub fn set_password(
 ) -> KeyringResult<()> {
     let keyring = Keyring::new(SERVICE, fingerprint)?;
 
-    if expiry == KeyringExpiry::Never {
-        return keyring.set_password(password);
-    }
-
-    let days: u64 = match expiry {
-        KeyringExpiry::Days(d) => d.into(),
-        _ => unreachable!(),
+    let store = state()?;
+    let expiration = match expiry {
+        KeyringExpiry::Never => None,
+        KeyringExpiry::Days(days) => Some(
+            SystemTime::now()
+                + Duration::from_secs(u64::from(days) * 24 * 60 * 60),
+        ),
     };
-
-    let expiration =
-        SystemTime::now() + Duration::from_secs(days * 24 * 60 * 60);
-    let exp_bytes = bincode::serialize(&expiration).unwrap();
-    fs::File::create(get_session_path(fingerprint))
-        .unwrap()
-        .write_all(&exp_bytes)
-        .unwrap();
-
+    // Save the expiry first so a failed state write cannot leave a newly
+    // stored credential without its expiry.
+    store
+        .set_session_expiry(fingerprint, expiration)
+        .map_err(|error| keyring::Error::PlatformFailure(error.into()))?;
     keyring.set_password(password)
 }
 
@@ -52,15 +46,11 @@ pub fn get_password(config: &Config) -> anyhow::Result<String> {
             bail!("No command provided");
         }
 
-        if std::env::var("ENVX_DEBUG").is_ok() {
-            println!("Running command: {:?}", command);
-        }
-
         let first = command.remove(0);
         let output = std::process::Command::new(first)
             .args(command)
             .output()
-            .expect("Failed to run command");
+            .context("Failed to run password command")?;
         if !output.status.success() {
             bail!("Command failed");
         }
@@ -72,26 +62,15 @@ pub fn get_password(config: &Config) -> anyhow::Result<String> {
         return Ok(password.clone());
     }
 
-    match settings.get_keyring_expiry() {
-        KeyringExpiry::Days(_) => {
-            let expiry = fs::read(get_session_path(fingerprint));
-            let expiry = match expiry {
-                Ok(e) => e,
-                Err(_) => {
-                    clear_password(fingerprint)?;
-                    bail!("No session found");
-                }
-            };
-
-            let expiry: SystemTime = bincode::deserialize(&expiry)?;
-
-            if expiry < SystemTime::now() {
-                clear_password(fingerprint)?;
-                bail!("Session expired");
+    if let KeyringExpiry::Days(_) = settings.get_keyring_expiry() {
+        let expiry = StateStore::open(config)?.session_expiry(fingerprint)?;
+        if expiry.map_or(true, |expiry| expiry < SystemTime::now()) {
+            // Legacy /tmp files are untrusted and intentionally not imported.
+            match clear_password(fingerprint) {
+                Ok(()) | Err(keyring::Error::NoEntry) => {}
+                Err(error) => return Err(error.into()),
             }
-        }
-        _ => {
-            println!("No keyring expiry set");
+            bail!("Keyring session expired or needs unlocking after upgrade");
         }
     }
 
@@ -102,5 +81,8 @@ pub fn get_password(config: &Config) -> anyhow::Result<String> {
 
 pub fn clear_password(fingerprint: &str) -> KeyringResult<()> {
     let keyring = Keyring::new(SERVICE, fingerprint)?;
+    state()?
+        .set_session_expiry(fingerprint, None)
+        .map_err(|error| keyring::Error::PlatformFailure(error.into()))?;
     keyring.delete_credential()
 }

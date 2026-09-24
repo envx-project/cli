@@ -1,0 +1,19 @@
+{
+  "salt": "fixture",
+  "sdk_url": "https://api.envx.sh",
+  "projects": [
+    {
+      "project_id": "00000000-0000-0000-0000-000000000002",
+      "path": "/work/project"
+    }
+  ],
+  "unknown_future_setting": {
+    "preserve": true
+  },
+  "primary_key": {
+    "fingerprint": "abc123",
+    "note": "fixture",
+    "primary_user_id": "fixture",
+    "uuid": "00000000-0000-0000-0000-000000000001"
+  }
+}

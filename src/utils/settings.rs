@@ -7,6 +7,7 @@ pub enum KeyringExpiry {
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
+#[serde(default)]
 pub struct Settings {
     pub warn_on_short_passwords: bool,
     pub keyring_expiry: Option<KeyringExpiry>,
