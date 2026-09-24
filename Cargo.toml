@@ -8,7 +8,7 @@ description = "Interact with envx servers via CLI"
 readme = "README.md"
 homepage = "https://github.com/env-store/rusty-cli"
 repository = "https://github.com/env-store/rusty-cli"
-rust-version = "1.75.0"
+rust-version = "1.85.0"
 default-run = "envx"
 include = ["src/**/*", "LICENSE", "README.md"]
 
