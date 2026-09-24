@@ -167,6 +167,20 @@ impl StateStore {
         })
     }
 
+    /// Run a read/validate/write sequence atomically. Nested transactions are rejected.
+    pub fn with_write_lock<T>(
+        &self,
+        operation: impl FnOnce(&Self) -> Result<T>,
+    ) -> Result<T> {
+        let transaction = rusqlite::Transaction::new_unchecked(
+            &self.conn,
+            TransactionBehavior::Immediate,
+        )?;
+        let value = operation(self)?;
+        transaction.commit()?;
+        Ok(value)
+    }
+
     pub fn get<T: DeserializeOwned>(
         &self,
         namespace: &str,
@@ -396,6 +410,49 @@ mod tests {
         assert_eq!(first.session_expiry("ABC123").unwrap(), Some(expiry));
         first.set_session_expiry("ABC123", None).unwrap();
         assert!(first.session_expiry("ABC123").unwrap().is_none());
+    }
+
+    #[test]
+    fn atomic_multi_record_operations_rollback_and_serialize() {
+        let dir = tempfile::tempdir().unwrap();
+        let store =
+            StateStore::open_at(dir.path(), &Config::default()).unwrap();
+        let result: Result<()> = store.with_write_lock(|store| {
+            store.put("pins", "friend", &"partial")?;
+            bail!("validation failed");
+        });
+        assert!(result.is_err());
+        assert!(store.get::<String>("pins", "friend").unwrap().is_none());
+        let mut workers = Vec::new();
+        for fingerprint in ["first", "second"] {
+            let path = dir.path().to_owned();
+            workers.push(std::thread::spawn(move || {
+                let store =
+                    StateStore::open_at(&path, &Config::default()).unwrap();
+                store
+                    .with_write_lock(|store| {
+                        if store.get::<String>("pins", "friend")?.is_some() {
+                            return Ok(false);
+                        }
+                        std::thread::sleep(Duration::from_millis(20));
+                        store.put("pins", "friend", &fingerprint)?;
+                        store.put("pin-history", "friend", &fingerprint)?;
+                        Ok(true)
+                    })
+                    .unwrap()
+            }));
+        }
+        assert_eq!(
+            workers
+                .into_iter()
+                .map(|worker| worker.join().unwrap() as usize)
+                .sum::<usize>(),
+            1
+        );
+        assert_eq!(
+            store.get::<String>("pins", "friend").unwrap(),
+            store.get::<String>("pin-history", "friend").unwrap()
+        );
     }
 
     #[test]
