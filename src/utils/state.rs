@@ -66,7 +66,16 @@ impl StateStore {
             .is_some();
         if !imported {
             // Keep exact pre-upgrade bytes before any later settings writes.
-            if let Ok(bytes) = fs::read(dir.join("config.json")) {
+            let legacy_bytes = match fs::read(dir.join("config.json")) {
+                Ok(bytes) => Some(bytes),
+                Err(error) if error.kind() == std::io::ErrorKind::NotFound => {
+                    None
+                }
+                Err(error) => {
+                    return Err(error).context("Failed to read legacy config")
+                }
+            };
+            if let Some(bytes) = legacy_bytes.as_ref() {
                 let backup = dir.join("config.pre-sqlite.json");
                 let mut opts = fs::OpenOptions::new();
                 opts.write(true).create_new(true);
@@ -83,7 +92,7 @@ impl StateStore {
                 let preserved = (|| -> Result<()> {
                     use std::io::Write;
                     let mut file = opts.open(&temporary)?;
-                    file.write_all(&bytes)?;
+                    file.write_all(bytes)?;
                     file.sync_all()?;
                     match fs::hard_link(&temporary, backup) {
                         Ok(()) => Ok(()),
@@ -99,25 +108,24 @@ impl StateStore {
                 let _ = fs::remove_file(temporary);
                 preserved?;
             }
-            // Legacy links belonged to the configured server and key. DEV_MODE must
-            // never silently claim production links for localhost.
-            let mut legacy_url = url::Url::parse(
-                config.sdk_url.as_deref().unwrap_or("https://api.envx.sh"),
-            )?;
-            legacy_url.set_fragment(None);
-            let legacy_scope = Self::scope_for(&legacy_url, config);
-            for project in &config.projects {
-                tx.execute(
-                    "INSERT OR IGNORE INTO records VALUES(?1,'projects',?2,?3)",
-                    params![
-                        legacy_scope,
-                        project
-                            .path
-                            .to_str()
-                            .context("Project path is not UTF-8")?,
-                        serde_json::to_vec(project)?
-                    ],
-                )?;
+            // A settings command may already have changed the in-memory server
+            // or account. Only the original on-disk profile establishes where
+            // its legacy links belonged; never claim them for the edited scope.
+            if let Some(bytes) = legacy_bytes {
+                let legacy = Config::decode(std::str::from_utf8(&bytes)?)?;
+                if let Ok(url) = legacy.sdk_url() {
+                    let legacy_scope = Self::scope_for(&url, &legacy);
+                    for project in &legacy.projects {
+                        tx.execute(
+                            "INSERT OR IGNORE INTO records VALUES(?1,'projects',?2,?3)",
+                            params![legacy_scope, project.path.to_str().context("Project path is not UTF-8")?, serde_json::to_vec(project)?],
+                        )?;
+                    }
+                } else if !legacy.projects.is_empty() {
+                    // Still finish the one-time import marker: a later launch
+                    // with the repaired URL must not reattribute these links.
+                    eprintln!("Legacy project links were preserved in config.json and config.pre-sqlite.json because their original API URL is invalid. Confirm the intended server, then use `envx link` to restore each link.");
+                }
             }
             // This metadata is disposable. A damaged file must not block upgrading.
             if let Ok(bytes) = fs::read(dir.join("version.json")) {
