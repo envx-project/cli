@@ -31,6 +31,16 @@ impl UnlockedKey {
     }
 
     pub fn auth_token(&self) -> Result<AuthToken> {
+        let user_id = self
+            .key
+            .uuid
+            .as_deref()
+            .context("Key is not registered; run `envx upload` first")?;
+        let user_id = uuid::Uuid::parse_str(user_id)
+            .context(
+                "Stored user ID is invalid; restore the registered identity",
+            )?
+            .to_string();
         let key = self
             .key
             .signed_secret_key()
@@ -54,17 +64,16 @@ impl UnlockedKey {
                 eprintln!("Failed to sign API authentication challenge: {}", e);
 
                 eprintln!("This is most likely due to a missing or incorrect passphrase.");
-                println!(
+                eprintln!(
                     "You can view the saved passphrase with 'envx keyring view [fingerprint]'"
                 );
-                println!("This command is interactive");
+                eprintln!("This command is interactive");
 
                 bail!("Failed to sign API authentication challenge");
             }
         };
 
-        let auth_token =
-            AuthToken::new(self.key.uuid.clone().unwrap(), signature);
+        let auth_token = AuthToken::new(user_id, signature);
 
         Ok(auth_token)
     }
@@ -241,5 +250,31 @@ mod tests {
         assert!(validate_passphrase_not_empty("").is_err());
         assert!(validate_passphrase_not_empty("   \t\n").is_err());
         assert!(validate_passphrase_not_empty("passphrase").is_ok());
+    }
+}
+
+#[cfg(test)]
+mod identity_tests {
+    use super::*;
+    #[test]
+    fn invalid_identity_fails_before_loading_private_key() {
+        for uuid in [None, Some("invalid".to_owned())] {
+            let key = UnlockedKey::new(
+                String::new(),
+                Key {
+                    fingerprint: "does-not-exist".into(),
+                    note: String::new(),
+                    primary_user_id: String::new(),
+                    pubkey_only: None,
+                    uuid,
+                },
+            );
+            let error = key.auth_token().unwrap_err().to_string();
+            assert!(
+                error.contains("not registered")
+                    || error.contains("user ID is invalid"),
+                "{error}"
+            );
+        }
     }
 }
