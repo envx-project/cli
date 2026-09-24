@@ -113,6 +113,14 @@ impl Config {
     }
 
     pub fn load() -> Result<Self> {
+        let mut config = Self::load_settings()?;
+        config.projects =
+            super::state::StateStore::open(&config)?.projects()?;
+        Ok(config)
+    }
+
+    /// Settings must remain repairable even when the configured server is invalid.
+    pub fn load_settings() -> Result<Self> {
         let path =
             get_config_file_path().context("Failed to get config path")?;
         let contents =
@@ -120,8 +128,6 @@ impl Config {
 
         let mut config = Self::decode(&contents)?;
         config.original = Some(serde_json::to_value(&config)?);
-        config.projects =
-            super::state::StateStore::open(&config)?.projects()?;
         Ok(config)
     }
 
@@ -167,6 +173,9 @@ impl Config {
     }
 
     pub fn write(&mut self) -> Result<()> {
+        if self.original.as_ref() == Some(&serde_json::to_value(&*self)?) {
+            return Ok(());
+        }
         let mut store = super::state::StateStore::open(self)?;
         let _guard = store.lock_settings()?;
         let path =
