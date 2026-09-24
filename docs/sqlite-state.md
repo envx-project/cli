@@ -2,7 +2,7 @@
 
 Starting with the SQLite release, envx automatically opens `~/.config/envx/state.sqlite` on the first command requiring configuration. No migration command is needed for existing envx profiles. The database uses transactional schema upgrades, a 10-second writer wait, private Unix permissions, and account/server scoped records. A future schema version is rejected with an upgrade instruction.
 
-Human settings remain in `config.json`. Private/public key files and OS keyring entries stay where they are. SQLite contains project links, encrypted cache blobs, update metadata, and friend/message operational records; it is not an encryption layer. Cache bytes remain OpenPGP encrypted. Scope is the normalized API base URL and signing-key fingerprint, so setting a UUID after authentication does not strand state. Different accounts and servers cannot read each other's scoped records. Update-check metadata is global.
+Human settings remain in `config.json`. Private/public key files and OS keyring entries stay where they are. SQLite contains project links, encrypted cache blobs, update metadata, and friend/message operational records; it is not an encryption layer. Cache bytes remain OpenPGP encrypted. Scope includes the normalized API base URL, account UUID, and signing-key fingerprint. Unregistered keys have a separate scope; registration does not silently transfer trusted records between accounts. Different accounts and servers cannot read each other's scoped records. Update-check metadata is global.
 
 ## Upgrade and recovery
 

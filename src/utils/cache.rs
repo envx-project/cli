@@ -272,7 +272,22 @@ mod tests {
         };
         let unlocked2 = key2.unlock(&password2);
 
+        // Bypass account isolation deliberately to prove the ciphertext itself
+        // still rejects a different private key.
+        let ciphertext = store(&key1)
+            .unwrap()
+            .get_bytes("cache", "proj-wrong-key")
+            .unwrap()
+            .unwrap();
+        store(&unlocked2)
+            .unwrap()
+            .put_bytes("cache", "proj-wrong-key", &ciphertext)
+            .unwrap();
         assert!(read_cache("proj-wrong-key", Some("test"), &unlocked2).is_err());
+        store(&unlocked2)
+            .unwrap()
+            .delete("cache", "proj-wrong-key")
+            .unwrap();
 
         // cleanup
         wipe_cache_for_project("proj-wrong-key").unwrap();
