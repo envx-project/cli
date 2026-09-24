@@ -18,3 +18,4 @@ pub mod symmetric;
 pub mod table;
 pub mod variable;
 pub mod vecu8;
+pub mod project_snapshot;

@@ -1,53 +1,48 @@
-use envx_sdk::models::InviteBody;
-use uuid::Uuid;
-
-use crate::{
-    sdk::SDK,
-    utils::{choice::Choice, symmetric::password_encrypt_to_armor},
-};
-
 use super::*;
-
+use crate::utils::{
+    choice::Choice,
+    project_snapshot::{self, Client, InvitePayload, VERSION},
+    symmetric::password_encrypt_to_armor,
+};
+use uuid::Uuid;
 #[derive(Parser)]
 pub struct Args {
     /// Project ID
     #[arg(short, long)]
     project_id: Option<String>,
-
     /// Output as JSON
     #[arg(long)]
     json: bool,
 }
-
 pub async fn command(args: Args, config: &mut Config) -> Result<()> {
-    let key = config.primary_key()?;
-    let password = config.primary_key_password()?;
-    let key = key.unlock(&password);
-    let sdk_config = config.sdk_configuration(&key)?;
-
+    let key = config.unlocked_primary_key()?;
+    let client = Client::new(config, &key)?;
     let project_id = Choice::try_project(args.project_id, &key).await?;
-    let kvpairs = SDK::get_variables(&project_id, &key).await?;
-    let stringified_kvpairs = serde_json::to_string(&kvpairs)?;
-
-    let symmetrical_encryption_key = uuid::Uuid::new_v4().to_string();
-    let encrypted = password_encrypt_to_armor(
-        &stringified_kvpairs,
-        &symmetrical_encryption_key,
-    )?;
-
-    let response = envx_sdk::apis::invite_api::new_invite(
-        &sdk_config,
-        InviteBody {
-            ciphertext: encrypted,
-            project_id: Uuid::parse_str(&project_id)?,
-        },
-    )
-    .await?;
-
-    println!(
-        "envx invite accept {}:{}:{}",
-        symmetrical_encryption_key, response.invite_code, response.verifier
-    );
-
+    let snapshot = client.snapshot(&project_id, &[]).await?;
+    let variables = project_snapshot::decrypt(&snapshot, &key)?;
+    let payload = InvitePayload {
+        protocol_version: VERSION,
+        project_id: project_id.clone(),
+        snapshot: snapshot.snapshot.clone(),
+        variables,
+    };
+    let sym = Uuid::new_v4().to_string();
+    let encrypted =
+        password_encrypt_to_armor(&serde_json::to_string(&payload)?, &sym)?;
+    #[derive(serde::Deserialize)]
+    struct Created {
+        invite_code: String,
+        verifier: String,
+    }
+    let response:Created=client.json("/v2/invite/new",&serde_json::json!({"protocol_version":VERSION,"project_id":project_id,"snapshot":snapshot.snapshot,"ciphertext":encrypted})).await?;
+    let code = format!("{sym}:{}:{}", response.invite_code, response.verifier);
+    if args.json {
+        println!(
+            "{}",
+            serde_json::json!({"code":code,"project_id":project_id})
+        );
+    } else {
+        println!("envx invite accept {code}");
+    }
     Ok(())
 }
