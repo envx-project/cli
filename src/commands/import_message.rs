@@ -31,6 +31,18 @@ pub async fn command(args: Args, config: &mut Config) -> Result<()> {
     let Payload::Variables(variables) = envelope.payload else {
         anyhow::bail!("This message contains text, not named variables");
     };
+    if variables.is_empty()
+        || variables.keys().any(|name| {
+            name.is_empty()
+                || !name.bytes().enumerate().all(|(i, b)| {
+                    b == b'_'
+                        || b.is_ascii_alphabetic()
+                        || (i > 0 && b.is_ascii_digit())
+                })
+        })
+    {
+        anyhow::bail!("Message contains no variables or an invalid environment variable name");
+    }
     let project_id = Choice::try_project(args.project_id, &client.key).await?;
     let existing = SDK::get_variables(&project_id, &client.key).await?;
     let mut replace_ids = Vec::new();
@@ -83,6 +95,10 @@ pub async fn command(args: Args, config: &mut Config) -> Result<()> {
         .collect();
     let ids = SDK::replace_many(values, &project_id, &client.key, replace_ids)
         .await?;
+    if let Err(error) = crate::utils::cache::wipe_cache_for_project(&project_id)
+    {
+        eprintln!("Import succeeded, but invalidating the local cache failed: {error}");
+    }
     if args.json {
         println!(
             "{}",

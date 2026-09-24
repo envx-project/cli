@@ -4,6 +4,7 @@ import json
 import os
 from pathlib import Path
 import shlex
+import sqlite3
 import subprocess
 import tempfile
 
@@ -41,6 +42,12 @@ for user in ('alice', 'bob', 'charlie'):
 
 link = doc('alice', 'friend-link', '--json')
 assert link['code'].split(':')[0].count('-') == 1
+label, marker, encoded = link['code'].split(':')
+foreign = json.loads(bytes.fromhex(encoded))
+foreign['server'] = 'http://127.0.0.1:9'
+foreign_code = ':'.join((label, marker, json.dumps(foreign).encode().hex()))
+assert 'another server' in run('bob', 'add-friend', foreign_code, ok=False).stderr
+run('bob', 'add-friend', link['code'], '--alias', 'bad\nname', ok=False)
 bob_pin = doc('bob', 'add-friend', link['code'], '--alias', 'alice', '--json')
 assert bob_pin['user_id'] == users['alice']
 run('charlie', 'add-friend', link['code'], '--json', ok=False)
@@ -60,8 +67,16 @@ revoked = doc('alice', 'friend-link', '--json')
 run('alice', 'friend-link', '--revoke', revoked['link']['id'])
 run('charlie', 'add-friend', revoked['code'], '--json', ok=False)
 
+# An unexpected pinned fingerprint blocks send before any plaintext is submitted.
+db = sqlite3.connect(root / 'alice' / '.config/envx/state.sqlite')
+row = db.execute("SELECT scope,value FROM records WHERE namespace='friend' AND key=?", (users['bob'],)).fetchone()
+changed_pin = json.loads(row[1]); changed_pin['fingerprint'] = '0' * 40
+db.execute("UPDATE records SET value=? WHERE scope=? AND namespace='friend' AND key=?", (json.dumps(changed_pin).encode(), row[0], users['bob'])); db.commit()
+assert 'key changed' in run('alice', 'send', 'bob', '--stdin', data='never-send', ok=False).stderr.lower()
+db.execute("UPDATE records SET value=? WHERE scope=? AND namespace='friend' AND key=?", (row[1], row[0], users['bob'])); db.commit(); db.close()
+
 secret = 'test-only secret with spaces = not metadata\n'
-sent = doc('alice', 'send', 'bob', '--stdin', '--json', data=secret)
+sent = doc('alice', 'send', 'bob', '--stdin', '--expires', '24h', '--json', data=secret)
 inbox = doc('bob', 'inbox', '--json')
 assert any(item['id'] == sent['id'] for item in inbox)
 assert all(item.get('ciphertext') is None for item in inbox)
