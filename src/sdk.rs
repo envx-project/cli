@@ -84,10 +84,11 @@ impl SDK {
         Ok(project_info)
     }
 
-    pub async fn set_many(
+    pub async fn replace_many(
         kvpairs: Vec<KVPair>,
         project_id: &str,
         key: &UnlockedKey,
+        replace_ids: Vec<String>,
     ) -> Result<Vec<String>> {
         let client = reqwest::Client::new();
 
@@ -112,6 +113,7 @@ impl SDK {
         let body = json!({
             "project_id": project_id,
             "variables": messages,
+            "replace_ids": replace_ids,
         });
 
         #[derive(Serialize, Deserialize, Debug)]
@@ -119,7 +121,12 @@ impl SDK {
             pub id: String,
         }
 
-        let url = api_url().join("/variables/set-many")?;
+        let endpoint = if replace_ids.is_empty() {
+            "/variables/set-many"
+        } else {
+            "/variables/replace-many"
+        };
+        let url = api_url().join(endpoint)?;
 
         let res = client
             .post(url)
@@ -129,6 +136,8 @@ impl SDK {
             .await?;
 
         let res = res
+            .error_for_status()
+            .context("Variable write failed; existing values were not deleted by this client")?
             .json::<Vec<SetManyVariableReturnType>>()
             .await?
             .iter()
