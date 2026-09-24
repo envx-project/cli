@@ -52,9 +52,9 @@ pub async fn command(_args: Args, config: &mut Config) -> Result<()> {
             return Ok(());
         }
 
-        match serde_json::from_str::<Config>(&edited) {
+        match Config::decode(&edited) {
             Ok(new_config) => {
-                *config = new_config;
+                config.apply_edited(new_config, &original)?;
                 let _ = fs::remove_file(&temp_path);
                 println!("{}", "Config updated.".green());
                 return Ok(());

@@ -53,7 +53,7 @@ pub struct Config {
 // }
 //
 // TODO: add project name
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
 pub struct Project {
     // TODO: make this a UUID
     pub project_id: String,
@@ -139,6 +139,24 @@ impl Config {
         let config: Config = serde_json::from_value(value)
             .context("Failed to parse config file")?;
         Ok(config)
+    }
+
+    pub fn apply_edited(
+        &mut self,
+        mut edited: Self,
+        original: &str,
+    ) -> Result<()> {
+        let baseline = Self::decode(original)?;
+        if edited.projects != baseline.projects {
+            bail!("Project links are managed in SQLite; use `envx link` or `envx unlink` instead of editing projects in config.json");
+        }
+        // The editor opens the retained JSON snapshot, whose project list can
+        // differ from current SQLite links. Keep those live links, and diff
+        // settings against the exact buffer the user started editing.
+        edited.original = Some(serde_json::to_value(&baseline)?);
+        edited.projects = self.projects.clone();
+        *self = edited;
+        Ok(())
     }
 
     pub fn write(&mut self) -> Result<()> {
@@ -426,6 +444,37 @@ pub fn get_config_file_path() -> Result<PathBuf> {
 #[cfg(test)]
 mod state_tests {
     use super::*;
+
+    #[test]
+    fn editor_preserves_baseline_and_rejects_legacy_project_edits() {
+        let mut config = Config::load().unwrap();
+        let path = get_config_file_path().unwrap();
+        let original = fs::read_to_string(&path).unwrap();
+        let mut edited = Config::decode(&original).unwrap();
+        edited.settings = Some(Settings {
+            loud: Some(true),
+            ..edited.get_settings()
+        });
+        let mut concurrent: serde_json::Value =
+            serde_json::from_str(&original).unwrap();
+        concurrent["sdk_url"] =
+            serde_json::json!("https://editor-concurrent.example");
+        fs::write(&path, serde_json::to_vec(&concurrent).unwrap()).unwrap();
+        config.apply_edited(edited, &original).unwrap();
+        config.write().unwrap();
+        let loaded = Config::load().unwrap();
+        assert_eq!(
+            loaded.sdk_url.as_deref(),
+            Some("https://editor-concurrent.example")
+        );
+        assert!(loaded.get_settings().is_loud());
+        let mut edited = Config::decode(&original).unwrap();
+        edited.projects.push(Project {
+            project_id: "attempted-json-link".into(),
+            path: PathBuf::from("/project"),
+        });
+        assert!(config.apply_edited(edited, &original).is_err());
+    }
 
     #[test]
     fn concurrent_writer_worker() {
