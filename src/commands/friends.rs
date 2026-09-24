@@ -119,13 +119,19 @@ pub async fn command(args: Args, config: &mut Config) -> Result<()> {
     if interactive && !friends.is_empty() {
         let mut options =
             vec!["Done".to_owned(), "Create a friend link".to_owned()];
-        options.extend(friends.iter().map(|friend| {
-            format!(
+        for friend in &friends {
+            let pin: Option<Pin> =
+                client.state.get("friend", &friend.user.id)?;
+            let label = pin
+                .as_ref()
+                .and_then(|pin| pin.alias.as_deref())
+                .unwrap_or(&friend.user.username);
+            options.push(format!(
                 "{} · {}",
-                messaging::safe(&friend.user.username),
+                messaging::safe(label),
                 friend.user.id
-            )
-        }));
+            ));
+        }
         let selection =
             inquire::Select::new("Friend options", options).prompt()?;
         if selection == "Create a friend link" {
