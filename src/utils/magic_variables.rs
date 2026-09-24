@@ -126,7 +126,7 @@ mod tests {
             let server = std::thread::spawn(move || {
                 let (mut socket, _) = listener.accept().unwrap();
                 let mut request = [0; 2048];
-                socket.read(&mut request).unwrap();
+                assert!(socket.read(&mut request).unwrap() > 0);
                 write!(socket, "HTTP/1.1 {status} Test\r\nContent-Length: 0\r\nConnection: close\r\n\r\n").unwrap();
             });
             let error = reqwest::get(format!("http://{address}"))
