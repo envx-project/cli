@@ -8,11 +8,11 @@ use reqwest::header;
 pub struct Args {
     /// Show server response and request diagnostics
     #[arg(long)]
-    verbose: bool,
+    pub(super) verbose: bool,
 
     /// Debug output (alias for --verbose)
     #[arg(short, long)]
-    debug: bool,
+    pub(super) debug: bool,
 }
 
 pub async fn command(args: Args, config: &mut Config) -> anyhow::Result<()> {

@@ -178,6 +178,28 @@ impl Config {
         }
         let mut store = super::state::StateStore::open(self)?;
         let _guard = store.lock_settings()?;
+        self.write_locked()
+    }
+
+    /// Compare against current disk state under the same lock used by settings writes.
+    pub fn install_identity(&mut self, key: Key, server: &str) -> Result<()> {
+        let mut store = super::state::StateStore::open(self)?;
+        let _guard = store.lock_settings()?;
+        let mut current = Self::load_settings()?;
+        if current.primary_key.is_some() {
+            bail!("An identity already exists; login will not replace it");
+        }
+        current.primary_key = Some(key);
+        current.sdk_url = Some(server.to_owned());
+        current.primary_key_password = None;
+        current.primary_key_command = None;
+        current.write_locked()?;
+        current.projects = Vec::new();
+        *self = current;
+        Ok(())
+    }
+
+    fn write_locked(&mut self) -> Result<()> {
         let path =
             get_config_file_path().context("Failed to get config path")?;
 

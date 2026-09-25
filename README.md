@@ -98,3 +98,14 @@ Options:
 This project is licensed under the GPLv3 License. A copy of the GPLv3 License can be found in the [LICENSE](LICENSE) file.
 
 This project uses code from the [Railway's CLIv3](https://github.com/railwayapp/cli), copyright (c) [2023] Railway Corp. The Railway CLI is licensed under the MIT License. A copy of the MIT License can be found in the [attributions/railway/LICENSE](attributions/railway/LICENSE) file.
+
+### Log in on another machine
+
+Run `envx auth link` on your existing machine and keep its terminal open. Run the
+printed `envx auth login '<link>'` command on the new machine, enter its verification
+code on the original machine, then enter your existing identity passphrase on the
+new machine. Links contain only a pairing identifier; identity material travels
+through an encrypted, verified channel. See [pairing and its security contract](docs/auth-pairing.md).
+
+Identity commands are also available under `auth`: `status`, `gen`, `register`,
+and `export`. Existing command spellings remain supported.
