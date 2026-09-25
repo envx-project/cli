@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.14.1](https://github.com/envx-project/cli/compare/v2.14.0...v2.14.1) (2026-09-25)
+
+
+### Bug Fixes
+
+* make friend links and inbox output actionable ([7b296d6](https://github.com/envx-project/cli/commit/7b296d6761a3fcdc44deb77b535f31143451213e))
+
 ## [2.14.0](https://github.com/envx-project/cli/compare/v2.13.0...v2.14.0) (2026-09-24)
 
 
