@@ -1,7 +1,7 @@
 use super::*;
 use crate::utils::{
     config::Config,
-    messaging::{self, Client, Message},
+    messaging::{self, Client, Message, Pin},
 };
 use reqwest::Method;
 
@@ -48,23 +48,40 @@ pub async fn command(args: Args, config: &mut Config) -> Result<()> {
     } else if messages.is_empty() {
         println!("No messages.");
     } else {
+        // Names are presentation only; reading still verifies signatures and pins.
+        let friends = client.friends().await.unwrap_or_default();
         for message in messages {
             let (direction, peer) = if message.sender_id == client.user_id() {
                 ("to", message.recipient_id)
             } else {
                 ("from", message.sender_id)
             };
+            let pin: Option<Pin> = client.state.get("friend", &peer)?;
+            let name = pin
+                .as_ref()
+                .and_then(|pin| pin.alias.as_deref())
+                .or_else(|| {
+                    friends
+                        .iter()
+                        .find(|friend| friend.user.id == peer)
+                        .map(|friend| friend.user.username.as_str())
+                })
+                .unwrap_or(&peer);
             println!(
-                "{} · {} {} · {}{}",
-                message.id,
-                direction,
-                peer,
-                message.created_at,
+                "{} {} · {}{}",
+                if direction == "to" { "Sent to" } else { "From" },
+                messaging::safe(name),
+                message.created_at.format("%Y-%m-%d %H:%M UTC"),
                 message
                     .expires_at
-                    .map(|time| format!(" · expires {time}"))
+                    .map(|time| format!(
+                        " · expires {}",
+                        time.format("%Y-%m-%d %H:%M UTC")
+                    ))
                     .unwrap_or_default()
             );
+            let id = uuid::Uuid::parse_str(&message.id)?;
+            println!("  envx read {id}\n");
         }
     }
     Ok(())

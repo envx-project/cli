@@ -117,7 +117,7 @@ pub async fn command(args: Args, config: &mut Config) -> Result<()> {
     if args.json {
         println!("{}", json!({"code":code,"link":created.link}));
     } else {
-        println!("{code}");
+        println!("envx add-friend '{code}'");
         eprintln!("Single use · expires {}", created.link.expires_at);
     }
     Ok(())
