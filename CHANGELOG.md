@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.15.0](https://github.com/envx-project/cli/compare/v2.14.1...v2.15.0) (2026-09-25)
+
+
+### Features
+
+* make CLI output concise and propagate local aliases ([444656c](https://github.com/envx-project/cli/commit/444656c412120bc6b16f00f6478104ce7b1d5fe9))
+
 ## [2.14.1](https://github.com/envx-project/cli/compare/v2.14.0...v2.14.1) (2026-09-25)
 
 
