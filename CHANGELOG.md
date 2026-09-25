@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.16.0](https://github.com/envx-project/cli/compare/v2.15.0...v2.16.0) (2026-09-25)
+
+
+### Features
+
+* pair an existing identity with another machine ([2aac846](https://github.com/envx-project/cli/commit/2aac846b63a6fb823d0facf6ca85ac23e13b53c8))
+
 ## [2.15.0](https://github.com/envx-project/cli/compare/v2.14.1...v2.15.0) (2026-09-25)
 
 
