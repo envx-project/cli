@@ -22,6 +22,10 @@ use crate::{
 /// (one per line; `#` comments and blank lines ignored).
 #[derive(Parser)]
 pub struct Args {
+    /// Show full IDs and diagnostic details
+    #[arg(long)]
+    pub verbose: bool,
+
     /// KVPairs
     #[arg(trailing_var_arg = true)]
     kvpairs: Vec<String>,
@@ -161,7 +165,9 @@ pub async fn command(args: Args, config: &mut Config) -> Result<()> {
         println!("{}", serde_json::to_string(&ids)?);
     } else {
         println!("Uploaded {} variables", ids.len());
-        println!("IDs: {:?}", ids);
+        if args.verbose {
+            println!("Variable IDs: {}", ids.join(", "));
+        }
     }
 
     Ok(())

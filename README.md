@@ -42,6 +42,20 @@ password"`) by setting `config.primary_key_command` in your config file.
 
 A command will be available for this in the future (maybe). See [#72](https://github.com/envx-project/cli/issues/72).
 
+### Readable output and local nicknames
+
+Set a local nickname with `envx friends --rename <user-id> --alias <nickname>`.
+The nickname appears alongside the account name in friend lists, inbox entries,
+send confirmations, project member lists, and removal menus. Nicknames stay local
+to the current account and server; they do not change user IDs or fingerprint trust.
+
+Normal output shows short identity references and concise success summaries.
+Use `--verbose` with `friends`, `add-friend`, `friend-link`, `set`, `auth`,
+`project list-users`, `project info`, `project remove-user`, or `get project`
+for full IDs or diagnostic details. Short IDs are display references, not accepted
+as user-ID arguments. `project list-users --all` explicitly includes public keys.
+Existing `--json` output remains unchanged for scripts.
+
 ### Usage
 
 ```bash

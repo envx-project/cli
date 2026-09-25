@@ -34,7 +34,7 @@ pub struct Args {
 }
 pub async fn command(args: Args, config: &mut Config) -> Result<()> {
     let client = Client::new(config)?;
-    let (id, request) = if let Some(id) = args.retry {
+    let (id, request, recipient_name) = if let Some(id) = args.retry {
         let id = uuid::Uuid::parse_str(&id)?.to_string();
         let body: Value = client
             .state
@@ -65,7 +65,9 @@ pub async fn command(args: Args, config: &mut Config) -> Result<()> {
                 "Pending send identity no longer matches trusted friend"
             );
         }
-        (id, body)
+        let names =
+            crate::utils::user_display::UserDisplay::from_state(&client.state)?;
+        (id, body, names.name(&friend.user.id, &friend.user.username))
     } else {
         let target = args
             .friend
@@ -106,7 +108,13 @@ pub async fn command(args: Args, config: &mut Config) -> Result<()> {
         }
         let request = json!({"id":id,"recipient_id":friend.user.id,"ciphertext":ciphertext,"expires_at":expires_at});
         client.state.put("pending-send", &id, &request)?;
-        (id, request)
+        let names =
+            crate::utils::user_display::UserDisplay::from_state(&client.state)?;
+        (
+            id,
+            request,
+            names.name(&friend.user.id, &friend.user.username),
+        )
     };
     let sent = client
         .request::<Message>(Method::POST, "/v2/messages", Some(request))
@@ -122,7 +130,7 @@ pub async fn command(args: Args, config: &mut Config) -> Result<()> {
     if args.json {
         println!("{}", serde_json::to_string(&sent)?);
     } else {
-        println!("Sent {}", sent.id);
+        println!("Sent to {recipient_name}.\n  envx read {id}");
     }
     Ok(())
 }

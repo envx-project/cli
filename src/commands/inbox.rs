@@ -1,7 +1,7 @@
 use super::*;
 use crate::utils::{
     config::Config,
-    messaging::{self, Client, Message, Pin},
+    messaging::{self, Client, Message},
 };
 use reqwest::Method;
 
@@ -50,27 +50,24 @@ pub async fn command(args: Args, config: &mut Config) -> Result<()> {
     } else {
         // Names are presentation only; reading still verifies signatures and pins.
         let friends = client.friends().await.unwrap_or_default();
+        let names =
+            crate::utils::user_display::UserDisplay::from_state(&client.state)?;
         for message in messages {
             let (direction, peer) = if message.sender_id == client.user_id() {
                 ("to", message.recipient_id)
             } else {
                 ("from", message.sender_id)
             };
-            let pin: Option<Pin> = client.state.get("friend", &peer)?;
-            let name = pin
-                .as_ref()
-                .and_then(|pin| pin.alias.as_deref())
-                .or_else(|| {
-                    friends
-                        .iter()
-                        .find(|friend| friend.user.id == peer)
-                        .map(|friend| friend.user.username.as_str())
-                })
+            let username = friends
+                .iter()
+                .find(|friend| friend.user.id == peer)
+                .map(|friend| friend.user.username.as_str())
                 .unwrap_or(&peer);
+            let name = names.name(&peer, username);
             println!(
                 "{} {} · {}{}",
                 if direction == "to" { "Sent to" } else { "From" },
-                messaging::safe(name),
+                name,
                 message.created_at.format("%Y-%m-%d %H:%M UTC"),
                 message
                     .expires_at

@@ -1,13 +1,17 @@
 use super::*;
 use crate::utils::{
     config::Config,
-    messaging::{self, Client, Pin},
+    messaging::{Client, Pin},
 };
 use serde_json::json;
 
 /// List friends, assign local aliases, verify keys, or remove a friendship
 #[derive(Parser, Debug)]
 pub struct Args {
+    /// Show full IDs and diagnostic details
+    #[arg(long)]
+    pub verbose: bool,
+
     #[arg(long)]
     pub json: bool,
     /// Friend UUID or local alias to remove
@@ -84,9 +88,13 @@ pub async fn command(args: Args, config: &mut Config) -> Result<()> {
         client.pin(&friend.user, old.and_then(|p| p.alias), true)?;
     }
     let friends = client.friends().await?;
-    let mut rows = Vec::new();
     for friend in &friends {
         client.learn_from_receipt(friend)?;
+    }
+    let names =
+        crate::utils::user_display::UserDisplay::from_state(&client.state)?;
+    let mut rows = Vec::new();
+    for friend in &friends {
         let pin: Option<Pin> = client.state.get("friend", &friend.user.id)?;
         let status = match &pin {
             Some(pin) if pin.fingerprint == friend.user.fingerprint => {
@@ -98,14 +106,13 @@ pub async fn command(args: Args, config: &mut Config) -> Result<()> {
         let alias = pin.and_then(|p| p.alias);
         if !args.json {
             println!(
-                "{} · {} · {} · {}",
-                messaging::safe(
-                    alias.as_deref().unwrap_or(&friend.user.username)
-                ),
-                friend.user.id,
-                friend.user.fingerprint,
+                "{} · {}",
+                names.row(&friend.user.id, &friend.user.username, args.verbose),
                 status
             );
+            if args.verbose {
+                println!("  Fingerprint: {}", friend.user.fingerprint);
+            }
         }
         rows.push(json!({"user":friend.user,"alias":alias,"trust":status,"created_at":friend.created_at}));
     }
@@ -120,16 +127,10 @@ pub async fn command(args: Args, config: &mut Config) -> Result<()> {
         let mut options =
             vec!["Done".to_owned(), "Create a friend link".to_owned()];
         for friend in &friends {
-            let pin: Option<Pin> =
-                client.state.get("friend", &friend.user.id)?;
-            let label = pin
-                .as_ref()
-                .and_then(|pin| pin.alias.as_deref())
-                .unwrap_or(&friend.user.username);
-            options.push(format!(
-                "{} · {}",
-                messaging::safe(label),
-                friend.user.id
+            options.push(names.row(
+                &friend.user.id,
+                &friend.user.username,
+                true,
             ));
         }
         let selection =
@@ -137,6 +138,7 @@ pub async fn command(args: Args, config: &mut Config) -> Result<()> {
         if selection == "Create a friend link" {
             super::friend_link::command(
                 super::friend_link::Args {
+                    verbose: args.verbose,
                     target: None,
                     expires: "24h".into(),
                     list: false,
@@ -193,6 +195,7 @@ pub async fn command(args: Args, config: &mut Config) -> Result<()> {
                         crate::utils::prompt::prompt_text("Local alias:")?;
                     Box::pin(command(
                         Args {
+                            verbose: args.verbose,
                             json: false,
                             remove: None,
                             rename: Some(target),

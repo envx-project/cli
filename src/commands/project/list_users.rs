@@ -6,6 +6,10 @@ use crate::{sdk::SDK, utils::choice::Choice};
 /// Get all environment variables for a project
 #[derive(Parser)]
 pub struct Args {
+    /// Show full IDs and diagnostic details
+    #[arg(long)]
+    pub verbose: bool,
+
     /// Partial fingerprint of key to use
     #[arg(short, long)]
     key: Option<String>,
@@ -50,20 +54,15 @@ pub async fn command(args: Args, config: &mut Config) -> Result<()> {
         return Ok(());
     }
 
-    if args.all {
-        for user in project_info.users.iter() {
-            println!(
-                "{} - {} - {} - {}",
-                user.username, user.id, user.created_at, user.public_key
-            );
+    let names = crate::utils::user_display::UserDisplay::new(config)?;
+    for user in &project_info.users {
+        println!(
+            "{}",
+            names.row(&user.id, &user.username, args.verbose || args.all)
+        );
+        if args.all {
+            println!("  Created: {}\n{}", user.created_at, user.public_key);
         }
-        println!("{:?}", &project_info.users);
-        return Ok(());
     }
-
-    for user in project_info.users.iter() {
-        println!("{}", user);
-    }
-
     Ok(())
 }

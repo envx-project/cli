@@ -10,6 +10,10 @@ use serde_json::json;
 /// Redeem a single-use friend code and pin its creator's public key
 #[derive(Parser, Debug)]
 pub struct Args {
+    /// Show full IDs and diagnostic details
+    #[arg(long)]
+    pub verbose: bool,
+
     pub code: String,
     #[arg(long)]
     pub alias: Option<String>,
@@ -91,12 +95,15 @@ pub async fn command(args: Args, config: &mut Config) -> Result<()> {
     if args.json {
         println!("{}", serde_json::to_string(&pin)?);
     } else {
+        let names =
+            crate::utils::user_display::UserDisplay::from_state(&client.state)?;
         println!(
-            "Added {} · {} · {}",
-            messaging::safe(&result.creator.username),
-            pin.user_id,
-            pin.fingerprint
+            "Added {}.",
+            names.row(&pin.user_id, &result.creator.username, args.verbose)
         );
+        if args.verbose {
+            println!("Fingerprint: {}", pin.fingerprint);
+        }
     }
     Ok(())
 }

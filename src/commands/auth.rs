@@ -6,7 +6,11 @@ use reqwest::header;
 /// Test authentication with the server
 #[derive(Parser)]
 pub struct Args {
-    /// Debug output
+    /// Show server response and request diagnostics
+    #[arg(long)]
+    verbose: bool,
+
+    /// Debug output (alias for --verbose)
     #[arg(short, long)]
     debug: bool,
 }
@@ -26,7 +30,7 @@ pub async fn command(args: Args, config: &mut Config) -> anyhow::Result<()> {
 
     let url = format!("{}test-auth", api_url(config)?);
 
-    if args.debug {
+    if args.debug || args.verbose {
         dbg!(&url);
     }
 
@@ -36,19 +40,17 @@ pub async fn command(args: Args, config: &mut Config) -> anyhow::Result<()> {
         .send()
         .await?;
 
-    if args.debug {
+    if args.debug || args.verbose {
         dbg!(&res);
     }
 
     let status = res.status();
 
     if status.is_success() {
-        println!("success");
-        // print the text response
-
-        let text = res.text().await?;
-
-        println!("{}", text);
+        println!("Authenticated successfully.");
+        if args.debug || args.verbose {
+            println!("{}", crate::utils::messaging::safe(&res.text().await?));
+        }
     } else {
         println!("status: {}", status);
         bail!("failed to auth")

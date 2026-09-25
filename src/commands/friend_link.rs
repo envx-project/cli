@@ -9,6 +9,10 @@ use serde_json::json;
 /// Create a single-use friend code, or manage previously created codes
 #[derive(Parser, Debug)]
 pub struct Args {
+    /// Show full IDs and diagnostic details
+    #[arg(long)]
+    pub verbose: bool,
+
     /// Restrict redemption to this stable user UUID
     pub target: Option<String>,
     #[arg(long, default_value = "24h")]
@@ -54,13 +58,19 @@ pub async fn command(args: Args, config: &mut Config) -> Result<()> {
         if args.json {
             println!("{}", serde_json::to_string(&links)?);
         } else {
+            let names = crate::utils::user_display::UserDisplay::from_state(
+                &client.state,
+            )?;
             for link in links {
                 let status = if let Some(who) = link.redeemed_by {
                     format!(
-                        "redeemed by {} · {} · {}",
-                        messaging::safe(&who.username),
-                        who.id,
-                        who.fingerprint
+                        "redeemed by {}{}",
+                        names.row(&who.id, &who.username, args.verbose),
+                        if args.verbose {
+                            format!(" · {}", who.fingerprint)
+                        } else {
+                            String::new()
+                        }
                     )
                 } else if link.revoked_at.is_some() {
                     "revoked".into()

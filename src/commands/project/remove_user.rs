@@ -24,11 +24,15 @@ use crate::{
 /// Remove a user from a project
 #[derive(Parser)]
 pub struct Args {
-    /// Project ID to add user to
+    /// Show full IDs and diagnostic details
+    #[arg(long)]
+    pub verbose: bool,
+
+    /// Project ID to remove users from
     #[arg(short, long)]
     project_id: Option<String>,
 
-    /// User ID to add to project
+    /// User ID to remove from the project
     #[arg(short, long)]
     user_id: Option<uuid::Uuid>,
 
@@ -41,10 +45,10 @@ pub struct Args {
     json: bool,
 }
 
-struct DisplayUser(envx_sdk::models::User);
+struct DisplayUser(envx_sdk::models::User, String);
 impl Display for DisplayUser {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{} - {}", self.0.username, self.0.id)
+        write!(f, "{}", self.1)
     }
 }
 
@@ -59,6 +63,7 @@ pub async fn command(args: Args, config: &mut Config) -> anyhow::Result<()> {
     )
     .await?;
 
+    let names = crate::utils::user_display::UserDisplay::new(config)?;
     let (selected, selected_ids) = match args.user_id {
         Some(uid) => {
             let uid = uid.to_string();
@@ -83,7 +88,11 @@ pub async fn command(args: Args, config: &mut Config) -> anyhow::Result<()> {
                     .users
                     .clone()
                     .into_iter()
-                    .map(DisplayUser)
+                    .map(|user| {
+                        let label =
+                            names.row(&user.id, &user.username, args.verbose);
+                        DisplayUser(user, label)
+                    })
                     .collect(),
             )?;
             users
@@ -100,6 +109,20 @@ pub async fn command(args: Args, config: &mut Config) -> anyhow::Result<()> {
         return Ok(());
     }
 
+    let selected_names = project_info
+        .users
+        .iter()
+        .filter(|user| selected_ids.contains(&user.id))
+        .map(|user| names.name(&user.id, &user.username))
+        .collect::<Vec<_>>();
+    let project_name = crate::utils::messaging::safe(
+        if project_info.project_name.trim().is_empty() {
+            &project_id
+        } else {
+            &project_info.project_name
+        },
+    );
+
     if !args.yes {
         if !is_interactive() {
             bail!(
@@ -109,9 +132,9 @@ pub async fn command(args: Args, config: &mut Config) -> anyhow::Result<()> {
         }
         let confirmed = prompt_confirm_with_default(
             &format!(
-                "Remove {} user(s) from project {}? All variables will be re-encrypted.",
-                selected_ids.len(),
-                &project_id,
+                "Remove {} from {}? All variables will be re-encrypted.",
+                selected_names.join(", "),
+                project_name,
             ),
             false,
         )?;
@@ -186,10 +209,17 @@ pub async fn command(args: Args, config: &mut Config) -> anyhow::Result<()> {
             })
         );
     } else {
-        println!("Updated {} variables", res.len());
-        println!("IDs: {:?}", res);
-        println!("Successfully removed users from project");
-        println!("Users removed: {:?}", selected);
+        println!(
+            "Removed {} from {}. Re-encrypted {} variables.",
+            selected_names.join(", "),
+            project_name,
+            res.len()
+        );
+        if args.verbose {
+            println!("Project ID: {project_id}");
+            println!("Removed user IDs: {}", selected_ids.join(", "));
+            println!("Variable IDs: {}", res.join(", "));
+        }
     }
 
     Ok(())

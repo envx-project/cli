@@ -5,6 +5,10 @@ use crate::{sdk::SDK, utils::choice::Choice};
 /// Get project info
 #[derive(Parser)]
 pub struct Args {
+    /// Show full IDs and diagnostic details
+    #[arg(long)]
+    pub verbose: bool,
+
     /// Partial fingerprint of key to use
     #[arg(short, long)]
     key: Option<String>,
@@ -29,12 +33,13 @@ pub async fn command(args: Args, config: &mut Config) -> Result<()> {
         return Ok(());
     }
 
+    let names = crate::utils::user_display::UserDisplay::new(config)?;
     println!("Project Info:\n");
     println!("ID: {}", project_info.project_id);
     println!("Name: {}", project_info.project_name);
     println!("Users:");
     for user in project_info.users {
-        println!("    {} - {}", user.id, user.username);
+        println!("    {}", names.row(&user.id, &user.username, args.verbose));
     }
 
     Ok(())
