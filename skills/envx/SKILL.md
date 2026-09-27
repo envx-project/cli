@@ -21,7 +21,13 @@ Verify capability quickly: `envx whoami` (prints your key fingerprint + uuid) an
 curl -fsSL https://get.envx.sh | sh      # installs to /usr/local/bin (needs sudo)
 ```
 
-No-sudo / locked-down machines: grab the release tarball for your target from the [`envx-project/cli`](https://github.com/envx-project/cli/releases) GitHub releases (e.g. `envx-2.13.0-aarch64-apple-darwin.tar.gz`), extract, and drop the `envx` binary somewhere on `PATH` such as `~/.local/bin`. Self-update later with `envx update` (re-runs the install script; fails on Windows).
+Windows (PowerShell; per-user, no admin; adds itself to the user `PATH`):
+
+```powershell
+powershell -c "irm https://raw.githubusercontent.com/envx-project/cli/main/install.ps1 | iex"
+```
+
+No-sudo Unix machines: `curl -fsSL get.envx.sh | sh -s -- --bin-dir ~/.local/bin`. Self-update later with `envx update` (re-runs the install script on every platform).
 
 Confirm: `envx --version` → `envx 2.13.0`.
 

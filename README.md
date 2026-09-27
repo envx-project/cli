@@ -23,8 +23,10 @@ Please run `envx config migrate` to migrate your config file to the new format.
 curl -fsSL get.envx.sh | bash
 ```
 
-For windows users:
-Download the binary from [this page](https://github.com/envx-project/cli/releases/latest), then you can run that binary as an application.
+```powershell
+# Windows (PowerShell, no administrator rights needed)
+powershell -c "irm https://raw.githubusercontent.com/envx-project/cli/main/install.ps1 | iex"
+```
 
 For more detailed instructions, see [windows installation](https://github.com/envx-project/cli/blob/main/windows-installation.md)
 
@@ -75,7 +77,7 @@ Commands:
   shell      Open a subshell with envx variables available
   unlink     Unlink the current project
   unset      Unset (delete) an environment variable
-  update     Attempt to self-update envx using the installation script. Fails on Windows
+  update     Self-update envx using the installation script
   upload     If your key is not in the database, use this command to upload it
   variables  Get all environment variables for the current configured directory
   version    Fancy, pretty-printed version information

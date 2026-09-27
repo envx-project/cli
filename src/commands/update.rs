@@ -9,19 +9,15 @@ use crate::utils::config::Config;
 
 use super::*;
 
-/// Attempt to self-update envx using the installation script. Fails on Windows.
+/// Self-update envx using the installation script
 #[derive(Parser)]
 pub struct Args {}
 
+#[cfg(not(target_os = "windows"))]
+const INSTALLER_URL: &str = "https://get.envx.sh";
 #[cfg(target_os = "windows")]
-pub async fn command(_args: Args, _config: &mut Config) -> Result<()> {
-    use anyhow::bail;
-
-    eprintln!("Self-update is not supported on Windows");
-    eprintln!("Read the installation instructions at https://github.com/envx-project/cli/blob/main/windows-installation.md");
-
-    bail!("Self-update is not supported on Windows")
-}
+const INSTALLER_URL: &str =
+    "https://raw.githubusercontent.com/envx-project/cli/main/install.ps1";
 
 #[derive(Default, serde::Serialize, serde::Deserialize)]
 pub struct UpdateCheck {
@@ -66,7 +62,6 @@ pub async fn check_update(force: bool) -> anyhow::Result<String> {
     Ok(latest_version.to_string())
 }
 
-#[cfg(not(target_os = "windows"))]
 pub async fn command(_args: Args, _config: &mut Config) -> Result<()> {
     let latest_version = check_update(true).await?;
 
@@ -92,7 +87,7 @@ pub async fn command(_args: Args, _config: &mut Config) -> Result<()> {
         .connect_timeout(std::time::Duration::from_secs(3))
         .timeout(std::time::Duration::from_secs(15))
         .build()?
-        .get("https://get.envx.sh")
+        .get(INSTALLER_URL)
         .send()
         .await?
         .error_for_status()?
@@ -122,6 +117,39 @@ async fn run_installer(script: &str) -> Result<()> {
         bail!("Update command failed with status: {}", status);
     }
 
+    Ok(())
+}
+
+/// Reinstall into the folder of the running executable. The installer renames
+/// the in-use envx.exe aside, which Windows allows, before placing the update.
+#[cfg(target_os = "windows")]
+async fn run_installer(script: &str) -> Result<()> {
+    let exe = std::env::current_exe()?;
+    let dir = exe.parent().context("Executable has no parent folder")?;
+    let path = std::env::temp_dir()
+        .join(format!("envx-install-{}.ps1", uuid::Uuid::new_v4()));
+    std::fs::write(&path, script)?;
+    let status = tokio::process::Command::new("powershell")
+        .args([
+            "-NoProfile",
+            "-NonInteractive",
+            "-ExecutionPolicy",
+            "Bypass",
+            "-File",
+        ])
+        .arg(&path)
+        .env("ENVX_INSTALL_DIR", dir)
+        .env("ENVX_NO_MODIFY_PATH", "1")
+        .stdout(Stdio::inherit())
+        .stderr(Stdio::inherit())
+        .status()
+        .await;
+    let _ = std::fs::remove_file(&path);
+    let status = status?;
+    if !status.success() {
+        bail!("Update command failed with status: {}", status);
+    }
+    println!("Command executed successfully.");
     Ok(())
 }
 

@@ -2,29 +2,44 @@
 
 ## Installation
 
-1. Download the latest release from [here](https://github.com/envx-project/cli/releases/latest)
-   - Choose the `x86_64-pc-windows-msvc.zip` file
-   - ![image](./assets/releases.png)
-2. Unzip the file
-3. Create a new folder called `envx` in your `C:\` directory
-4. Copy the `envx.exe` file from the unzipped folder to the `envx` folder
-5. Add the `envx` folder to your PATH environment variable (instructions [here](https://www.architectryan.com/2018/03/17/add-to-the-path-on-windows-10/))
+Run this in PowerShell or Command Prompt:
 
-## Portable Installation
+```powershell
+powershell -c "irm https://raw.githubusercontent.com/envx-project/cli/main/install.ps1 | iex"
+```
 
-1. Download the latest release from [here](https://github.com/envx-project/cli/releases/latest)
-   - Choose the `x86_64-pc-windows-msvc.zip` file
+The script downloads the latest release, verifies its SHA256 checksum, installs
+`envx.exe` to `%LOCALAPPDATA%\Programs\envx` (no administrator rights needed),
+and adds that folder to your user `PATH`. Open a new terminal afterwards.
+
+Update later with `envx update`.
+
+Environment variables customise the install:
+
+| Variable | Effect |
+| --- | --- |
+| `ENVX_VERSION` | Install a specific release, e.g. `2.16.0` |
+| `ENVX_INSTALL_DIR` | Install somewhere other than `%LOCALAPPDATA%\Programs\envx` |
+| `ENVX_PLATFORM` | `msvc` (default) or `gnu` build |
+| `ENVX_NO_MODIFY_PATH` | Set to `1` to leave `PATH` unchanged |
+| `ENVX_UNINSTALL` | Set to `1` to remove envx and its `PATH` entry |
+
+For example, to uninstall:
+
+```powershell
+$env:ENVX_UNINSTALL = '1'; irm https://raw.githubusercontent.com/envx-project/cli/main/install.ps1 | iex
+```
+
+## Manual installation
+
+1. Download `x86_64-pc-windows-msvc.zip` from the [latest release](https://github.com/envx-project/cli/releases/latest)
    - ![image](./assets/releases.png)
-2. Unzip the file
-3. Open a terminal and navigate to the unzipped folder
-4. Run `envx.exe` to start the program
+2. Unzip it and move `envx.exe` to a folder of your choice
+3. Add that folder to your `PATH` environment variable
 
 ## Troubleshooting
 
-### Error: The term 'envx' is not recognized as the name of a cmdlet, function, script file, or operable program
+### The term 'envx' is not recognized as the name of a cmdlet, function, script file, or operable program
 
-If you get this error, you probably tried to run the program from the global scope when you followed the portable installation instructions.
-To fix this, you can either:
-
-- Run the program from the local scope by navigating to the `envx` folder and running `envx.exe`
-- Add the `envx` folder to your PATH environment variable (instructions [here](https://www.architectryan.com/2018/03/17/add-to-the-path-on-windows-10/))
+The terminal was opened before `PATH` changed. Open a new terminal. If it still
+fails, check that the install folder is listed in your user `PATH`.

@@ -50,3 +50,29 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - run: docker run --rm --network none -v "$PWD:/src:ro" python:3.12-slim python /src/tests/installer.py
+
+  windows-installer:
+    name: Windows installer (${{ matrix.shell }})
+    runs-on: windows-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        shell: [powershell, pwsh]
+    steps:
+      - uses: actions/checkout@v4
+      # Mirror the documented `irm ... | iex` path against the latest published release.
+      - name: Install, upgrade in place, and uninstall
+        shell: ${{ matrix.shell }}
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $env:ENVX_INSTALL_DIR = Join-Path $env:RUNNER_TEMP 'envx-bin'
+          $script = Get-Content -Raw ./install.ps1
+          $script | Invoke-Expression
+          & (Join-Path $env:ENVX_INSTALL_DIR 'envx.exe') --version
+          if ([Environment]::GetEnvironmentVariable('Path', 'User') -notlike "*$env:ENVX_INSTALL_DIR*") { throw 'user PATH not updated' }
+          $script | Invoke-Expression
+          if (Test-Path (Join-Path $env:ENVX_INSTALL_DIR 'envx.exe.old')) { throw 'stale .old left behind' }
+          $env:ENVX_UNINSTALL = '1'
+          $script | Invoke-Expression
+          if (Test-Path (Join-Path $env:ENVX_INSTALL_DIR 'envx.exe')) { throw 'still installed' }
+          if ([Environment]::GetEnvironmentVariable('Path', 'User') -like "*$env:ENVX_INSTALL_DIR*") { throw 'user PATH not cleaned' }
