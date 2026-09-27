@@ -15,9 +15,9 @@ jobs:
       envx_version: ${{ env.ENVX_VERSION }}
       build: ${{ env.BUILD }}
     steps:
-      # Releases start as drafts so /releases/latest never points at a release
-      # without assets; publish-release below makes it public. The tag is still
-      # created immediately (force-tag-creation) so changelogs find it.
+      # release-please-config.json keeps releases draft until publish-release
+      # has every asset, so /releases/latest stays installable, and forces the
+      # tag immediately so the next changelog can find it.
       - name: Release Please
         uses: googleapis/release-please-action@v4
         id: release
@@ -143,12 +143,14 @@ jobs:
             fi
           done
 
-      # gh resolves draft releases by tag; the REST get-by-tag lookup does not.
+      # gh finds draft releases by tag; the REST releases/tags/{tag} endpoint cannot.
       - name: Upload release archive
         shell: bash
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: gh release upload "v${{ needs.release-please.outputs.envx_version }}" envx-${{ needs.release-please.outputs.envx_version }}-${{ matrix.target }}* --clobber --repo "$GITHUB_REPOSITORY"
+          VERSION: ${{ needs.release-please.outputs.envx_version }}
+          TARGET: ${{ matrix.target }}
+        run: gh release upload "v$VERSION" envx-"$VERSION"-"$TARGET"* --clobber --repo "$GITHUB_REPOSITORY"
 
       # - name: Install cargo-deb
       #   if: matrix.target == 'x86_64-unknown-linux-musl'
@@ -165,17 +167,22 @@ jobs:
       #     tag: ${{ needs.release-please.outputs.envx_version }}
       #     file: envx-${{ needs.release-please.outputs.envx_version }}-amd64.deb
 
+  # Skipped unless every build-release leg succeeded, leaving the draft
+  # unpublished. Recover with "Re-run failed jobs"; a full re-run does not
+  # re-emit release_created for an existing release.
   publish-release:
     name: Publish Release
     needs: [release-please, build-release]
-    # Only publish when every target uploaded; a failed build leaves the draft.
-    if: needs.release-please.outputs.build == 'true'
     permissions:
       contents: write
     runs-on: ubuntu-latest
     steps:
+      # make_latest=legacy picks latest by version and date, so a delayed
+      # older release cannot displace a newer one.
       - name: Publish draft release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           TAG: v${{ needs.release-please.outputs.envx_version }}
-        run: gh release edit "$TAG" --draft=false --latest --repo "$GITHUB_REPOSITORY"
+        run: |
+          id=$(gh release view "$TAG" --json databaseId --jq .databaseId --repo "$GITHUB_REPOSITORY")
+          gh api --method PATCH "repos/$GITHUB_REPOSITORY/releases/$id" -F draft=false -f make_latest=legacy
