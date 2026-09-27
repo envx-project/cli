@@ -25,9 +25,11 @@ pub async fn command(args: Args, config: &mut Config) -> Result<()> {
     } else {
         match envelope.payload {
             Payload::Text(text) => text.into_bytes(),
-            Payload::Variables(variables) => {
-                serde_json::to_vec_pretty(&variables)?
-            }
+            Payload::Variables(variables) => variables
+                .iter()
+                .map(|(name, value)| format!("{name}={value}\n"))
+                .collect::<String>()
+                .into_bytes(),
         }
     };
     if let Some(path) = args.output {

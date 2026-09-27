@@ -108,6 +108,17 @@ result = doc('bob', 'import', 'message', variables['id'], '--project-id', projec
 assert result['applied'] is True
 values = doc('bob', 'variables', '--project-id', project_id, '--all', '--json')
 assert values == {'TOKEN': 'new-value', 'KEEP': 'untouched', 'NEW': 'added'}
+# Piped input needs no --stdin; conventional KEY=VALUE lines become variables.
+detected = run('alice', 'send', 'bob', '--json', data='AUTO_TOKEN=auto-value\n')
+assert 'Detected 1 KEY=VALUE variable' in detected.stderr and 'auto-value' not in detected.stderr
+assert doc('bob', 'read', json.loads(detected.stdout)['id'], '--json')['payload'] == {'kind': 'variables', 'value': {'AUTO_TOKEN': 'auto-value'}}
+assert run('bob', 'read', json.loads(detected.stdout)['id']).stdout == 'AUTO_TOKEN=auto-value\n'
+forced = doc('alice', 'send', 'bob', '--text', '--json', data='AUTO_TOKEN=auto-value\n')
+assert run('bob', 'read', forced['id']).stdout == 'AUTO_TOKEN=auto-value\n'
+padded = doc('alice', 'send', 'bob', '--json', data='QUJDRA==')
+assert run('bob', 'read', padded['id']).stdout == 'QUJDRA=='
+missing = run('alice', 'send', '--json', data='never-sent', ok=False)
+assert 'friend' in missing.stderr.lower() and 'never-sent' not in missing.stderr
 run('alice', 'friends', '--remove', 'bob', '--json')
 run('alice', 'send', 'bob', '--stdin', data='blocked', ok=False)
 assert doc('bob', 'read', variables['id'], '--json')['payload']['kind'] == 'variables'

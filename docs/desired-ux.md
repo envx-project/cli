@@ -57,8 +57,8 @@ Three things make this feel good:
 
 ### `envx variables`
 
-- Prints a nice unicode box-drawing table by default.
-- Has `--kv` (KEY=VALUE lines), `--json`, `--filter <regex>`, `--all`.
+- Prints KEY=VALUE lines by default, so output can be redirected to a `.env` file.
+- Has `--table` (unicode box-drawing table), `--json`, `--filter <regex>`, `--all`. `--kv` is a hidden no-op kept for existing scripts.
 - This one is already polished.
 
 ### `envx shell`

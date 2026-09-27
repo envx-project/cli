@@ -18,8 +18,12 @@ pub struct Args {
     #[arg(long)]
     json: bool,
 
-    /// Output as a list of key=value pairs
+    /// Output as a table instead of KEY=VALUE lines
     #[arg(long)]
+    table: bool,
+
+    /// KEY=VALUE lines; the default, kept for existing scripts
+    #[arg(long, hide = true, conflicts_with = "table")]
     kv: bool,
 
     /// Output all variables (this project only)
@@ -83,10 +87,10 @@ impl Mode {
     fn from_args(args: &Args) -> Self {
         if args.json {
             Self::Json
-        } else if args.kv {
-            Self::KV
-        } else {
+        } else if args.table {
             Self::Table
+        } else {
+            Self::KV
         }
     }
 }
