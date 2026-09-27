@@ -15,12 +15,16 @@ jobs:
       envx_version: ${{ env.ENVX_VERSION }}
       build: ${{ env.BUILD }}
     steps:
+      # Releases start as drafts so /releases/latest never points at a release
+      # without assets; publish-release below makes it public. The tag is still
+      # created immediately (force-tag-creation) so changelogs find it.
       - name: Release Please
-        uses: GoogleCloudPlatform/release-please-action@v4
+        uses: googleapis/release-please-action@v4
         id: release
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-          release-type: rust
+          config-file: release-please-config.json
+          manifest-file: .release-please-manifest.json
 
       - name: Set SemVer String
         id: set-semver
@@ -139,13 +143,12 @@ jobs:
             fi
           done
 
+      # gh resolves draft releases by tag; the REST get-by-tag lookup does not.
       - name: Upload release archive
-        uses: softprops/action-gh-release@v1
+        shell: bash
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          tag_name: v${{ needs.release-please.outputs.envx_version }}
-          files: envx-${{ needs.release-please.outputs.envx_version }}-${{ matrix.target }}*
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh release upload "v${{ needs.release-please.outputs.envx_version }}" envx-${{ needs.release-please.outputs.envx_version }}-${{ matrix.target }}* --clobber --repo "$GITHUB_REPOSITORY"
 
       # - name: Install cargo-deb
       #   if: matrix.target == 'x86_64-unknown-linux-musl'
@@ -161,3 +164,18 @@ jobs:
       #   with:
       #     tag: ${{ needs.release-please.outputs.envx_version }}
       #     file: envx-${{ needs.release-please.outputs.envx_version }}-amd64.deb
+
+  publish-release:
+    name: Publish Release
+    needs: [release-please, build-release]
+    # Only publish when every target uploaded; a failed build leaves the draft.
+    if: needs.release-please.outputs.build == 'true'
+    permissions:
+      contents: write
+    runs-on: ubuntu-latest
+    steps:
+      - name: Publish draft release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: v${{ needs.release-please.outputs.envx_version }}
+        run: gh release edit "$TAG" --draft=false --latest --repo "$GITHUB_REPOSITORY"
