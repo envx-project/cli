@@ -1,5 +1,13 @@
 # Changelog
 
+## [2.17.1](https://github.com/envx-project/cli/compare/v2.17.0...v2.17.1) (2026-09-27)
+
+
+### Bug Fixes
+
+* publish releases only after every asset is uploaded ([fd19c46](https://github.com/envx-project/cli/commit/fd19c464d5f60903d8608f05608a3d3ca78af1cb))
+* publish releases without forcing them to latest ([3114244](https://github.com/envx-project/cli/commit/3114244d6a3684254ad6ce7c12ceb2e01c86e024))
+
 ## [2.17.0](https://github.com/envx-project/cli/compare/v2.16.0...v2.17.0) (2026-09-27)
 
 
