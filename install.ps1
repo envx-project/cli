@@ -122,4 +122,10 @@
 
   Write-Host "Installed envx $version to $exe"
   Update-UserPath $true
+
+  # An older manual install earlier on PATH would keep running instead.
+  $found = Get-Command envx -CommandType Application -ErrorAction SilentlyContinue | Select-Object -First 1
+  if ($onWindows -and $found -and $found.Source -ine $exe) {
+    Write-Warning "Another envx at $($found.Source) comes first on PATH and will run instead. See https://envx.sh/docs/windows#migrate"
+  }
 }

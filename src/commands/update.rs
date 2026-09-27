@@ -126,6 +126,23 @@ async fn run_installer(script: &str) -> Result<()> {
 async fn run_installer(script: &str) -> Result<()> {
     let exe = std::env::current_exe()?;
     let dir = exe.parent().context("Executable has no parent folder")?;
+    let standard = std::env::var("LOCALAPPDATA").ok().map(|local| {
+        std::path::Path::new(&local).join("Programs").join("envx")
+    });
+    if let Some(standard) = standard {
+        if !same_windows_dir(
+            &dir.to_string_lossy(),
+            &standard.to_string_lossy(),
+        ) {
+            eprintln!(
+                "{} envx is installed in {}, not the standard {}.\nUpdating it in place. To move it, see {}",
+                "Warning:".yellow().bold(),
+                dir.display(),
+                standard.display(),
+                WINDOWS_MIGRATE_URL,
+            );
+        }
+    }
     let path = std::env::temp_dir()
         .join(format!("envx-install-{}.ps1", uuid::Uuid::new_v4()));
     std::fs::write(&path, script)?;
@@ -151,6 +168,39 @@ async fn run_installer(script: &str) -> Result<()> {
     }
     println!("Command executed successfully.");
     Ok(())
+}
+
+#[cfg_attr(not(target_os = "windows"), allow(dead_code))]
+const WINDOWS_MIGRATE_URL: &str = "https://envx.sh/docs/windows#migrate";
+
+/// Windows paths compare case-insensitively and ignore trailing separators.
+#[cfg_attr(not(target_os = "windows"), allow(dead_code))]
+fn same_windows_dir(a: &str, b: &str) -> bool {
+    let normalize = |p: &str| {
+        p.trim_start_matches(r"\\?\")
+            .replace('/', r"\")
+            .trim_end_matches('\\')
+            .to_lowercase()
+    };
+    normalize(a) == normalize(b)
+}
+
+#[cfg(test)]
+mod windows_path_tests {
+    use super::same_windows_dir;
+    #[test]
+    fn standard_location_matches_regardless_of_case_and_separators() {
+        let standard = r"C:\Users\a\AppData\Local\Programs\envx";
+        assert!(same_windows_dir(
+            r"c:\users\A\appdata\local\programs\envx\",
+            standard
+        ));
+        assert!(same_windows_dir(
+            r"\\?\C:\Users\a\AppData\Local\Programs\envx",
+            standard
+        ));
+        assert!(!same_windows_dir(r"C:\envx", standard));
+    }
 }
 
 #[cfg(all(test, not(target_os = "windows")))]
