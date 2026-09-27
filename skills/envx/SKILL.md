@@ -92,7 +92,7 @@ envx unlink                   # detach the cwd
 Other everyday commands:
 
 ```bash
-envx variables            # pretty table of this project's vars (--kv, --json, --filter <regex>, -a/--all)
+envx variables            # KEY=VALUE lines of this project's vars (--table, --json, --filter <regex>, -a/--all)
 envx shell                # subshell with the vars exported; `exit` to leave
 envx set KEY=VALUE        # set/overwrite a var (interactive prompt if value omitted)
 envx unset -v KEY         # delete a var (-a to clear all)
