@@ -124,9 +124,43 @@ assert secret.encode() not in terminal.output
 terminal.send(b'\r')
 assert terminal.finish() == 0
 
+# Bare `envx send` walks through friend, source, expiry, then hidden entry.
 terminal = Terminal('alice', 'send')
-assert terminal.finish() != 0
-assert b"FRIEND" in terminal.output and b"Usage:" in terminal.output
+terminal.until('Send to:')
+assert b'local-bob' in terminal.output.split(b'Send to:', 1)[1], 'Picker should show the local alias'
+terminal.send(b'\r')
+terminal.until('What to send:')
+terminal.send(b'\r')
+terminal.until('Expires:')
+terminal.send(b'\x1b[B\x1b[B\r')
+terminal.until('Secret:')
+wizard_secret = 'synthetic-wizard-pty-secret-3319'
+terminal.send(wizard_secret.encode()+b'\r')
+assert terminal.finish() == 0, terminal.output.decode(errors='replace')
+assert wizard_secret.encode() not in terminal.output, 'Wizard secret echoed'
+latest = doc('bob', 'inbox', '--json')
+message = next(item for item in latest if item['id'] not in {x['id'] for x in messages})
+assert message['expires_at'], 'Wizard expiry choice was not applied'
+assert run('bob', 'read', message['id']) == wizard_secret
+
+# The wizard can send a file; KEY=VALUE content is detected as variables.
+env_file = root / 'alice' / 'wizard.env'
+env_file.write_text('WIZARD_TOKEN=synthetic-wizard-value\n')
+terminal = Terminal('alice', 'send')
+terminal.until('Send to:')
+terminal.send(b'\r')
+terminal.until('What to send:')
+terminal.send(b'\x1b[B\r')
+terminal.until('File path:')
+terminal.send(str(env_file).encode()+b'\r')
+terminal.until('Expires:')
+terminal.send(b'\r')
+assert terminal.finish() == 0, terminal.output.decode(errors='replace')
+assert b'Detected 1 KEY=VALUE variable' in terminal.output
+assert b'synthetic-wizard-value' not in terminal.output
+newest = doc('bob', 'inbox', '--json')
+message = next(item for item in newest if item['id'] not in {x['id'] for x in latest})
+assert 'WIZARD_TOKEN' in run('bob', 'read', message['id'])
 assert secret.encode() not in run('bob', 'inbox').encode()
-print('PASS: PTY hidden entry and cancel, friend menu, missing-argument guidance, metadata-only inbox')
+print('PASS: PTY hidden entry and cancel, friend menu, send wizard (typed and file), metadata-only inbox')
 print('FIXTURE_ROOT='+str(root))

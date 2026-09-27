@@ -1,7 +1,7 @@
 use super::*;
 use crate::utils::{
     config::Config,
-    messaging::{self, Client, Message},
+    messaging::{self, Client, Friend, Message},
     messaging_crypto::{self as crypto, Envelope, Payload},
 };
 use reqwest::Method;
@@ -13,23 +13,33 @@ use std::{
 };
 
 /// Send a signed, encrypted secret to a friend; values never go in arguments
+///
+/// Run without arguments in a terminal to pick a friend and secret
+/// interactively. Piped input is read automatically; KEY=VALUE lines are
+/// sent as variables unless --text is given.
 #[derive(Parser, Debug)]
 pub struct Args {
-    #[arg(required_unless_present = "retry")]
+    /// Friend UUID or local alias (prompted for when omitted in a terminal)
     pub friend: Option<String>,
+    /// Read the secret from a file
     #[arg(long, conflicts_with = "stdin")]
     pub file: Option<PathBuf>,
+    /// Read the secret from stdin even when it is a terminal
     #[arg(long)]
     pub stdin: bool,
     /// Parse input as KEY=VALUE lines instead of plain text
-    #[arg(long)]
+    #[arg(long, conflicts_with = "text")]
     pub env: bool,
+    /// Send input as plain text even if it looks like KEY=VALUE lines
+    #[arg(long)]
+    pub text: bool,
+    /// Expire the message after a duration such as 30m, 24h, or 7d
     #[arg(long)]
     pub expires: Option<String>,
     #[arg(long)]
     pub json: bool,
     /// Retry a previously prepared send without creating a duplicate
-    #[arg(long, conflicts_with_all = ["friend", "file", "stdin", "env", "expires"])]
+    #[arg(long, conflicts_with_all = ["friend", "file", "stdin", "env", "text", "expires"])]
     pub retry: Option<String>,
 }
 pub async fn command(args: Args, config: &mut Config) -> Result<()> {
@@ -69,23 +79,48 @@ pub async fn command(args: Args, config: &mut Config) -> Result<()> {
             crate::utils::user_display::UserDisplay::from_state(&client.state)?;
         (id, body, names.name(&friend.user.id, &friend.user.username))
     } else {
-        let target = args
-            .friend
-            .context("Specify a friend's UUID or local alias")?;
-        let friend = client.resolve(&target).await?;
+        // Wizard only when nothing was specified and a human can answer.
+        let wizard = args.friend.is_none()
+            && args.file.is_none()
+            && !args.stdin
+            && crate::utils::prompt::is_interactive();
+        let friend = match args.friend {
+            Some(target) => client.resolve(&target).await?,
+            None if wizard => select_friend(&client).await?,
+            None => anyhow::bail!(
+                "Specify a friend's UUID or local alias, or run `envx send` in a terminal to choose one"
+            ),
+        };
         let pin = client.trusted(&friend.user)?;
-        let text = input(args.file, args.stdin)?;
+        let (file, expires) = if wizard {
+            let file = prompt_source()?;
+            let expires = match args.expires {
+                Some(expires) => Some(expires),
+                None => prompt_expiry()?,
+            };
+            (file, expires)
+        } else {
+            (args.file, args.expires)
+        };
+        // Validate expiry before asking for the secret.
+        let expires_at =
+            expires.as_deref().map(messaging::expires).transpose()?;
+        let (text, typed) = input(file, args.stdin)?;
         let payload = if args.env {
             Payload::Variables(parse_variables(&text)?)
+        } else if args.text || typed {
+            Payload::Text(text)
+        } else if let Some(variables) = detect_variables(&text) {
+            eprintln!(
+                "Detected {} KEY=VALUE variable{}; pass --text to send as plain text.",
+                variables.len(),
+                if variables.len() == 1 { "" } else { "s" }
+            );
+            Payload::Variables(variables)
         } else {
             Payload::Text(text)
         };
         let id = uuid::Uuid::new_v4().to_string();
-        let expires_at = args
-            .expires
-            .as_deref()
-            .map(messaging::expires)
-            .transpose()?;
         let envelope = Envelope {
             version: 1,
             server: client.origin.clone(),
@@ -134,7 +169,90 @@ pub async fn command(args: Args, config: &mut Config) -> Result<()> {
     }
     Ok(())
 }
-fn input(file: Option<PathBuf>, stdin: bool) -> Result<String> {
+/// Presentation wrapper so the picker shows names while returning the friend.
+struct Choice<T>(String, T);
+impl<T> std::fmt::Display for Choice<T> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str(&self.0)
+    }
+}
+
+async fn select_friend(client: &Client) -> Result<Friend> {
+    let names =
+        crate::utils::user_display::UserDisplay::from_state(&client.state)?;
+    let mut choices = Vec::new();
+    for friend in client.friends().await? {
+        client.learn_from_receipt(&friend)?;
+        // Only offer friends whose current key matches the local pin.
+        if client.trusted(&friend.user).is_ok() {
+            choices.push(Choice(
+                names.row(&friend.user.id, &friend.user.username, false),
+                friend,
+            ));
+        }
+    }
+    if choices.is_empty() {
+        anyhow::bail!(
+            "No trusted friends to send to. Share an `envx friend-link` code, or verify a friend with `envx friends --accept-key`."
+        );
+    }
+    Ok(inquire::Select::new("Send to:", choices)
+        .with_render_config(crate::utils::prompt::get_render_config())
+        .prompt()
+        .context("Failed to choose a friend")?
+        .1)
+}
+
+/// None means type the secret at a hidden prompt.
+fn prompt_source() -> Result<Option<PathBuf>> {
+    let choices = vec![
+        Choice("Type a secret (hidden)".into(), false),
+        Choice(
+            "Send a file (KEY=VALUE files become variables)".into(),
+            true,
+        ),
+    ];
+    let from_file = inquire::Select::new("What to send:", choices)
+        .with_render_config(crate::utils::prompt::get_render_config())
+        .prompt()
+        .context("Failed to choose what to send")?
+        .1;
+    if !from_file {
+        return Ok(None);
+    }
+    let path = inquire::Text::new("File path:")
+        .with_render_config(crate::utils::prompt::get_render_config())
+        .with_validator(|path: &str| {
+            Ok(if std::path::Path::new(path.trim()).is_file() {
+                inquire::validator::Validation::Valid
+            } else {
+                inquire::validator::Validation::Invalid(
+                    "No file at that path".into(),
+                )
+            })
+        })
+        .prompt()
+        .context("Failed to read file path")?;
+    Ok(Some(PathBuf::from(path.trim())))
+}
+
+fn prompt_expiry() -> Result<Option<String>> {
+    let choices = vec![
+        Choice("Never".into(), None),
+        Choice("1 hour".into(), Some("1h")),
+        Choice("24 hours".into(), Some("24h")),
+        Choice("7 days".into(), Some("7d")),
+    ];
+    Ok(inquire::Select::new("Expires:", choices)
+        .with_render_config(crate::utils::prompt::get_render_config())
+        .prompt()
+        .context("Failed to choose an expiry")?
+        .1
+        .map(Into::into))
+}
+
+/// Returns the secret and whether it was typed at the hidden prompt.
+fn input(file: Option<PathBuf>, stdin: bool) -> Result<(String, bool)> {
     let mut bytes = Vec::new();
     if let Some(path) = file {
         std::fs::File::open(path)?
@@ -146,14 +264,15 @@ fn input(file: Option<PathBuf>, stdin: bool) -> Result<String> {
             .take(65537)
             .read_to_end(&mut bytes)?;
     } else {
-        return inquire::Password::new("Secret:")
+        let secret = inquire::Password::new("Secret:")
             .without_confirmation()
             .with_render_config(crate::utils::prompt::get_render_config())
             .with_help_message(
-                "Hidden input. Use --stdin or --file for multiline secrets.",
+                "Hidden input. Pipe input or use --file for multiline secrets.",
             )
             .prompt()
-            .context("Failed to read secret");
+            .context("Failed to read secret")?;
+        return Ok((secret, true));
     }
     if bytes.len() > 65536 {
         anyhow::bail!("Secret input exceeds 64 KiB");
@@ -161,7 +280,28 @@ fn input(file: Option<PathBuf>, stdin: bool) -> Result<String> {
     if bytes.is_empty() {
         anyhow::bail!("Secret input is empty");
     }
-    String::from_utf8(bytes).context("Secret input must be UTF-8 text")
+    let text =
+        String::from_utf8(bytes).context("Secret input must be UTF-8 text")?;
+    Ok((text, false))
+}
+
+/// Conservative: every line must look like a conventional env assignment,
+/// so a bare token such as base64 with `=` padding stays plain text.
+fn detect_variables(text: &str) -> Option<BTreeMap<String, String>> {
+    let conventional = text.lines().all(|line| {
+        let line = line.trim_start();
+        if line.trim().is_empty() || line.starts_with('#') {
+            return true;
+        }
+        line.split_once('=').is_some_and(|(name, value)| {
+            name.bytes().any(|b| b.is_ascii_uppercase())
+                && name.bytes().all(|b| {
+                    b == b'_' || b.is_ascii_uppercase() || b.is_ascii_digit()
+                })
+                && !value.starts_with('=')
+        })
+    });
+    conventional.then(|| parse_variables(text).ok()).flatten()
 }
 pub fn parse_variables(text: &str) -> Result<BTreeMap<String, String>> {
     let mut variables = BTreeMap::new();
@@ -209,6 +349,26 @@ mod tests {
         ] {
             let error = parse_variables(value).unwrap_err().to_string();
             assert!(!error.contains("private-value"));
+        }
+    }
+
+    #[test]
+    fn detects_only_conventional_env_input_as_variables() {
+        let values =
+            detect_variables("# comment\nTOKEN=a=b\n\nAPI_KEY_2=\n").unwrap();
+        assert_eq!(values["TOKEN"], "a=b");
+        assert_eq!(values["API_KEY_2"], "");
+        for text in [
+            "hunter2",
+            "QUJDRA==",
+            "password=secret",
+            "TOKEN=a\nplain line",
+            "export TOKEN=a",
+            "A=1\nA=2",
+            "_=1",
+            "",
+        ] {
+            assert!(detect_variables(text).is_none(), "{text:?}");
         }
     }
 }

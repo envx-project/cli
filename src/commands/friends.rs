@@ -175,6 +175,7 @@ pub async fn command(args: Args, config: &mut Config) -> Result<()> {
                             file: None,
                             stdin: false,
                             env: false,
+                            text: false,
                             expires: None,
                             json: false,
                             retry: None,
