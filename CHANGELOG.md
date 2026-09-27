@@ -1,5 +1,16 @@
 # Changelog
 
+## [2.17.0](https://github.com/envx-project/cli/compare/v2.16.0...v2.17.0) (2026-09-27)
+
+
+### Features
+
+* default to KEY=VALUE output instead of tables ([b4ca12f](https://github.com/envx-project/cli/commit/b4ca12f9629ac3ffdec40c9da3fed3e7b1cdb127))
+* interactive envx send and KEY=VALUE input detection ([793aa1f](https://github.com/envx-project/cli/commit/793aa1fc9e4d8f1a1f174e9efba3d1248d3b7d04))
+* PowerShell installer and self-update on Windows ([f4dbca1](https://github.com/envx-project/cli/commit/f4dbca16b813a3145a7a12864b455f72daf3362c))
+* show who envx auth authenticated as ([deda3da](https://github.com/envx-project/cli/commit/deda3dacba80bdb44516388bfec7c830ed1c82ab))
+* warn when Windows envx lives outside the standard folder ([a2374ec](https://github.com/envx-project/cli/commit/a2374ec9d016f58d328611ac470904ca22e9e377))
+
 ## [2.16.0](https://github.com/envx-project/cli/compare/v2.15.0...v2.16.0) (2026-09-25)
 
 
