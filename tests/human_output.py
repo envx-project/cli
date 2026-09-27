@@ -6,6 +6,7 @@ import http.server
 import json
 import os
 from pathlib import Path
+import re
 import shlex
 import sqlite3
 import subprocess
@@ -94,7 +95,7 @@ for args in [("project", "list-users"), ("project", "info"), ("get", "project")]
 assert "From Teammate (@account)" in run("inbox")
 assert "Teammate (@account) · 22222222 · trusted" in run("friends")
 assert "Fingerprint: pin" in run("friends", "--verbose")
-assert run("auth").strip() == "Authenticated successfully."
+assert re.fullmatch(r"Authenticated as .+ \([0-9a-f]{8}\)", run("auth").strip())
 assert "server response" in run("auth", "--verbose")
 for flags in [[], ["--verbose"], ["--json"]]:
     output = run("project", "remove-user", "--project-id", PROJECT, "--user-id", PEER, "--yes", *flags)

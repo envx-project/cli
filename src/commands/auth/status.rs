@@ -23,6 +23,11 @@ pub async fn command(args: Args, config: &mut Config) -> anyhow::Result<()> {
         bail!("Key does not have a UUID, try `envx upload`");
     }
 
+    let identity = format!(
+        "{} ({})",
+        crate::utils::messaging::safe(&key.primary_user_id),
+        key.fingerprint.chars().take(8).collect::<String>()
+    );
     let key = key.unlock(&password);
 
     let client = reqwest::Client::new();
@@ -47,7 +52,7 @@ pub async fn command(args: Args, config: &mut Config) -> anyhow::Result<()> {
     let status = res.status();
 
     if status.is_success() {
-        println!("Authenticated successfully.");
+        println!("Authenticated as {identity}");
         if args.debug || args.verbose {
             println!("{}", crate::utils::messaging::safe(&res.text().await?));
         }
